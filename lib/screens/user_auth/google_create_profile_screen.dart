@@ -1,5 +1,6 @@
 // ignore_for_file: unused_import, sized_box_for_whitespace, prefer_const_constructors
 import 'dart:typed_data';
+import 'package:assumemate/storage/secure_storage.dart';
 import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -16,15 +17,18 @@ import 'package:image_picker/image_picker.dart';
 import 'package:assumemate/service/service.dart';
 import 'package:provider/provider.dart';
 
-class CreateProfileScreen extends StatefulWidget {
+class GoogleCreateProfileScreen extends StatefulWidget {
   final String email;
-  const CreateProfileScreen({super.key, required this.email});
+  final String googleId;
+  const GoogleCreateProfileScreen(
+      {super.key, required this.email, required this.googleId});
 
   @override
-  State<CreateProfileScreen> createState() => _CreateProfileScreenState();
+  State<GoogleCreateProfileScreen> createState() =>
+      _GoogleCreateProfileScreenState();
 }
 
-class _CreateProfileScreenState extends State<CreateProfileScreen> {
+class _GoogleCreateProfileScreenState extends State<GoogleCreateProfileScreen> {
   late PhotosPermission storagePermission;
   final ApiService apiService = ApiService();
   final ImagePicker _picker = ImagePicker();
@@ -37,9 +41,6 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
   final TextEditingController lastNameController = TextEditingController();
   final TextEditingController mobilenoController = TextEditingController();
   final TextEditingController addressController = TextEditingController();
-  final TextEditingController passwordController = TextEditingController();
-  final TextEditingController retypepasswordController =
-      TextEditingController();
   final TextEditingController _dateController = TextEditingController();
   DateTime? _selectedDate;
   String? _selectedGender;
@@ -50,6 +51,8 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
 
   bool _isLoading = false;
   Uint8List? _imageBytes;
+
+  final SecureStorage secureStorage = SecureStorage();
 
   Future<void> _pickImageWeb(String type) async {
     final result = await FilePicker.platform.pickFiles(
@@ -72,7 +75,6 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
     });
 
     String email = emailController.text.trim();
-    String password = passwordController.text.trim();
     String? role = roleSelected;
     String lname = lastNameController.text;
     String fname = firstNameController.text;
@@ -86,8 +88,8 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
     try {
       final response = await apiService.registerUser(
           email,
-          password,
           null,
+          widget.googleId,
           role!,
           fname,
           lname,
@@ -99,6 +101,8 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
           picture!);
 
       if (response.containsKey('profile')) {
+        final token = await secureStorage.getToken();
+        print(token);
         Navigator.pushReplacement(
             context,
             MaterialPageRoute(
@@ -309,16 +313,6 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
                         "Address", addressController, validateNotEmpty),
                     const SizedBox(height: 15.0),
 
-                    // Password Field
-                    buildPasswordRow(
-                        "Password", passwordController, validatePassword),
-                    const SizedBox(height: 15.0),
-
-                    //Retype Password
-                    buildPasswordRow("Confirm Password",
-                        retypepasswordController, validateRetypePassword),
-                    const SizedBox(height: 15.0),
-
                     Row(
                       children: [
                         buildImagePicker(
@@ -453,9 +447,10 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
                       Text(
                         '(+63)',
                         style: const TextStyle(
-                            color: Colors.black,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12),
+                          color: Colors.black,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
                       ),
                     ],
                   ),
@@ -559,8 +554,8 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
                 onTapOutside: (event) {
                   FocusManager.instance.primaryFocus?.unfocus();
                 },
-                controller: _dateController,
                 style: TextStyle(fontSize: 12),
+                controller: _dateController,
                 readOnly: true,
                 decoration: InputDecoration(
                   hintText: labelText,
@@ -704,39 +699,4 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
     }
     return null;
   }
-
-  String? validatePassword(String? value) {
-    if (value == null || value.isEmpty) {
-      return "Please enter a password";
-    } else if (value.length < 6) {
-      return "Password must be at least 6 characters long";
-    } else if (value != retypepasswordController.text) {
-      return 'Passwords do not match';
-    }
-    return null;
-  }
-
-  String? validateRetypePassword(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Please retype your password';
-    }
-    if (value != passwordController.text) {
-      return 'Passwords do not match';
-    }
-    return null;
-  }
-
-  // @override
-  // void dispose() {
-  //   _dateController.dispose();
-  //   emailController.dispose();
-  //   passwordController.dispose();
-  //   retypepasswordController.dispose();
-  //   lastNameController.dispose();
-  //   firstNameController.dispose();
-  //   firstNameController.dispose();
-  //   mobilenoController.dispose();
-  //   addressController.dispose();
-  //   super.dispose();
-  // }
 }

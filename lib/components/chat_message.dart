@@ -246,7 +246,7 @@ class _ChatMessageState extends State<ChatMessage> {
                         Text(
                           widget.messages['text'],
                           style: const TextStyle(
-                            fontSize: 13,
+                            fontSize: 12,
                           ),
                         ),
                         const SizedBox(height: 5),
@@ -279,7 +279,7 @@ class _ChatMessageState extends State<ChatMessage> {
                     ),
                     child: Text(
                       widget.messages['text'],
-                      style: const TextStyle(fontSize: 13),
+                      style: const TextStyle(fontSize: 12),
                     ),
                   )
                 else if (widget.messages['file'] != null &&
@@ -318,7 +318,7 @@ class _ChatMessageState extends State<ChatMessage> {
                           center: _isDownloading
                               ? Text(
                                   "${(_progress * 100).toStringAsFixed(0)}%",
-                                  style: const TextStyle(fontSize: 12),
+                                  style: const TextStyle(fontSize: 11),
                                 )
                               : CircleAvatar(
                                   backgroundColor: Colors.white24,
@@ -353,11 +353,11 @@ class _ChatMessageState extends State<ChatMessage> {
                             children: [
                               Text(
                                 extractFileName(widget.messages['file']),
-                                style: const TextStyle(fontSize: 13),
+                                style: const TextStyle(fontSize: 12),
                               ),
                               Text(
                                 '${(size / 1024).toStringAsFixed(2)} KB',
-                                style: const TextStyle(fontSize: 10),
+                                style: const TextStyle(fontSize: 9),
                               ),
                             ],
                           ),
@@ -370,14 +370,14 @@ class _ChatMessageState extends State<ChatMessage> {
                     Text(
                       date,
                       style:
-                          TextStyle(fontSize: 10, color: Colors.grey.shade400),
+                          TextStyle(fontSize: 9, color: Colors.grey.shade400),
                     ),
                     if (widget.isRead) ...[
                       const SizedBox(width: 3),
                       Text(
                         'Read',
-                        style: TextStyle(
-                            fontSize: 10, color: Colors.grey.shade400),
+                        style:
+                            TextStyle(fontSize: 9, color: Colors.grey.shade400),
                       ),
                     ],
                   ]),
@@ -389,7 +389,7 @@ class _ChatMessageState extends State<ChatMessage> {
                         Text(
                           'Read',
                           style: TextStyle(
-                              fontSize: 10, color: Colors.grey.shade400),
+                              fontSize: 9, color: Colors.grey.shade400),
                         ),
                       ]
                     ],

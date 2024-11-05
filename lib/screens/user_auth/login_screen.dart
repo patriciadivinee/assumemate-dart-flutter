@@ -1,15 +1,16 @@
+import 'package:assumemate/format.dart';
 import 'package:flutter/material.dart';
-import 'package:assumemate/logo/check_splash.dart';
+// import 'package:assumemate/logo/check_splash.dart';
 // import 'package:assumemate/screens/user_auth/create_profile_screen.dart';
 // import 'package:web_socket_channel/web_socket_channel.dart';
 // import 'package:web_socket_channel/status.dart' as status;
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:assumemate/logo/loading_animation.dart';
+// import 'package:assumemate/logo/loading_animation.dart';
 import 'package:assumemate/logo/pop_up.dart';
 import 'package:assumemate/provider/favorite_provider.dart';
 import 'package:assumemate/screens/home_screen.dart';
 import 'package:assumemate/screens/user_auth/forgot_password_screen.dart';
-import 'package:assumemate/screens/waiting_area/pending_application_screen.dart';
+// import 'package:assumemate/screens/waiting_area/pending_application_screen.dart';
 import 'package:assumemate/service/service.dart';
 import 'package:assumemate/screens/user_auth/signup_choice_screen.dart';
 import 'package:provider/provider.dart';
@@ -38,6 +39,23 @@ class _LoginScreenState extends State<LoginScreen> {
     _passwordController.clear();
   }
 
+  Future<void> _signInWithGoogle() async {
+    final user = await GoogleSignInApi.login();
+    if (user == null) {
+      popUp(context, 'User cancelled');
+      return;
+    }
+
+    final googleAuth = await user.authentication;
+
+    // final String googleId = user.id;
+    // final String email = user.email;
+
+    print(googleAuth.idToken);
+    final token = googleAuth.idToken;
+    _loginUser(token, null, null);
+  }
+
   void _login() async {
     setState(() {
       _isLoading = true;
@@ -47,29 +65,33 @@ class _LoginScreenState extends State<LoginScreen> {
     String password = _passwordController.text.trim();
 
     try {
-      final response = await apiService.loginUser(email, password);
-
-      if (response.containsKey('error')) {
-        popUp(context, response['error']);
-      } else {
-        await Provider.of<ProfileProvider>(context, listen: false)
-            .initializeToken();
-        await Provider.of<FavoriteProvider>(context, listen: false)
-            .initializeFave();
-        // final status = response['is_approved'];
-        // final token = response['access_token'];
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (context) => const HomeScreen()),
-          (Route<dynamic> route) => false, // Removes all previous routes
-        );
-      }
+      _loginUser(null, email, password);
     } catch (e) {
       popUp(context, 'An error occured: $e');
     } finally {
       setState(() {
         _isLoading = false; // Stop loading
       });
+    }
+  }
+
+  void _loginUser(String? token, String? email, String? password) async {
+    final response = await apiService.loginUser(token, email, password);
+
+    if (response.containsKey('error')) {
+      popUp(context, response['error']);
+    } else {
+      await Provider.of<ProfileProvider>(context, listen: false)
+          .initializeToken();
+      await Provider.of<FavoriteProvider>(context, listen: false)
+          .initializeFave();
+      // final status = response['is_approved'];
+      // final token = response['access_token'];
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => const HomeScreen()),
+        (Route<dynamic> route) => false,
+      );
     }
   }
 
@@ -85,22 +107,37 @@ class _LoginScreenState extends State<LoginScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                const Column(children: [
-                  Text(
-                    "WELCOME BACK TO",
-                    style: TextStyle(
-                        fontSize: 45,
-                        color: Colors.black,
-                        fontWeight: FontWeight.bold),
+                Column(children: [
+                  Container(
+                      padding: const EdgeInsets.only(
+                        bottom: 20,
+                      ),
+                      child: ClipRRect(
+                        child: Image.asset(
+                          'assets/images/15-removebg-preview.png',
+                          width: MediaQuery.of(context).size.width * .45,
+                          fit: BoxFit.cover,
+                        ),
+                      )),
+                  const SizedBox(height: 10),
+                  RichText(
                     textAlign: TextAlign.center,
-                  ),
-                  Text(
-                    "ASSUMEMATE",
-                    style: TextStyle(
-                        fontSize: 45,
-                        color: Color(0xff4A8AF0),
-                        fontWeight: FontWeight.bold),
-                    textAlign: TextAlign.center,
+                    textScaler: const TextScaler.linear(1.5),
+                    text: const TextSpan(
+                        text: "LOG IN TO",
+                        style: TextStyle(
+                            fontSize: 20,
+                            color: Colors.black,
+                            fontWeight: FontWeight.bold),
+                        children: <TextSpan>[
+                          TextSpan(
+                            text: " ASSUMEMATE",
+                            style: TextStyle(
+                                fontSize: 20,
+                                color: Color(0xff4A8AF0),
+                                fontWeight: FontWeight.bold),
+                          ),
+                        ]),
                   ),
                 ]),
                 const SizedBox(height: 40),
@@ -115,26 +152,17 @@ class _LoginScreenState extends State<LoginScreen> {
                         onTapOutside: (event) {
                           FocusManager.instance.primaryFocus?.unfocus();
                         },
+                        style: const TextStyle(fontSize: 13),
                         cursorColor: const Color(0xff4A8AF0),
                         decoration: InputDecoration(
-                          contentPadding: const EdgeInsets.all(18),
+                          contentPadding: const EdgeInsets.all(12),
                           hintText: "EMAIL",
                           floatingLabelStyle: const TextStyle(
                             color: Color(0xff4A8AF0),
                           ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(30.0),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(30.0),
-                              borderSide: const BorderSide(
-                                color: Colors.black,
-                              )),
-                          border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(30.0),
-                              borderSide: const BorderSide(
-                                color: Color(0xff4A8AF0),
-                              )),
+                          enabledBorder: borderStyle,
+                          focusedBorder: borderStyle,
+                          border: borderStyle,
                           prefixIcon: const Padding(
                               padding: EdgeInsets.only(left: 12, right: 10),
                               child: Icon(Icons.email)),
@@ -158,9 +186,10 @@ class _LoginScreenState extends State<LoginScreen> {
                         onTapOutside: (event) {
                           FocusManager.instance.primaryFocus?.unfocus();
                         },
+                        style: const TextStyle(fontSize: 13),
                         cursorColor: const Color(0xff4A8AF0),
                         decoration: InputDecoration(
-                          contentPadding: const EdgeInsets.all(18),
+                          contentPadding: const EdgeInsets.all(12),
                           hintText: "PASSWORD",
                           floatingLabelStyle: const TextStyle(
                             color: Color(
@@ -232,11 +261,13 @@ class _LoginScreenState extends State<LoginScreen> {
 
                       // Login Button
                       ElevatedButton(
-                        onPressed: () {
-                          if (_formKey.currentState!.validate()) {
-                            _login();
-                          }
-                        },
+                        onPressed: _isLoading
+                            ? null
+                            : () {
+                                if (_formKey.currentState!.validate()) {
+                                  _login();
+                                }
+                              },
                         style: ElevatedButton.styleFrom(
                           backgroundColor:
                               const Color(0xFF4A8AF0), // Custom button color
@@ -253,8 +284,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                               )
                             : const Text(
-                                "LOG IN",
+                                "Log in",
                                 style: TextStyle(
+                                  fontSize: 15,
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -296,11 +328,12 @@ class _LoginScreenState extends State<LoginScreen> {
 
                       ElevatedButton.icon(
                           onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) => const SignupScreen()),
-                            );
+                            // Navigator.push(
+                            //   context,
+                            //   MaterialPageRoute(
+                            //       builder: (context) => const SignupScreen()),
+                            // );
+                            _signInWithGoogle();
                           },
                           icon: const Padding(
                             padding: EdgeInsets.only(right: 8),
@@ -322,7 +355,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             'Sign in with Google',
                             style: TextStyle(
                                 color: Colors.white,
-                                fontSize: 18,
+                                fontSize: 15,
                                 fontWeight: FontWeight.w500),
                           )),
 
@@ -336,7 +369,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             const Text(
                               "Don't have an account yet? ",
                               style:
-                                  TextStyle(fontSize: 14, color: Colors.black),
+                                  TextStyle(fontSize: 13, color: Colors.black),
                             ),
                             GestureDetector(
                               onTap: () {
@@ -352,7 +385,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               child: const Text(
                                 'Sign Up',
                                 style: TextStyle(
-                                  fontSize: 14,
+                                  fontSize: 13,
                                   fontWeight: FontWeight.w600,
                                   color: Color(0xff4A8AF0),
                                 ),

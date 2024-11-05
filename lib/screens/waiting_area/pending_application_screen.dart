@@ -1,11 +1,15 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:assumemate/provider/favorite_provider.dart';
+import 'package:assumemate/provider/profile_provider.dart';
+import 'package:assumemate/screens/user_auth/login_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:assumemate/logo/welcome.dart';
 import 'package:assumemate/screens/home_screen.dart';
 import 'package:assumemate/storage/secure_storage.dart';
 import 'package:assumemate/main.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:provider/provider.dart';
 
 class PendingApplicationScreen extends StatelessWidget {
   PendingApplicationScreen({super.key});
@@ -84,38 +88,46 @@ class PendingApplicationScreen extends StatelessWidget {
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
               ),
               const SizedBox(height: 30),
-              ElevatedButton.icon(
-                  onPressed: () async {
-                    await secureStorage.clearTokens();
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => const WelcomeScreen()),
-                    );
-                  },
-                  icon: const Padding(
-                    padding: EdgeInsets.only(right: 8),
-                    child: Icon(
-                      Icons.logout,
+              ElevatedButton(
+                onPressed: () async {
+                  await Provider.of<ProfileProvider>(context, listen: false)
+                      .initializeToken();
+                  await Provider.of<FavoriteProvider>(context, listen: false)
+                      .initializeFave();
+
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(builder: (context) => const HomeScreen()),
+                    (Route<dynamic> route) => false,
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xff4A8AF0),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 30, vertical: 10),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Continue browsing',
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w500),
+                    ),
+                    SizedBox(width: 2),
+                    Icon(
+                      Icons.arrow_forward,
                       color: Colors.white,
-                      size: 28,
-                    ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xffF04F4F),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 30, vertical: 15),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                  ),
-                  label: const Text(
-                    'LOG OUT',
-                    style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w500),
-                  )),
+                      size: 25,
+                    )
+                  ],
+                ),
+              ),
             ],
           ),
         ),

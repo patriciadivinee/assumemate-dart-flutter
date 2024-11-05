@@ -95,7 +95,7 @@ class _HomeScreenState extends State<HomeScreen> {
       bottomNavigationBar: Container(
         color: const Color(0xff4A8AF0),
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 18),
+          padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 18),
           child: GNav(
               backgroundColor: const Color(0xff4A8AF0),
               color: const Color(0xffFFFCF1),
@@ -103,8 +103,7 @@ class _HomeScreenState extends State<HomeScreen> {
               // tabBackgroundColor: const Color(0xffFFFCF1),
 
               padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
-              rippleColor: Colors.transparent,
-              iconSize: 26,
+              rippleColor: const Color(0xff4A8AF0).withOpacity(.8),
               duration: const Duration(milliseconds: 200),
               tabs: _buildTabs(_selectedIndex),
               selectedIndex: _selectedIndex,

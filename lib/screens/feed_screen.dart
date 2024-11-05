@@ -1,3 +1,6 @@
+import 'package:assumemate/provider/profile_provider.dart';
+import 'package:assumemate/screens/profile_screen.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -25,7 +28,6 @@ class _FeedScreenState extends State<FeedScreen> {
 
   late final PageController pageController;
   int pageNo = 0;
-  Timer? _timer;
   late Future<List<dynamic>> houseAndLotListings;
   late Future<List<dynamic>> carListings;
   late Future<List<dynamic>> motorcycleListings;
@@ -47,10 +49,9 @@ class _FeedScreenState extends State<FeedScreen> {
     // Fetch listings for each category
     houseAndLotListings = fetchListingsByCategory('Real Estate');
     carListings = fetchListingsByCategory('Car');
-    motorcycleListings = fetchListingsByCategory('Motorcycles');
+    motorcycleListings = fetchListingsByCategory('Motorcycle');
   }
 
-  //final String baseUrl = 'http://192.168.254.129:8000';
   final String? baseURL = dotenv.env['API_URL'];
 
   Future<List<dynamic>> fetchListingsByCategory(String category) async {
@@ -99,11 +100,11 @@ class _FeedScreenState extends State<FeedScreen> {
           return const Center(child: Text('No listings available'));
         } else {
           return GridView.builder(
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
               crossAxisSpacing: 5,
               mainAxisSpacing: 5,
-              mainAxisExtent: 190,
+              mainAxisExtent: MediaQuery.of(context).size.width * .50,
             ),
             physics: const BouncingScrollPhysics(),
             itemCount: snapshot.data!.length,
@@ -115,11 +116,9 @@ class _FeedScreenState extends State<FeedScreen> {
               var content = listing['list_content'];
               var title;
 
-              print('tangiinaaaaaaa' + listing['user_id'].toString());
-
               // Check the category and set the title accordingly
               if (content['category'] == "Cars" ||
-                  content['category'] == "Motorcycles") {
+                  content['category'] == "Motorcycle") {
                 title =
                     '${content['make'] ?? 'Unknown make'} (${content['model'] ?? 'Unknown model'})';
               } else if (content['category'] == "House and Lot") {
@@ -146,10 +145,10 @@ class _FeedScreenState extends State<FeedScreen> {
   @override
   Widget build(BuildContext context) {
     final favoriteProvider = Provider.of<FavoriteProvider>(context);
-    int favoriteCount = favoriteProvider.favoriteIds.length;
-    final tabTextStyle = GoogleFonts.poppins();
 
-    print(favoriteCount);
+    int favoriteCount = favoriteProvider.favoriteIds.length;
+    final tabTextStyle =
+        GoogleFonts.poppins(textStyle: const TextStyle(fontSize: 13));
 
     return DefaultTabController(
       length: 3,
@@ -157,33 +156,24 @@ class _FeedScreenState extends State<FeedScreen> {
         appBar: AppBar(
           backgroundColor: const Color(0xffFFFCF1),
           title: Row(children: [
-            Expanded(
-              child: TextField(
-                cursorColor: const Color(0xff4A8AF0),
-                decoration: InputDecoration(
-                  hintText: 'Search...',
-                  fillColor: Colors.grey.shade300,
-                  filled: true,
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(30),
-                    borderSide: const BorderSide(color: Colors.transparent),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(30),
-                    borderSide: const BorderSide(color: Colors.transparent),
-                  ),
-                ),
-              ),
+            Image.asset(
+              'assets/images/15-removebg-preview.png',
+              height: 50,
+              fit: BoxFit.contain,
             ),
+            const Spacer(),
+            IconButton(
+                onPressed: () {},
+                icon: const Icon(Icons.search,
+                    size: 40, color: Color(0xff4A8AF0))),
             Stack(
               children: [
                 IconButton(
                   onPressed: () async {
-                    // Await the result from FavoritesScreen
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                          builder: (context) => FavoritesScreen()),
+                          builder: (context) => const FavoritesScreen()),
                     );
                   },
                   icon: const Icon(

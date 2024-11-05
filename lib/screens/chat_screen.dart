@@ -7,6 +7,7 @@ import 'package:assumemate/logo/pop_up.dart';
 import 'package:assumemate/service/service.dart';
 import 'package:assumemate/storage/secure_storage.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
+import 'package:assumemate/format.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});

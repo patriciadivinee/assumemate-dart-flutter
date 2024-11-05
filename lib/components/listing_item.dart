@@ -1,4 +1,5 @@
 import 'dart:convert'; // for JSON decoding
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:assumemate/provider/favorite_provider.dart';
@@ -42,19 +43,17 @@ class _ListingItemState extends State<ListingItem> {
       final response = await http.get(
         Uri.parse('${dotenv.env['API_URL']}/view/$assumptorId/profile/'),
         headers: {
-          'Authorization':
-              'Bearer $token', // Include the token in the request headers
+          'Authorization': 'Bearer $token',
         },
       );
 
-      // print(
-      //     'User Profile Response: ${response.statusCode} ${response.body}'); // Log the response
-
       if (response.statusCode == 200) {
+        final profile = json.decode(response.body);
         setState(() {
-          userProfile = json.decode(response.body);
+          userProfile = profile['user_profile'];
           isLoading = false;
         });
+        print(userProfile!['user_prof_pic']);
       } else {
         throw Exception(
             'Failed to load user profile: ${response.reasonPhrase}');
@@ -107,37 +106,43 @@ class _ListingItemState extends State<ListingItem> {
                   topLeft: Radius.circular(15),
                   topRight: Radius.circular(15),
                 ),
-                child: Image.network(
-                  widget.imageUrl.isNotEmpty
+                child: CachedNetworkImage(
+                  imageUrl: widget.imageUrl.isNotEmpty
                       ? widget.imageUrl[0]
-                      : 'https://example.com/placeholder.png', // Access the first image
+                      : 'https://example.com/placeholder.png',
+                  placeholder: (context, url) => Container(
+                    color: Colors.grey.shade300,
+                  ),
+                  errorWidget: (context, url, error) => Container(
+                      color: Colors.grey.shade300,
+                      child: const Icon(
+                        Icons.warning_rounded,
+                        color: Colors.black38,
+                      )),
                   height: MediaQuery.of(context).size.width * 0.32,
                   width: MediaQuery.of(context).size.width,
                   fit: BoxFit.cover,
                 ),
               ),
 
-              // User and favorite icon section
               Padding(
-                padding: const EdgeInsets.only(left: 10, right: 10, top: 5),
+                padding: const EdgeInsets.all(5),
                 child: Row(
                   children: [
                     CircleAvatar(
-                      radius: 18,
+                      radius: 16,
+                      backgroundColor: Colors.grey.shade300,
                       backgroundImage: isLoading
                           ? null // Display nothing while loading
                           : isError
                               ? const NetworkImage(
                                   'https://pbs.twimg.com/media/GV_AI3pawAA-fU3?format=jpg&name=4096x4096') // Error state placeholder
                               : NetworkImage(
-                                  userProfile?['user_image'] ??
+                                  userProfile?['user_prof_pic'] ??
                                       'https://pbs.twimg.com/media/GV_AI3pawAA-fU3?format=jpg&name=4096x4096', // User's profile image
                                 ),
-                      child: isLoading
-                          ? const CircularProgressIndicator() // Show loading indicator
-                          : null, // No indicator once loaded
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 5),
                     Expanded(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,

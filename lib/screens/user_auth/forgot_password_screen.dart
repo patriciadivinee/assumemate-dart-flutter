@@ -62,12 +62,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           children: [
             const Text(
               'Please check your email to continue to reset your password.',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 15),
             const Text(
               'Enter the email address associated with your account, and we\'ll send you an email with a link to reset your password.',
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.normal),
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.normal),
             ),
             const SizedBox(height: 50),
             Form(
@@ -75,10 +75,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 child: Column(children: [
                   TextFormField(
                     controller: _emailController,
+                    style: const TextStyle(fontSize: 12),
                     keyboardType: TextInputType.emailAddress,
                     decoration: InputDecoration(
                       contentPadding: const EdgeInsets.all(15),
-                      hintText: 'Email Address',
+                      hintText: 'EMAIL',
                       focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(30.0),
                           borderSide: const BorderSide(
@@ -134,6 +135,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                       style: TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
+                        fontSize: 15,
                       ),
                     ),
             ),

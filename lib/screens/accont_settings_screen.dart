@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:assumemate/provider/favorite_provider.dart';
-import 'package:assumemate/screens/change_password_screen.dart';
+import 'package:assumemate/screens/user_auth/change_password_screen.dart';
 import 'package:assumemate/service/service.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 class AccontSettingsScreen extends StatelessWidget {
@@ -12,6 +13,7 @@ class AccontSettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ApiService apiService = ApiService();
+    final subtitleStyle = GoogleFonts.poppins();
     // final favoriteProvider = Provider.of<FavoriteProvider>(context);
 
     return Scaffold(
@@ -19,7 +21,9 @@ class AccontSettingsScreen extends StatelessWidget {
             backgroundColor: const Color(0xff4A8AF0),
             leading: IconButton(
               splashColor: Colors.transparent,
-              icon: const Icon(Icons.arrow_back_ios),
+              icon: const Icon(
+                Icons.arrow_back_ios,
+              ),
               color: const Color(0xffFFFEF7),
               onPressed: () {
                 Navigator.pop(context);
@@ -28,7 +32,7 @@ class AccontSettingsScreen extends StatelessWidget {
             title: const Text(
               "Account Settings",
               style: TextStyle(
-                fontSize: 20,
+                fontSize: 18,
                 color: Color(0xffFFFEF7),
                 fontWeight: FontWeight.bold,
               ),
@@ -50,27 +54,24 @@ class AccontSettingsScreen extends StatelessWidget {
                             color: Color(0xff4A8AF0),
                             size: 40,
                           ),
-                          const SizedBox(width: 25),
+                          const SizedBox(width: 15),
                           Expanded(
                             child: RichText(
-                              text: const TextSpan(
-                                  style: TextStyle(
-                                      fontSize: 16, color: Colors.black),
-                                  children: <TextSpan>[
+                              text: TextSpan(
+                                  style: subtitleStyle,
+                                  children: const <TextSpan>[
                                     TextSpan(
-                                      text:
-                                          'Account Information\n', // Bold title
+                                      text: 'Account Information\n',
                                       style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize:
-                                            16, // Optional: make the title a bit larger
-                                      ),
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 13,
+                                          color: Colors.black),
                                     ),
                                     TextSpan(
                                       text:
                                           'See your account information like your email address, user type, and phone number', // Detail
                                       style: TextStyle(
-                                        fontSize: 13,
+                                        fontSize: 11,
                                         color: Colors.black87,
                                       ),
                                     ),
@@ -92,32 +93,34 @@ class AccontSettingsScreen extends StatelessWidget {
                       padding: const EdgeInsets.all(10),
                       child: Row(
                         children: [
-                          const Icon(
-                            Icons.lock_outlined,
-                            color: Color.fromRGBO(74, 138, 240, 1),
-                            size: 35,
-                          ),
-                          const SizedBox(width: 25),
+                          const Padding(
+                              padding: EdgeInsets.only(left: 3),
+                              child: Icon(
+                                Icons.lock_outlined,
+                                color: Color.fromRGBO(74, 138, 240, 1),
+                                size: 36,
+                              )),
+                          const SizedBox(width: 15),
                           Expanded(
                             child: RichText(
-                              text: const TextSpan(
-                                  style: TextStyle(
-                                      fontSize: 16, color: Colors.black),
-                                  children: <TextSpan>[
+                              text: TextSpan(
+                                  style: subtitleStyle,
+                                  children: const <TextSpan>[
                                     TextSpan(
                                       text:
                                           'Change your password\n', // Bold title
                                       style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize:
-                                            16, // Optional: make the title a bit larger
-                                      ),
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 13,
+                                          color: Colors
+                                              .black // Optional: make the title a bit larger
+                                          ),
                                     ),
                                     TextSpan(
                                       text:
                                           'Change your password at anytime', // Detail
                                       style: TextStyle(
-                                        fontSize: 13,
+                                        fontSize: 11,
                                         color: Colors.black87,
                                       ),
                                     ),
@@ -146,7 +149,7 @@ class AccontSettingsScreen extends StatelessWidget {
                       style: TextStyle(
                         color: Color(0xffFFFEF7),
                         fontWeight: FontWeight.bold,
-                        fontSize: 18,
+                        fontSize: 13,
                       ),
                     )),
               ],

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:assumemate/provider/favorite_provider.dart';
-import 'package:assumemate/screens/chat_message_screen.dart';
 import 'package:provider/provider.dart';
 
 class HighlightedItem extends StatefulWidget {
@@ -50,19 +49,19 @@ class _HighlightedItemState extends State<HighlightedItem> {
                 fit: BoxFit.cover,
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.only(left: 10, right: 10, top: 5),
+            const Padding(
+              padding: EdgeInsets.only(left: 10, right: 10, top: 5),
               child: Row(
                 children: [
-                  const CircleAvatar(
+                  CircleAvatar(
                     radius: 18,
                     backgroundImage: NetworkImage(
                         'https://pbs.twimg.com/media/GV_AI3pawAA-fU3?format=jpg&name=4096x4096'),
                   ),
-                  const SizedBox(
+                  SizedBox(
                     width: 8,
                   ),
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -70,7 +69,7 @@ class _HighlightedItemState extends State<HighlightedItem> {
                         Text(
                           'Wishville',
                           style: TextStyle(
-                              fontSize: 12, fontWeight: FontWeight.bold),
+                              fontSize: 13, fontWeight: FontWeight.bold),
                         ),
                         Text(
                           'Yushi',

@@ -8,8 +8,10 @@ import 'package:provider/provider.dart';
 import 'item_detail_screen.dart'; // Import the ItemDetailScreen
 
 class FavoritesScreen extends StatefulWidget {
+  const FavoritesScreen({super.key});
+
   @override
-  _FavoritesScreenState createState() => _FavoritesScreenState();
+  State<FavoritesScreen> createState() => _FavoritesScreenState();
 }
 
 class _FavoritesScreenState extends State<FavoritesScreen> {
@@ -82,6 +84,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
 
     return Scaffold(
       appBar: AppBar(
+          backgroundColor: const Color(0xffFFFCF1),
           leading: IconButton(
             splashColor: Colors.transparent,
             icon: const Icon(Icons.arrow_back_ios),

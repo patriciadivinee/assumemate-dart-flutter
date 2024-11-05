@@ -580,7 +580,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                 children: [
                   Container(
                     padding:
-                        const EdgeInsets.symmetric(vertical: 5, horizontal: 20),
+                        const EdgeInsets.symmetric(vertical: 5, horizontal: 18),
                     decoration: const BoxDecoration(
                         color: Color(0xffFFFCF1),
                         border: Border(
@@ -593,10 +593,9 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(Icons.messenger_outline),
-                          SizedBox(height: 2),
                           Text(
                             'Inquire',
-                            style: TextStyle(fontSize: 14),
+                            style: TextStyle(fontSize: 12),
                           )
                         ],
                       ),
@@ -626,8 +625,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(Icons.local_offer_outlined),
-                          SizedBox(height: 2),
-                          Text('Make offer', style: TextStyle(fontSize: 14))
+                          Text('Make offer', style: TextStyle(fontSize: 12))
                         ],
                       ),
                     ),
@@ -654,10 +652,9 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                           children: [
                             Icon(Icons.account_balance_wallet_rounded,
                                 color: Color(0xffFFFCF1)),
-                            SizedBox(height: 2),
                             Text('₱ 1,000,000 Buy',
                                 style: TextStyle(
-                                    color: Color(0xffFFFCF1), fontSize: 14))
+                                    color: Color(0xffFFFCF1), fontSize: 12))
                           ],
                         ),
                       ),
@@ -796,7 +793,7 @@ class ListingDetail {
   }
 
   Color? extractColor() {
-    // if (color == null) return null;
+    if (color == null) return null;
     final regex = RegExp(r'Color\(0xff([0-9a-fA-F]+)\)');
     final match = regex.firstMatch(color);
     if (match != null) {

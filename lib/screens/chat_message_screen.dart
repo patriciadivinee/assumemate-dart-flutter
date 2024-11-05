@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:assumemate/format.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -313,6 +314,17 @@ class _ChatMessageState extends State<ChatMessageScreen> {
         'offer_id': offerDetails['offerId'],
         'offer_status': status
       }));
+
+      final updatedStatus = status.toLowerCase();
+
+      final message = {
+        'message': 'Offer $updatedStatus',
+        'file': null,
+        'file_name': null,
+        'file_type': null,
+      };
+
+      _sendInboxUpdate(message, false);
     }
   }
 
@@ -491,7 +503,7 @@ class _ChatMessageState extends State<ChatMessageScreen> {
               Text(
                 name,
                 style:
-                    const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                    const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
               ),
             ],
           ),
@@ -532,25 +544,25 @@ class _ChatMessageState extends State<ChatMessageScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       InkWell(
-                        onTap: () {
-                          Navigator.of(context).push(MaterialPageRoute(
-                            builder: (context) => ItemDetailScreen(
-                                listingId: offerDetails['listingId'],
-                                assumptorId: widget.receiverId),
-                          ));
-                        },
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(7),
-                          child: Image.network(
-                            offerDetails['itemImg'] != ''
-                                ? offerDetails['itemImg']
-                                : 'https://example.com/placeholder.png',
-                            height: 90,
-                            width: 120,
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                      ),
+                          onTap: () {
+                            Navigator.of(context).push(MaterialPageRoute(
+                              builder: (context) => ItemDetailScreen(
+                                  listingId: offerDetails['listingId'],
+                                  assumptorId: widget.receiverId),
+                            ));
+                          },
+                          child: AspectRatio(
+                            aspectRatio: 4 / 3,
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(7),
+                              child: Image.network(
+                                offerDetails['itemImg'] != ''
+                                    ? offerDetails['itemImg']
+                                    : 'https://example.com/placeholder.png',
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                          )),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Column(
@@ -558,10 +570,11 @@ class _ChatMessageState extends State<ChatMessageScreen> {
                             children: [
                               Expanded(
                                 child: Text(
-                                  "Offer Details: ${offerDetails['offerPrice']}",
+                                  "Offer Details: ${formatCurrency(double.parse(offerDetails['offerPrice']))}",
                                   style: const TextStyle(
-                                      fontSize: 16,
+                                      fontSize: 14,
                                       fontWeight: FontWeight.w500),
+                                  softWrap: true,
                                 ),
                               ),
                               const SizedBox(height: 10),
@@ -652,7 +665,7 @@ class _ChatMessageState extends State<ChatMessageScreen> {
                                   )),
                               child: const Text(
                                 'User is typing...',
-                                style: TextStyle(fontSize: 13),
+                                style: TextStyle(fontSize: 12),
                               ),
                             )
                           ])))
@@ -714,7 +727,7 @@ class _ChatMessageState extends State<ChatMessageScreen> {
                   ))
               : const SizedBox(),
           Container(
-            margin: const EdgeInsets.only(right: 3, left: 3, top: 5, bottom: 4),
+            margin: const EdgeInsets.only(top: 5, bottom: 4),
             padding: const EdgeInsets.symmetric(vertical: 5),
             decoration: BoxDecoration(borderRadius: BorderRadius.circular(30)),
             child: Row(
@@ -723,13 +736,27 @@ class _ChatMessageState extends State<ChatMessageScreen> {
                   onPressed: () => _pickDocument(),
                   icon: const Icon(Icons.attach_file),
                   color: const Color(0xff4A8AF0),
-                  padding: EdgeInsets.zero,
+                  padding: const EdgeInsets.only(left: 8, right: 4),
+                  constraints:
+                      const BoxConstraints(), // override default min size of 48px
+                  style: ButtonStyle(
+                      tapTargetSize:
+                          MaterialTapTargetSize.shrinkWrap, // the '2023' part
+                      overlayColor:
+                          WidgetStateProperty.all(Colors.transparent)),
                 ),
                 IconButton(
                   onPressed: () => _pickImage(),
                   icon: const Icon(Icons.photo_outlined),
                   color: const Color(0xff4A8AF0),
-                  padding: EdgeInsets.zero,
+                  padding: const EdgeInsets.only(left: 4, right: 8),
+                  constraints:
+                      const BoxConstraints(), // override default min size of 48px
+                  style: ButtonStyle(
+                      tapTargetSize:
+                          MaterialTapTargetSize.shrinkWrap, // the '2023' part
+                      overlayColor:
+                          WidgetStateProperty.all(Colors.transparent)),
                 ),
                 Expanded(
                   child: TextFormField(
@@ -738,7 +765,7 @@ class _ChatMessageState extends State<ChatMessageScreen> {
                     minLines: 1,
                     maxLines: 4,
                     decoration: InputDecoration(
-                        hintStyle: const TextStyle(fontSize: 13),
+                        hintStyle: const TextStyle(fontSize: 12),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12.0),
                           borderSide: BorderSide.none,
@@ -748,13 +775,21 @@ class _ChatMessageState extends State<ChatMessageScreen> {
                         fillColor: const Color(0xffFCFCFC),
                         contentPadding: const EdgeInsets.symmetric(
                             vertical: 0, horizontal: 12.0)),
-                    style: const TextStyle(fontSize: 13),
+                    style: const TextStyle(fontSize: 12),
                   ),
                 ),
                 IconButton(
                   onPressed: _sendMessage,
                   icon: const Icon(Icons.send),
                   color: const Color(0xff4A8AF0),
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  constraints:
+                      const BoxConstraints(), // override default min size of 48px
+                  style: ButtonStyle(
+                      tapTargetSize:
+                          MaterialTapTargetSize.shrinkWrap, // the '2023' part
+                      overlayColor:
+                          WidgetStateProperty.all(Colors.transparent)),
                 ),
               ],
             ),
@@ -777,6 +812,7 @@ class _ChatMessageState extends State<ChatMessageScreen> {
       String label1, String label2, Function action1, Function action2) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.end,
+      mainAxisSize: MainAxisSize.min,
       children: [
         OutlinedButton(
           onPressed: (label1 == 'RESERVED') ? null : () => action1(),
@@ -794,7 +830,7 @@ class _ChatMessageState extends State<ChatMessageScreen> {
             style: const TextStyle(
               color: Color(0xff683131),
               fontWeight: FontWeight.w500,
-              fontSize: 13,
+              fontSize: 11,
             ),
           ),
         ),
@@ -809,7 +845,7 @@ class _ChatMessageState extends State<ChatMessageScreen> {
             label2,
             style: const TextStyle(
               fontWeight: FontWeight.bold,
-              fontSize: 13,
+              fontSize: 11,
             ),
           ),
         ),
@@ -831,7 +867,8 @@ class _ChatMessageState extends State<ChatMessageScreen> {
         }));
 
         final message = {
-          'message': 'Change offer: ₱${offerController.text}',
+          'message':
+              'Change offer: ${formatCurrency(double.parse(offerController.text))}',
           'file': null,
           'file_name': null,
           'file_type': null,

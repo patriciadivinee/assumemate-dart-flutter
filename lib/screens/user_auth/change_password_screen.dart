@@ -92,7 +92,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
         ),
         title: const Text("Change password",
             style: TextStyle(
-              fontSize: 20,
+              fontSize: 18,
               color: Color(0xffFFFEF7),
               fontWeight: FontWeight.bold,
             )),
@@ -137,6 +137,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                         'Update password',
                         style: TextStyle(
                           color: Color(0xffFFFEF7),
+                          fontSize: 15,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -151,6 +152,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                   "Forgot password?",
                   style: TextStyle(
                     color: Color(0xff4A8AF0),
+                    fontSize: 13,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -177,41 +179,20 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
           padding: const EdgeInsets.only(left: 12),
           child: Text(
             labelTxt,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 5),
         TextFormField(
           controller: controller,
           focusNode: focusNode,
+          style: const TextStyle(fontSize: 13),
           decoration: InputDecoration(
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8.0),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8.0),
-              borderSide: BorderSide(
-                  color: const Color(0xff4A8AF0)
-                      .withOpacity(0.4)), // Color when enabled
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8.0),
-              borderSide: BorderSide(
-                  color: const Color(0xff4A8AF0)
-                      .withOpacity(0.4)), // Color when focused
-            ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8.0),
-              borderSide: BorderSide(
-                  color: const Color(0xff4A8AF0)
-                      .withOpacity(0.4)), // Color when focused
-            ),
-            focusedErrorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8.0),
-              borderSide: BorderSide(
-                  color: const Color(0xff4A8AF0)
-                      .withOpacity(0.4)), // Color when focused
-            ),
+            border: borderStyle,
+            enabledBorder: borderStyle,
+            focusedBorder: borderStyle,
+            errorBorder: borderStyle,
+            focusedErrorBorder: borderStyle,
             hintText: hintText,
           ),
           obscureText: true,
@@ -220,6 +201,11 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       ],
     );
   }
+
+  final OutlineInputBorder borderStyle = OutlineInputBorder(
+    borderRadius: BorderRadius.circular(30.0),
+    borderSide: BorderSide(color: const Color(0xff4A8AF0).withOpacity(0.4)),
+  );
 
   String? _validateNewPassword(String? value) {
     if (value == null || value.isEmpty) {

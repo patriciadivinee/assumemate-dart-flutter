@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -8,6 +9,8 @@ import 'package:assumemate/main.dart';
 import 'package:assumemate/storage/secure_storage.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+
+final String? baseURL = dotenv.env['API_URL'];
 
 String formatDate(DateTime date) {
   final DateFormat formatter = DateFormat('yyyy-MM-dd');
@@ -20,7 +23,6 @@ Future<String> imageToBase64(File imageFile) async {
 }
 
 class ApiService {
-  final String? baseURL = dotenv.env['API_URL'];
   final SecureStorage secureStorage = SecureStorage();
 
   Future<Map<String, dynamic>> emailVerification(String email) async {
@@ -66,7 +68,8 @@ class ApiService {
 
   Future<Map<String, dynamic>> registerUser(
       String email,
-      String password,
+      String? password,
+      String? googleId,
       String role,
       String fname,
       String lname,
@@ -93,12 +96,17 @@ class ApiService {
 
     final Map<String, dynamic> userReg = {
       'email': email,
-      'password': password,
-      'is_staff': false,
-      'is_reviewer': false,
       'is_assumee': isAssumee,
       'is_assumptor': isAssumptor,
     };
+
+    if (password != null && password.isNotEmpty) {
+      userReg['password'] = password;
+    }
+
+    if (googleId != null && googleId.isNotEmpty) {
+      userReg['google_id'] = googleId;
+    }
 
     try {
       final response = await http.post(
@@ -117,6 +125,12 @@ class ApiService {
         await secureStorage.storeRefreshToken(refreshToken);
 
         final user = responseData['user'];
+
+        if (user['is_assumptor'] == true) {
+          await secureStorage.storeUserType('assumptor');
+        } else if (user['is_assumee'] == true) {
+          await secureStorage.storeUserType('assumee');
+        }
 
         final Map<String, dynamic> userProfile = {
           'user_id': user['id'],
@@ -169,13 +183,23 @@ class ApiService {
     }
   }
 
-  Future<Map<String, dynamic>> loginUser(String email, String password) async {
+  Future<Map<String, dynamic>> loginUser(
+      String? token, String? email, String? password) async {
     final apiUrl = Uri.parse('$baseURL/login/');
 
-    final Map<String, dynamic> loginData = {
-      'email': email,
-      'password': password,
-    };
+    final Map<String, dynamic> loginData = {};
+
+    if (email != null && email.isNotEmpty) {
+      loginData['email'] = email;
+    }
+
+    if (password != null && password.isNotEmpty) {
+      loginData['password'] = password;
+    }
+
+    if (token != null && token.isNotEmpty) {
+      loginData['token'] = token;
+    }
 
     try {
       final response = await http.post(
@@ -655,10 +679,52 @@ class ApiService {
       MaterialPageRoute(builder: (context) => const WelcomeScreen()),
     );
   }
+
+  Future<Map<String, dynamic>> checkUserEmail(String token) async {
+    final apiUrl = Uri.parse('$baseURL/check/user/email/');
+
+    final Map<String, dynamic> credentials = {
+      'token': token,
+    };
+
+    try {
+      final response = await http.post(apiUrl,
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: jsonEncode(credentials));
+
+      final decodedResponse = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        return decodedResponse;
+      } else {
+        return decodedResponse;
+      }
+    } catch (e) {
+      return {'error': 'An error occured: $e'};
+    }
+  }
 }
 
 class GoogleSignInApi {
-  static final _googleSignIn = GoogleSignIn();
+  static final _clientIdWeb = dotenv.env['CLIENT_ID'];
 
-  static Future<GoogleSignInAccount?> login() => _googleSignIn.signIn();
+  static final _googleSignIn = GoogleSignIn(
+    clientId: _clientIdWeb,
+    scopes: ['email'],
+  );
+
+  static Future<GoogleSignInAccount?> login() async {
+    try {
+      return await _googleSignIn.signIn();
+    } catch (error) {
+      print('Error signing in with Google: $error');
+      return null;
+    }
+  }
+
+  static Future<void> logout() async {
+    await _googleSignIn.disconnect();
+  }
 }

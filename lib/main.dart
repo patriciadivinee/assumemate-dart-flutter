@@ -76,7 +76,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       navigatorKey: navigatorKey,
-      title: 'Capstone Trial',
+      title: 'Assumemate',
       theme: ThemeData(
         textTheme: GoogleFonts.poppinsTextTheme(
           Theme.of(context).textTheme,
@@ -98,7 +98,7 @@ class MyApp extends StatelessWidget {
           } else if (snapshot.hasData) {
             final data = snapshot.data!;
             final token = data['token'];
-            // final applicationStatus = data['applicationStatus'];s
+            // final applicationStatus = data['applicationStatus'];
             if (token != null) {
               return const HomeScreen();
             } else {

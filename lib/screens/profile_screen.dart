@@ -10,6 +10,7 @@ import 'package:assumemate/screens/edit_profile_screen.dart';
 import 'package:assumemate/screens/payment_screen.dart';
 import 'package:assumemate/service/service.dart';
 import 'package:assumemate/storage/secure_storage.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -72,6 +73,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final profileProvider = Provider.of<ProfileProvider>(context);
+    final tabTextStyle =
+        GoogleFonts.poppins(textStyle: const TextStyle(fontSize: 13));
 
     if (profileProvider.isLoading) {
       return const LoadingAnimation();
@@ -117,46 +120,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   forceElevated: true,
                   pinned: true,
                   floating: true,
-                  expandedHeight: 150,
+                  expandedHeight: 250,
                   collapsedHeight: 60,
                   flexibleSpace: FlexibleSpaceBar(
-                    titlePadding: const EdgeInsets.only(left: 15, bottom: 10),
-                    title: (_isCollapsed!)
-                        ? AnimatedOpacity(
-                            duration: const Duration(milliseconds: 200),
-                            opacity: _isCollapsed! ? 1 : 0,
-                            child: Row(
-                              children: [
-                                CircleAvatar(
-                                  backgroundImage: NetworkImage(profileProvider
-                                      .userProfile['user_prof_pic']),
-                                  radius: 25,
-                                ),
-                                const SizedBox(width: 7),
-                                Text(
-                                  '${profileProvider.userProfile['user_prof_fname']} ${profileProvider.userProfile['user_prof_lname']}',
-                                  style: const TextStyle(
-                                    color: Color(0xffFFFFFF),
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 20,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          )
-                        : null,
+                    titlePadding: const EdgeInsets.only(left: 15),
                     background: Stack(children: [
-                      Container(
-                        color: Colors.grey,
-                        child: Image.network(
-                          'https://pbs.twimg.com/media/GQ6Tse_aQAABFI2?format=jpg&name=large',
-                          height: 200,
-                          width: double.infinity,
-                          fit: BoxFit.cover,
-                        ),
+                      Image.network(
+                        'https://pbs.twimg.com/media/GQ6Tse_aQAABFI2?format=jpg&name=large',
+                        height: 250,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
                       ),
                       Positioned(
-                        top: 150 - 50,
+                        bottom: 15,
                         left: 10,
                         child: Row(
                           children: [
@@ -178,7 +154,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     style: const TextStyle(
                                       color: Color(0xffFFFFFF),
                                       fontWeight: FontWeight.bold,
-                                      fontSize: 20,
+                                      fontSize: 18,
                                     ),
                                   ),
                                   OutlinedButton(
@@ -208,7 +184,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                           style: TextStyle(
                                             fontWeight: FontWeight.w500,
                                             color: Color(0xffFFFFFF),
-                                            fontSize: 13,
+                                            fontSize: 11,
                                           ),
                                         ),
                                         SizedBox(width: 2),
@@ -239,11 +215,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               const Text(
                                 'My Wallet',
                                 style: TextStyle(
-                                    fontSize: 16,
+                                    fontSize: 14,
                                     color: Colors.black,
                                     fontWeight: FontWeight.bold),
                               ),
-                              const SizedBox(height: 10),
+                              const SizedBox(height: 8),
                               InkWell(
                                 onTap: () {
                                   Navigator.push(
@@ -278,7 +254,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                           const Icon(
                                             FontAwesomeIcons.coins,
                                             color: Color(0xffF2D120),
-                                            size: 35,
+                                            size: 32,
                                           ),
                                           const SizedBox(width: 8),
                                           Column(
@@ -288,11 +264,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                               Text(
                                                 _coins.toString(),
                                                 style: const TextStyle(
-                                                    fontSize: 16,
+                                                    fontSize: 14,
                                                     fontWeight:
                                                         FontWeight.bold),
                                               ),
-                                              const Text('Coins')
+                                              const Text('Coins',
+                                                  style:
+                                                      TextStyle(fontSize: 13))
                                             ],
                                           ),
                                         ],
@@ -300,7 +278,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       IconButton(
                                         onPressed: () {},
                                         icon: const Icon(Icons.add),
-                                        iconSize: 30,
+                                        iconSize: 28,
                                         color: const Color(0xFF4A8AF0),
                                       ),
                                     ],
@@ -324,9 +302,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      tabs: const [
-                        Tab(text: 'Listings'),
-                        Tab(text: 'Offers'),
+                      tabs: [
+                        Tab(child: Text('Listings', style: tabTextStyle)),
+                        Tab(child: Text('Offers', style: tabTextStyle)),
                       ],
                     ),
                   ),

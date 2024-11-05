@@ -117,10 +117,30 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   bool _validateInputs() {
-    if (_mobilenoController.text.trim().isEmpty) {
+    String mobile = _mobilenoController.text.trim();
+    String pattern = r'^\+639\d{9}$';
+
+    if (mobile.isEmpty) {
       popUp(context, 'Mobile number cannot be empty');
       return false;
     }
+
+    if (mobile.startsWith('09')) {
+      mobile = '+639${mobile.substring(2)}';
+    } else if (mobile.startsWith('9')) {
+      mobile = '+639${mobile.substring(1)}';
+    } else if (mobile.startsWith('639')) {
+      mobile = '+639${mobile.substring(3)}';
+    } else {
+      popUp(context, 'Enter a valid Philippine number');
+      return false;
+    }
+
+    if (!RegExp(pattern).hasMatch(mobile)) {
+      popUp(context, 'Enter a valid Philippine number');
+      return false;
+    }
+
     if (_addressController.text.trim().isEmpty) {
       popUp(context, 'Address cannot be empty');
       return false;
@@ -155,8 +175,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         profileProvider.userProfile['user_prof_fname'] ?? '';
     _lastNameController.text =
         profileProvider.userProfile['user_prof_lname'] ?? '';
-    _mobilenoController.text =
-        profileProvider.userProfile['user_prof_mobile'] ?? '';
+    _mobilenoController.text = profileProvider.userProfile['user_prof_mobile']
+            .replaceFirst('+63', '') ??
+        '';
     _addressController.text =
         profileProvider.userProfile['user_prof_address'] ?? '';
     _genderController.text =
@@ -237,15 +258,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         backgroundColor: const Color(0xff4A8AF0),
         actions: [
           TextButton(
-              onPressed: () {
-                if (_validateInputs()) {
-                  _updateProfile();
-                  setState(() => isSaved = true);
-                }
-              },
-              child: const Text(
-                'Save',
-                style: TextStyle(
+              onPressed: _applicationStatus == 'PENDING'
+                  ? null
+                  : () {
+                      if (_validateInputs()) {
+                        _updateProfile();
+                        setState(() => isSaved = true);
+                      }
+                    },
+              child: Text(
+                _applicationStatus == 'PENDING' ? '' : 'Save',
+                style: const TextStyle(
                   fontSize: 20,
                   color: Color(0xffFFFEF7),
                   fontWeight: FontWeight.normal,
@@ -407,19 +430,49 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         child: TextFormField(
           controller: controller,
           readOnly: readOnly,
+          maxLength: 10,
           onChanged: (text) => setState(() => isSaved = false),
           keyboardType: TextInputType.number, // Numeric keyboard
           inputFormatters: <TextInputFormatter>[
             FilteringTextInputFormatter.digitsOnly, // Allow only digits
+            LengthLimitingTextInputFormatter(10),
           ],
           decoration: InputDecoration(
-              contentPadding: const EdgeInsets.all(10),
-              label: Text(labelText),
-              labelStyle: const TextStyle(
-                fontSize: 18,
-                color: Colors.black45,
+            counterText: '',
+            contentPadding: const EdgeInsets.all(10),
+            label: Text(labelText),
+            labelStyle: const TextStyle(
+              fontSize: 18,
+              color: Colors.black45,
+            ),
+            border: InputBorder.none,
+            prefixIcon: Padding(
+              padding: const EdgeInsets.only(left: 15, right: 8),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Image.asset(
+                    'icons/flags/png250px/ph.png',
+                    package: 'country_icons',
+                    width: 30,
+                    height: 30,
+                  ),
+                  const SizedBox(width: 5),
+                  const Text(
+                    '(+63)',
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
               ),
-              border: InputBorder.none),
+            ),
+            prefixIconConstraints: const BoxConstraints(
+              minWidth: 0,
+              minHeight: 0,
+            ),
+          ),
         ));
   }
 }

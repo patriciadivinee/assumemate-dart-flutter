@@ -25,12 +25,27 @@ class WaitingEmailVerification extends StatefulWidget {
 
 class _WaitingEmailVerificationState extends State<WaitingEmailVerification> {
   final ApiService apiService = ApiService();
+  Timer? _timer;
+  int _countdown = 60;
 
-  // @override
-  // void initState() {
-  //   super.initState();
-  //   _emailVerify();
-  // }
+  @override
+  void initState() {
+    super.initState();
+    _startCountdown();
+  }
+
+  void _startCountdown() {
+    _timer = Timer.periodic(Duration(seconds: 1), (timer) {
+      if (_countdown > 0) {
+        setState(() {
+          _countdown--;
+        });
+      } else {
+        timer.cancel();
+        // Add any action after the countdown ends, if needed
+      }
+    });
+  }
 
   void waitForVerification() {
     Timer.periodic(const Duration(seconds: 3), (timer) async {
@@ -137,9 +152,7 @@ class _WaitingEmailVerificationState extends State<WaitingEmailVerification> {
               ),
               const SizedBox(height: 24),
               ElevatedButton(
-                  onPressed: () {
-                    _emailVerify();
-                  },
+                  onPressed: (_countdown == 0) ? _emailVerify : null,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xff4A8AF0),
                     padding: const EdgeInsets.all(18),
@@ -147,9 +160,11 @@ class _WaitingEmailVerificationState extends State<WaitingEmailVerification> {
                       borderRadius: BorderRadius.circular(30.0),
                     ),
                   ),
-                  child: const Text(
-                    'Resend verification email',
-                    style: TextStyle(
+                  child: Text(
+                    (_countdown == 0)
+                        ? 'Resend verification email'
+                        : 'Resend in $_countdown seconds',
+                    style: const TextStyle(
                         color: Color(0xffFFFEF7),
                         fontWeight: FontWeight.bold,
                         fontSize: 17),
@@ -159,5 +174,11 @@ class _WaitingEmailVerificationState extends State<WaitingEmailVerification> {
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
   }
 }
