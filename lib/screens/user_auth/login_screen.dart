@@ -56,11 +56,7 @@ class _LoginScreenState extends State<LoginScreen> {
     _loginUser(token, null, null);
   }
 
-  void _login() async {
-    setState(() {
-      _isLoading = true;
-    });
-
+  void _loginWithPassword() async {
     String email = _emailController.text.trim();
     String password = _passwordController.text.trim();
 
@@ -68,30 +64,38 @@ class _LoginScreenState extends State<LoginScreen> {
       _loginUser(null, email, password);
     } catch (e) {
       popUp(context, 'An error occured: $e');
-    } finally {
-      setState(() {
-        _isLoading = false; // Stop loading
-      });
     }
   }
 
   void _loginUser(String? token, String? email, String? password) async {
-    final response = await apiService.loginUser(token, email, password);
+    setState(() {
+      _isLoading = true;
+    });
 
-    if (response.containsKey('error')) {
-      popUp(context, response['error']);
-    } else {
-      await Provider.of<ProfileProvider>(context, listen: false)
-          .initializeToken();
-      await Provider.of<FavoriteProvider>(context, listen: false)
-          .initializeFave();
-      // final status = response['is_approved'];
-      // final token = response['access_token'];
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (context) => const HomeScreen()),
-        (Route<dynamic> route) => false,
-      );
+    try {
+      final response = await apiService.loginUser(token, email, password);
+
+      if (response.containsKey('error')) {
+        popUp(context, response['error']);
+      } else {
+        await Provider.of<ProfileProvider>(context, listen: false)
+            .initializeToken();
+        await Provider.of<FavoriteProvider>(context, listen: false)
+            .initializeFave();
+        // final status = response['is_approved'];
+        // final token = response['access_token'];
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const HomeScreen()),
+          (Route<dynamic> route) => false,
+        );
+      }
+    } catch (e) {
+      popUp(context, 'Error occured: $e');
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
@@ -265,7 +269,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             ? null
                             : () {
                                 if (_formKey.currentState!.validate()) {
-                                  _login();
+                                  print(_isLoading);
+                                  _loginWithPassword();
                                 }
                               },
                         style: ElevatedButton.styleFrom(

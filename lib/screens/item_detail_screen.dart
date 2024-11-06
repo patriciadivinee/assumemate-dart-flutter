@@ -2,6 +2,9 @@
 
 import 'dart:async';
 // import 'dart:io';
+import 'package:assumemate/format.dart';
+import 'package:assumemate/screens/chat_message_screen.dart';
+import 'package:currency_text_input_formatter/currency_text_input_formatter.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:assumemate/logo/pop_up.dart';
@@ -587,7 +590,13 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                             top: BorderSide(color: Colors.black45),
                             left: BorderSide(color: Colors.black45))),
                     child: InkWell(
-                      onTap: () {},
+                      onTap: () {
+                        Navigator.of(context).push(MaterialPageRoute(
+                          builder: (context) => ChatMessageScreen(
+                            receiverId: widget.assumptorId,
+                          ),
+                        ));
+                      },
                       child: const Column(
                         mainAxisSize: MainAxisSize.min,
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -813,15 +822,23 @@ Future<void> offerDialog(BuildContext context, String listId) async {
   final TextEditingController offerController = TextEditingController();
 
   Future<void> makeOffer() async {
-    // final token = await secureStorage.getToken();
-    final response =
-        await apiService.makeOffer(listId, double.parse(offerController.text));
+    final amount = offerController.text;
+    try {
+      final response = await apiService.makeOffer(
+          listId, double.parse(amount.replaceAll(',', '')));
 
-    if (response == 'success') {
-      // return ChatMessageScreen(receiverId: '2', name: name, picture: picture);
-      popUp(context, 'Offer sent!', align: TextAlign.center);
-    } else {
-      popUp(context, response);
+      if (response.containsKey('user_id')) {
+        Navigator.of(context).push(MaterialPageRoute(
+            builder: (context) => ChatMessageScreen(
+                  receiverId: response['user_id'].toString(),
+                )));
+        // return ChatMessageScreen(receiverId: response['user_id'], chatroomId: response['room_id']);
+        // popUp(context, 'Offer sent!', align: TextAlign.center);
+      } else {
+        popUp(context, response['error']);
+      }
+    } catch (e) {
+      popUp(context, 'Error occured: $e');
     }
   }
 
@@ -852,7 +869,7 @@ Future<void> offerDialog(BuildContext context, String listId) async {
                 decoration: const InputDecoration(
                   border: InputBorder.none,
                   contentPadding: EdgeInsets.all(0),
-                  hintText: 'Amount',
+                  hintText: '\u20B10.00',
                   hoverColor: Color(0xff4A8AF0),
                   focusedBorder: UnderlineInputBorder(
                     borderSide: BorderSide(
@@ -861,8 +878,9 @@ Future<void> offerDialog(BuildContext context, String listId) async {
                   ),
                 ),
                 keyboardType: TextInputType.number,
-                inputFormatters: <TextInputFormatter>[
-                  FilteringTextInputFormatter.digitsOnly, // Allow only digits
+                inputFormatters: [
+                  CurrencyTextInputFormatter.currency(
+                      locale: 'en_PH', decimalDigits: 2, symbol: '')
                 ],
                 validator: (value) {
                   if (value == null || value.isEmpty) {

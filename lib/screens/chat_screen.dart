@@ -116,6 +116,7 @@ class _ChatScreenState extends State<ChatScreen> {
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: _getInbox,
+          color: const Color(0xff4A8AF0),
           child: ListView.builder(
             itemCount: _convos.length,
             itemBuilder: (context, index) {

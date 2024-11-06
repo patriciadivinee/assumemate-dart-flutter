@@ -75,7 +75,6 @@ class _ChatListState extends State<ChatList> {
             Navigator.of(context).push(MaterialPageRoute(
                 builder: (context) => ChatMessageScreen(
                       receiverId: widget.id,
-                      chatroomId: widget.chatroomId,
                     )));
           });
         },

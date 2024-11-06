@@ -35,7 +35,7 @@ class _ListingItemState extends State<ListingItem> {
   bool isError = false; // For error state
 
   // Method to fetch user profile
-  Future<void> fetchUserProfile(String assumptorId) async {
+  void fetchUserProfile(String assumptorId) async {
     final SecureStorage secureStorage = SecureStorage();
     String? token = await secureStorage.getToken(); // Retrieve the token
 
@@ -69,16 +69,13 @@ class _ListingItemState extends State<ListingItem> {
 
   @override
   void initState() {
-    super.initState();
     fetchUserProfile(widget
         .assumptorId); // Fetch the user profile when the widget is initialized
+    super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
-    final favoriteProvider =
-        Provider.of<FavoriteProvider>(context, listen: false);
-
     return InkWell(
         onTap: () {
           Navigator.push(

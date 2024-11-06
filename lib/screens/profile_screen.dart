@@ -1,3 +1,4 @@
+import 'package:assumemate/logo/pop_up.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:assumemate/components/highlighted_item.dart';
@@ -12,6 +13,7 @@ import 'package:assumemate/service/service.dart';
 import 'package:assumemate/storage/secure_storage.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:http/http.dart' as http;
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -25,6 +27,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   double _coins = 0;
   late ScrollController _scrollController;
   bool? _isCollapsed = false;
+  List<Map<String, dynamic>> _offers = [];
+  String? token;
 
   final SecureStorage secureStorage = SecureStorage();
   final ApiService apiService = ApiService();
@@ -58,10 +62,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _scrollController.offset > (150 - kToolbarHeight);
   }
 
+  Future<void> _getOffers() async {
+    try {
+      final response = await apiService.getAssumptorListOffer();
+
+      if (response.containsKey('offers')) {
+        setState(() {
+          _offers = List<Map<String, dynamic>>.from(response['offers']);
+        });
+      }
+    } catch (e) {
+      popUp(context, 'Error: $e');
+    }
+  }
+
+  void _getToken() async {
+    final tok = await secureStorage.getToken();
+    setState(() {
+      token = tok;
+    });
+  }
+
   @override
   void initState() {
     super.initState();
+    _getToken();
     _fetchCoins();
+    _getOffers();
+
     _scrollController = ScrollController()
       ..addListener(() {
         setState(() {
@@ -93,120 +121,123 @@ class _ProfileScreenState extends State<ProfileScreen> {
         body: DefaultTabController(
           length: 2,
           child: NestedScrollView(
-            controller: _scrollController,
-            headerSliverBuilder:
-                (BuildContext context, bool innerBoxIsScrolled) {
-              return [
-                SliverAppBar(
-                  title: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      IconButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) =>
-                                    const AccontSettingsScreen()),
-                          );
-                        },
-                        icon: const Icon(Icons.settings),
-                        color: const Color(0xffFFFCF1),
-                        iconSize: 30,
-                      )
-                    ],
-                  ),
-                  backgroundColor: const Color(0xFF4A8AF0),
-                  forceElevated: true,
-                  pinned: true,
-                  floating: true,
-                  expandedHeight: 250,
-                  collapsedHeight: 60,
-                  flexibleSpace: FlexibleSpaceBar(
-                    titlePadding: const EdgeInsets.only(left: 15),
-                    background: Stack(children: [
-                      Image.network(
-                        'https://pbs.twimg.com/media/GQ6Tse_aQAABFI2?format=jpg&name=large',
-                        height: 250,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                      ),
-                      Positioned(
-                        bottom: 15,
-                        left: 10,
-                        child: Row(
-                          children: [
-                            CircleAvatar(
-                              backgroundImage: NetworkImage(
-                                  profileProvider.userProfile['user_prof_pic']),
-                              radius: 40,
-                            ),
-                            const SizedBox(width: 10),
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: 10),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    '${profileProvider.userProfile['user_prof_fname']} ${profileProvider.userProfile['user_prof_lname']}',
-                                    style: const TextStyle(
-                                      color: Color(0xffFFFFFF),
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 18,
-                                    ),
-                                  ),
-                                  OutlinedButton(
-                                    onPressed: () {
-                                      Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) =>
-                                                const EditProfileScreen(),
-                                          ));
-                                    },
-                                    style: OutlinedButton.styleFrom(
-                                      side: const BorderSide(
-                                          color: Color(0xffFFFFFF), width: 1.5),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      minimumSize: const Size(0, 0),
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 10, vertical: 5),
-                                    ),
-                                    child: const Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Text(
-                                          'Edit profile',
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.w500,
-                                            color: Color(0xffFFFFFF),
-                                            fontSize: 11,
-                                          ),
-                                        ),
-                                        SizedBox(width: 2),
-                                        Icon(
-                                          Icons.edit_outlined,
-                                          color: Color(0xffFFFFFF),
-                                          size: 18,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            )
-                          ],
+              controller: _scrollController,
+              headerSliverBuilder:
+                  (BuildContext context, bool innerBoxIsScrolled) {
+                return [
+                  SliverAppBar(
+                    title: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        IconButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) =>
+                                      const AccontSettingsScreen()),
+                            );
+                          },
+                          icon: const Icon(Icons.settings),
+                          color: const Color(0xffFFFCF1),
+                          iconSize: 30,
+                        )
+                      ],
+                    ),
+                    backgroundColor: const Color(0xFF4A8AF0),
+                    forceElevated: true,
+                    pinned: true,
+                    floating: true,
+                    expandedHeight: 250,
+                    collapsedHeight: 60,
+                    flexibleSpace: FlexibleSpaceBar(
+                      titlePadding: const EdgeInsets.only(left: 15),
+                      background: Stack(children: [
+                        Positioned.fill(
+                          child: Image.network(
+                            'https://pbs.twimg.com/media/GQ6Tse_aQAABFI2?format=jpg&name=large',
+                            fit: BoxFit
+                                .cover, // Ensure the image covers the entire area
+                          ),
                         ),
-                      ),
-                    ]),
-                    collapseMode: CollapseMode.pin,
+                        Positioned(
+                          bottom: 15,
+                          left: 10,
+                          child: Row(
+                            children: [
+                              CircleAvatar(
+                                backgroundImage: NetworkImage(profileProvider
+                                    .userProfile['user_prof_pic']),
+                                radius: 40,
+                              ),
+                              const SizedBox(width: 10),
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 10),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      '${profileProvider.userProfile['user_prof_fname']} ${profileProvider.userProfile['user_prof_lname']}',
+                                      style: const TextStyle(
+                                        color: Color(0xffFFFFFF),
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 18,
+                                      ),
+                                    ),
+                                    OutlinedButton(
+                                      onPressed: () {
+                                        Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) =>
+                                                  const EditProfileScreen(),
+                                            ));
+                                      },
+                                      style: OutlinedButton.styleFrom(
+                                        side: const BorderSide(
+                                            color: Color(0xffFFFFFF),
+                                            width: 1.5),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                        ),
+                                        minimumSize: const Size(0, 0),
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 10, vertical: 5),
+                                      ),
+                                      child: const Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Text(
+                                            'Edit profile',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.w500,
+                                              color: Color(0xffFFFFFF),
+                                              fontSize: 11,
+                                            ),
+                                          ),
+                                          SizedBox(width: 2),
+                                          Icon(
+                                            Icons.edit_outlined,
+                                            color: Color(0xffFFFFFF),
+                                            size: 18,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            ],
+                          ),
+                        ),
+                      ]),
+                      collapseMode: CollapseMode.pin,
+                    ),
                   ),
-                ),
-                SliverToBoxAdapter(
+                  SliverToBoxAdapter(
                     child: Padding(
                         padding: const EdgeInsets.all(10),
                         child: Column(
@@ -285,57 +316,75 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   ),
                                 ),
                               ),
-                            ]))),
-                SliverPersistentHeader(
-                  delegate: MySliverPersistentHeaderDelegate(
-                    TabBar(
-                      labelColor: Colors.black,
-                      labelStyle: const TextStyle(fontWeight: FontWeight.bold),
-                      indicatorSize: TabBarIndicatorSize.tab,
-                      indicator: UnderlineTabIndicator(
-                        borderSide: const BorderSide(
-                          width: 4,
-                          color: Color(0xff4A8AF0),
+                            ])),
+                  ),
+                  SliverPersistentHeader(
+                    delegate: MySliverPersistentHeaderDelegate(
+                      TabBar(
+                        labelColor: Colors.black,
+                        labelStyle:
+                            const TextStyle(fontWeight: FontWeight.bold),
+                        indicatorSize: TabBarIndicatorSize.tab,
+                        indicator: UnderlineTabIndicator(
+                          borderSide: const BorderSide(
+                            width: 4,
+                            color: Color(0xff4A8AF0),
+                          ),
+                          insets: const EdgeInsets.symmetric(
+                            horizontal: (30 - 4) / 2,
+                          ),
+                          borderRadius: BorderRadius.circular(8),
                         ),
-                        insets: const EdgeInsets.symmetric(
-                          horizontal: (30 - 4) / 2,
-                        ),
-                        borderRadius: BorderRadius.circular(8),
+                        tabs: [
+                          Tab(child: Text('Listings', style: tabTextStyle)),
+                          Tab(child: Text('Offers', style: tabTextStyle)),
+                        ],
                       ),
-                      tabs: [
-                        Tab(child: Text('Listings', style: tabTextStyle)),
-                        Tab(child: Text('Offers', style: tabTextStyle)),
-                      ],
                     ),
+                    pinned: true,
                   ),
-                  pinned: true,
+                ];
+              },
+              body: Padding(
+                padding: EdgeInsets.zero,
+                child: TabBarView(
+                  children: [
+                    GridView.builder(
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        crossAxisSpacing: 5,
+                        mainAxisSpacing: 5,
+                        mainAxisExtent: 190,
+                      ),
+                      physics: const BouncingScrollPhysics(),
+                      itemBuilder: (context, index) {
+                        return const HighlightedItem();
+                      },
+                      itemCount: 55,
+                    ),
+                    RefreshIndicator(
+                      onRefresh: _getOffers,
+                      color: const Color(0xff4A8AF0),
+                      child: ListView.builder(
+                        itemCount: _offers.length,
+                        itemBuilder: (context, index) {
+                          final offer = _offers[index];
+                          return OfferList(
+                            offerId: offer['offer_id'],
+                            offerAmnt: offer['offer_price'],
+                            listId: offer['list_id'],
+                            listImage: offer['list_image'],
+                            userId: offer['user_id'],
+                            userFullname: offer['user_fullname'],
+                            roomId: offer['chatroom_id'],
+                          );
+                        },
+                      ),
+                    )
+                  ],
                 ),
-              ];
-            },
-            body: TabBarView(
-              children: [
-                GridView.builder(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    crossAxisSpacing: 5,
-                    mainAxisSpacing: 5,
-                    mainAxisExtent: 190,
-                  ),
-                  physics: const BouncingScrollPhysics(),
-                  itemBuilder: (context, index) {
-                    return const HighlightedItem();
-                  },
-                  itemCount: 55,
-                ),
-                ListView.builder(
-                  itemCount: 10,
-                  itemBuilder: (context, index) {
-                    return const OfferList();
-                  },
-                ),
-              ],
-            ),
-          ),
+              )),
         ),
       );
     } else {

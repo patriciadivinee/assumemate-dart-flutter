@@ -348,9 +348,9 @@ class _FeedScreenState extends State<FeedScreen> {
     );
   }
 
-  @override
-  void dispose() {
-    pageController.dispose();
-    super.dispose();
-  }
+  // @override
+  // void dispose() {
+  //   pageController.dispose();
+  //   super.dispose();
+  // }
 }

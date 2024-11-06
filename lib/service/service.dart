@@ -477,7 +477,7 @@ class ApiService {
     }
   }
 
-  Future<String> makeOffer(String listId, double price) async {
+  Future<Map<String, dynamic>> makeOffer(String listId, double price) async {
     final apiUrl = Uri.parse('$baseURL/make/offer/');
     final token = await secureStorage.getToken();
 
@@ -495,13 +495,14 @@ class ApiService {
           body: jsonEncode(data));
 
       if (response.statusCode == 200) {
-        return 'success';
+        final result = jsonDecode(response.body);
+        return result;
       } else {
         final error = jsonDecode(response.body);
-        return error['error'];
+        return error;
       }
     } catch (e) {
-      return 'An error occured: $e';
+      return {'error': 'An error occured: $e'};
     }
   }
 
@@ -533,9 +534,34 @@ class ApiService {
     }
   }
 
+  Future<Map<String, dynamic>> getAssumptorListOffer() async {
+    final token = await secureStorage.getToken();
+    final apiUrl = Uri.parse('$baseURL/assumptor/list/offers/');
+
+    try {
+      final response = await http.get(
+        apiUrl,
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final offers = jsonDecode(utf8.decode(response.bodyBytes));
+        return offers;
+      } else {
+        final error = jsonDecode(response.body);
+        return error;
+      }
+    } catch (e) {
+      return {'error': 'An error occufred $e'};
+    }
+  }
+
   Future<Map<String, dynamic>> viewConversation(
-      String token, int chatroomId) async {
-    final apiUrl = Uri.parse('$baseURL/view-convo/$chatroomId/');
+      String token, int receiverId) async {
+    final apiUrl = Uri.parse('$baseURL/view-convo/$receiverId/');
 
     try {
       final response = await http.get(

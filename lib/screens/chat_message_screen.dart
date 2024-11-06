@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:assumemate/format.dart';
+import 'package:currency_text_input_formatter/currency_text_input_formatter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -24,13 +25,8 @@ import 'package:path/path.dart' as p;
 
 class ChatMessageScreen extends StatefulWidget {
   final String receiverId;
-  final String chatroomId;
 
-  const ChatMessageScreen({
-    super.key,
-    required this.receiverId,
-    required this.chatroomId,
-  });
+  const ChatMessageScreen({super.key, required this.receiverId});
 
   @override
   State<ChatMessageScreen> createState() => _ChatMessageState();
@@ -49,6 +45,7 @@ class _ChatMessageState extends State<ChatMessageScreen> {
   WebSocketChannel? _isReadChannel;
   WebSocketChannel? _inboxChannel;
   String? _userId;
+  String? _chatroomId;
   String? _userType;
   Timer? _typingTimer;
   bool _isTyping = false;
@@ -77,7 +74,7 @@ class _ChatMessageState extends State<ChatMessageScreen> {
     if (_userId != null) {
       try {
         _isReadChannel = WebSocketChannel.connect(
-          Uri.parse('$baseURL/ws/chat/read/${widget.chatroomId}/?token=$token'),
+          Uri.parse('$baseURL/ws/chat/read/$_chatroomId/?token=$token'),
         );
 
         _isReadChannel!.stream.listen((message) {
@@ -114,7 +111,7 @@ class _ChatMessageState extends State<ChatMessageScreen> {
 
         _inboxChannel!.sink.add(jsonEncode({
           'type': 'inbox_read',
-          'room_id': widget.chatroomId,
+          'room_id': _chatroomId,
           'is_read': true,
         }));
       } catch (e) {
@@ -203,7 +200,7 @@ class _ChatMessageState extends State<ChatMessageScreen> {
     _isReadChannel!.sink.add(jsonEncode({
       'type': 'chat_status',
       'user_id': _userId,
-      'chat_room': widget.chatroomId,
+      'chat_room': _chatroomId,
       'chat_status': true
     }));
   }
@@ -249,7 +246,7 @@ class _ChatMessageState extends State<ChatMessageScreen> {
       'type': 'inbox_update',
       'sender_id': _userId,
       'message': message,
-      'room_id': widget.chatroomId,
+      'room_id': _chatroomId,
       'receiver_id': widget.receiverId,
       'is_read': isRead,
     }));
@@ -277,7 +274,7 @@ class _ChatMessageState extends State<ChatMessageScreen> {
         'type': 'message',
         'user_id': _userId,
         'message': message,
-        'room_id': widget.chatroomId
+        'room_id': _chatroomId
       }));
 
       _sendInboxUpdate(message, false);
@@ -297,7 +294,7 @@ class _ChatMessageState extends State<ChatMessageScreen> {
         'type': 'message',
         'user_id': _userId,
         'message': message,
-        'room_id': widget.chatroomId
+        'room_id': _chatroomId
       }));
 
       _sendInboxUpdate(message, false);
@@ -332,11 +329,12 @@ class _ChatMessageState extends State<ChatMessageScreen> {
     _userId = await secureStorage.getUserId();
     final userToken = await secureStorage.getToken();
     final response = await apiService.viewConversation(
-        userToken!, int.parse(widget.chatroomId));
+        userToken!, int.parse(widget.receiverId));
 
     if (response.containsKey('messages')) {
       setState(() {
         _messages = List<Map<String, dynamic>>.from(response['messages']);
+        _chatroomId = response['room_id'];
       });
     } else if (response.containsKey('error')) {
       popUp(context, response['error']);
@@ -858,17 +856,19 @@ class _ChatMessageState extends State<ChatMessageScreen> {
     final TextEditingController offerController = TextEditingController();
 
     void changeOffer() {
-      if (offerController.text.isNotEmpty && _channel != null) {
+      final amount = offerController.text;
+
+      if (amount.isNotEmpty && _channel != null) {
         _channel!.sink.add(jsonEncode({
           'type': 'change_offer_amount',
           'user_id': _userId,
           'offer_id': offerId,
-          'offer_amount': offerController.text
+          'offer_amount': amount.replaceAll(',', '')
         }));
 
         final message = {
           'message':
-              'Change offer: ${formatCurrency(double.parse(offerController.text))}',
+              'Change offer: ${formatCurrency(double.parse(amount.replaceAll(',', '')))}',
           'file': null,
           'file_name': null,
           'file_type': null,
@@ -908,7 +908,7 @@ class _ChatMessageState extends State<ChatMessageScreen> {
                   decoration: const InputDecoration(
                     border: InputBorder.none,
                     contentPadding: EdgeInsets.all(0),
-                    hintText: 'Amount',
+                    hintText: '\u20B10.00',
                     hoverColor: Color(0xff4A8AF0),
                     focusedBorder: UnderlineInputBorder(
                       borderSide: BorderSide(
@@ -917,8 +917,9 @@ class _ChatMessageState extends State<ChatMessageScreen> {
                     ),
                   ),
                   keyboardType: TextInputType.number,
-                  inputFormatters: <TextInputFormatter>[
-                    FilteringTextInputFormatter.digitsOnly, // Allow only digits
+                  inputFormatters: [
+                    CurrencyTextInputFormatter.currency(
+                        locale: 'en_PH', decimalDigits: 2, symbol: '')
                   ],
                   validator: (value) {
                     if (value == null || value.isEmpty) {
