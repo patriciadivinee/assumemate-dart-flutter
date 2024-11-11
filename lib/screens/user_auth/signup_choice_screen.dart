@@ -36,7 +36,6 @@ class _SignupScreenState extends State<SignupScreen> {
     print(_clientIdWeb);
     final user = await GoogleSignInApi.login();
     if (user == null) {
-      popUp(context, 'User cancelled');
       return;
     }
 
@@ -162,15 +161,6 @@ class _SignupScreenState extends State<SignupScreen> {
                 ]),
               ),
               SizedBox(height: 40),
-              Padding(
-                padding: const EdgeInsets.only(left: 12),
-                child: Text(
-                  "Email",
-                  style: const TextStyle(
-                      fontSize: 15, fontWeight: FontWeight.bold),
-                ),
-              ),
-              SizedBox(height: 10),
               Form(
                 key: _formKey,
                 child: Column(
@@ -205,20 +195,28 @@ class _SignupScreenState extends State<SignupScreen> {
                     ),
                     SizedBox(height: 30),
                     ElevatedButton(
-                      onPressed: () {
-                        if (_formKey.currentState!.validate()) {
-                          _emailVerify();
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF4A8AF0),
-                        minimumSize: const Size(double.infinity, 50),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(30.0),
+                      onPressed: _isLoading
+                          ? null
+                          : () {
+                              if (_formKey.currentState!.validate()) {
+                                _emailVerify();
+                              }
+                            },
+                      style: ButtonStyle(
+                        backgroundColor:
+                            WidgetStateProperty.all(const Color(0xff4A8AF0)),
+                        minimumSize: WidgetStateProperty.all(
+                            const Size(double.infinity, 50)),
+                        shape: WidgetStateProperty.all(
+                          RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30.0),
+                          ),
                         ),
                       ),
                       child: (_isLoading)
-                          ? const Center(
+                          ? const SizedBox(
+                              height: 30,
+                              width: 30,
                               child: CircularProgressIndicator(
                                 color: Color(0xffFFFCF1),
                               ),
@@ -263,32 +261,47 @@ class _SignupScreenState extends State<SignupScreen> {
                     ]),
                     const SizedBox(height: 22),
                     ElevatedButton.icon(
-                        onPressed: () {
-                          signUpWithGoogle();
-                        },
-                        icon: const Padding(
-                          padding: EdgeInsets.only(right: 8),
-                          child: FaIcon(
-                            FontAwesomeIcons.google,
-                            color: Colors.white,
-                            size: 25,
+                        onPressed: _isLoading
+                            ? null
+                            : () {
+                                signUpWithGoogle();
+                              },
+                        icon: _isLoading
+                            ? null
+                            : const Padding(
+                                padding: EdgeInsets.only(right: 8),
+                                child: FaIcon(
+                                  FontAwesomeIcons.google,
+                                  color: Colors.white,
+                                  size: 25,
+                                ),
+                              ),
+                        style: ButtonStyle(
+                          backgroundColor:
+                              WidgetStateProperty.all(const Color(0xffF04F4F)),
+                          minimumSize: WidgetStateProperty.all(
+                              const Size(double.infinity, 50)),
+                          shape: WidgetStateProperty.all(
+                            RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(30.0),
+                            ),
                           ),
                         ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xffF04F4F),
-                          // padding: const EdgeInsets.all(20),
-                          minimumSize: const Size(double.infinity, 50),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30),
-                          ),
-                        ),
-                        label: const Text(
-                          'Sign up with Google',
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 15,
-                              fontWeight: FontWeight.w500),
-                        )),
+                        label: _isLoading
+                            ? const SizedBox(
+                                height: 30,
+                                width: 30,
+                                child: CircularProgressIndicator(
+                                  color: Color(0xffFFFCF1),
+                                ),
+                              )
+                            : const Text(
+                                'Sign up with Google',
+                                style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w500),
+                              )),
                     SizedBox(height: 16),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 25.0),

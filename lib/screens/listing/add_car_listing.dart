@@ -1,17 +1,20 @@
 // add_listing.dart
 import 'package:flutter/material.dart';
-import 'car_form.dart'; // Import the new file for CarForm
+import 'car_form.dart';
 import 'restate.dart';
 import 'motorform.dart';
 
 class AddListing extends StatefulWidget {
+  final String category;
+
+  // Constructor to accept category
+  AddListing({Key? key, required this.category}) : super(key: key);
+
   @override
   _AddListingState createState() => _AddListingState();
 }
 
 class _AddListingState extends State<AddListing> {
-  String? selectedCategory;
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -35,32 +38,18 @@ class _AddListingState extends State<AddListing> {
         ),
       ),
       body: SingleChildScrollView(
-        padding: EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            DropdownButton<String>(
-              value: selectedCategory,
-              hint: Text('Select Category'),
-              items: ['Car', 'Real Estate', 'Motorcycle']
-                  .map<DropdownMenuItem<String>>((String value) {
-                return DropdownMenuItem<String>(
-                  value: value,
-                  child: Text(value),
-                );
-              }).toList(),
-              onChanged: (value) {
-                setState(() {
-                  selectedCategory = value;
-                });
-              },
-            ),
-            if (selectedCategory == 'Car')
-              CarForm() // Call the CarForm widget
-            // Other forms can be built here based on the selected category
-            else if (selectedCategory == 'Real Estate')
-              Restate() // Placeholder for Real Estate form
-            else if (selectedCategory == 'Motorcycle')
+            // Check the category passed to decide which form to display
+            if (widget.category == 'Car')
+              CarForm()
+            else if (widget.category == 'Real Estate')
+              Restate()
+            else if (widget.category == 'Motorcycle')
               MotorForm()
+            else
+              Center(child: Text('Invalid Category')),
           ],
         ),
       ),

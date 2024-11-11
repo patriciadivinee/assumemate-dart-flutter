@@ -126,6 +126,9 @@ class ApiService {
 
         final user = responseData['user'];
 
+        String userId = responseData['id'] ?? '';
+        await secureStorage.storeUserId(userId);
+
         if (user['is_assumptor'] == true) {
           await secureStorage.storeUserType('assumptor');
         } else if (user['is_assumee'] == true) {
@@ -700,10 +703,6 @@ class ApiService {
 
   Future<void> sessionExpired() async {
     await secureStorage.clearTokens();
-
-    navigatorKey.currentState?.pushReplacement(
-      MaterialPageRoute(builder: (context) => const WelcomeScreen()),
-    );
   }
 
   Future<Map<String, dynamic>> checkUserEmail(String token) async {
@@ -731,6 +730,192 @@ class ApiService {
       return {'error': 'An error occured: $e'};
     }
   }
+
+  Future<Map<String, dynamic>> assumptorListings() async {
+    final apiUrl = Uri.parse('$baseURL/assumptor/all/listings/');
+    final token = await secureStorage.getToken();
+    try {
+      final response = await http.get(
+        apiUrl,
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
+      );
+
+      final decodedResponse = jsonDecode(response.body);
+      print(decodedResponse);
+
+      if (response.statusCode == 200) {
+        print(decodedResponse);
+        return decodedResponse;
+      } else {
+        return decodedResponse;
+      }
+    } catch (e) {
+      return {'error': 'An error occured: $e'};
+    }
+  }
+
+  Future<Map<String, dynamic>> assumptorUserListings(int userId) async {
+    final apiUrl = Uri.parse('$baseURL/assumptor/$userId/all/listings/');
+    final token = await secureStorage.getToken();
+    try {
+      final response = await http.get(
+        apiUrl,
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
+      );
+
+      final decodedResponse = jsonDecode(response.body);
+      // print(decodedResponse);
+
+      if (response.statusCode == 200) {
+        // print(decodedResponse);
+        return decodedResponse;
+      } else {
+        return decodedResponse;
+      }
+    } catch (e) {
+      return {'error': 'An error occured: $e'};
+    }
+  }
+
+  Future<Map<String, dynamic>> getFollowers() async {
+    final apiUrl = Uri.parse('$baseURL/follower/list/');
+    final token = await secureStorage.getToken();
+    try {
+      final response = await http.get(
+        apiUrl,
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
+      );
+
+      final decodedResponse = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        return decodedResponse;
+      } else {
+        return decodedResponse;
+      }
+    } catch (e) {
+      return {'error': 'An error occured: $e'};
+    }
+  }
+
+  Future<Map<String, dynamic>> createOrder(String offerId) async {
+    final apiUrl = Uri.parse('$baseURL/paypal/create/order/');
+    final token = await secureStorage.getToken();
+
+    final Map<String, dynamic> data = {'offer_id': offerId};
+
+    try {
+      final response = await http.post(apiUrl,
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer $token",
+          },
+          body: jsonEncode(data));
+
+      return jsonDecode(response.body);
+    } catch (e) {
+      return ({'error': 'An error occured: $e'});
+    }
+  }
+
+  Future<String?> initiatePayment() async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseURL/create-paypal-order/'), // Your Django API endpoint
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (response.statusCode == 200) {
+        final responseData = json.decode(response.body);
+        return responseData['approval_url']; // Return the approval URL
+      } else {
+        throw 'Failed to create PayPal order';
+      }
+    } catch (error) {
+      print('Error: $error');
+      throw 'Payment initiation failed: $error';
+    }
+  }
+
+  Future<void> deductCoins(
+      String listingId, int userId, double amount, String token) async {
+    final response = await http.patch(
+      Uri.parse('$baseURL/wallet/$userId/deduct-coins/'),
+      headers: {
+        'Content-Type': 'application/json', // Fixed Content-Type header
+        'Authorization': 'Bearer $token',
+      },
+      body: json.encode({'amount': amount, 'list_id': listingId}),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception(
+          'Failed to deduct coins: ${response.statusCode} - ${response.body}');
+    }
+  }
+
+  Future<void> updateListingStatus(
+      String listingId, String token, double amount) async {
+    // final url = '$baseURL/listing/$listingId/update-status/'; // Update the URL to match your backend
+
+    final response = await http.patch(
+      Uri.parse('$baseURL/listing/$listingId/update-status/'),
+      headers: {
+        'Content-Type': 'application/json', // Fixed Content-Type header
+        'Authorization': 'Bearer $token',
+      },
+      body: json.encode({'amount': amount, 'list_id': listingId}),
+    );
+
+    // Check the response status code
+    if (response.statusCode == 200) {
+      print('Listing status updated successfully');
+    } else {
+      throw Exception(
+          'Failed to update listing status: ${response.statusCode} - ${response.body}');
+    }
+  }
+
+  Future<void> promoteListing(
+      String listingId, String token, double amount) async {
+    final response = await http.post(
+      Uri.parse('$baseURL/promote_listing/'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: json.encode({'list_id': listingId, 'amount': amount}),
+    );
+
+    if (response.statusCode != 201) {
+      throw Exception(
+          'Failed to promote listing: ${response.statusCode} - ${response.body}');
+    }
+  }
+
+  Future<void> deleteListing(String listingId, String token) async {
+    final response = await http.patch(
+      Uri.parse('$baseURL/listing/$listingId/delete/'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception(
+          'Failed to delete listing: ${response.statusCode} - ${response.body}');
+    }
+  }
 }
 
 class GoogleSignInApi {
@@ -751,6 +936,11 @@ class GoogleSignInApi {
   }
 
   static Future<void> logout() async {
+    await _googleSignIn.signOut();
+  }
+
+  static Future<void> logoutDisconnect() async {
+    await _googleSignIn.signOut();
     await _googleSignIn.disconnect();
   }
 }

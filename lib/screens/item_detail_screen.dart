@@ -1,16 +1,16 @@
 // ignore_for_file: deprecated_member_use
 
 import 'dart:async';
-// import 'dart:io';
+import 'package:assumemate/components/listing_item.dart';
 import 'package:assumemate/format.dart';
 import 'package:assumemate/screens/chat_message_screen.dart';
+import 'package:assumemate/screens/other_profile_screen.dart';
+import 'package:assumemate/screens/profile_screen%20copy.dart';
 import 'package:currency_text_input_formatter/currency_text_input_formatter.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:assumemate/logo/pop_up.dart';
 import 'package:assumemate/provider/favorite_provider.dart';
 import 'package:flutter/material.dart';
-// import 'package:assumemate/screens/chat_message_screen.dart';
 import 'package:assumemate/service/service.dart';
 import 'package:assumemate/storage/secure_storage.dart';
 import 'package:provider/provider.dart';
@@ -37,6 +37,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
   String? assumptorId;
   String? _userType;
   String? _applicationStatus;
+  String? _userId;
 
   Map<String, dynamic>? userProfile;
   final ApiService apiService = ApiService();
@@ -51,7 +52,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
     super.initState();
 
     _getUserType();
-    fetchUserProfile(widget.assumptorId);
+    fetchUserProfile();
     pageController = PageController(initialPage: 0);
     fetchListingDetails(widget.listingId).then((details) {
       setState(() {
@@ -63,6 +64,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
   Future<void> _getUserType() async {
     _userType = await secureStorage.getUserType();
     _applicationStatus = await secureStorage.getApplicationStatus();
+    _userId = await secureStorage.getUserId();
   }
 
   Future<ListingDetail> fetchListingDetails(String listingId) async {
@@ -83,15 +85,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
       // Ensure correct decoding
       final data = jsonDecode(utf8.decode(response.bodyBytes));
 
-      setState(() {
-        assumptorId = data['user_id'].toString();
-      });
-
-      print(data['user_id']);
-      print(data['list_id']);
-
       final listingDetails = ListingDetail.fromJson(data);
-      print('Listing details: $listingDetails');
 
       return listingDetails;
     } else {
@@ -99,25 +93,24 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
     }
   }
 
-  Future<void> fetchUserProfile(String assumptorId) async {
+  Future<void> fetchUserProfile() async {
     final SecureStorage secureStorage = SecureStorage();
     String? token = await secureStorage.getToken(); // Retrieve the token
 
     try {
       final response = await http.get(
-        Uri.parse('${dotenv.env['API_URL']}/view/$assumptorId/profile/'),
+        Uri.parse(
+            '${dotenv.env['API_URL']}/view/${widget.assumptorId}/profile/'),
         headers: {
           'Authorization':
               'Bearer $token', // Include the token in the request headers
         },
       );
 
-      // print(
-      //     'User Profile Response: ${response.statusCode} ${response.body}'); // Log the response
-
       if (response.statusCode == 200) {
         setState(() {
-          userProfile = json.decode(response.body);
+          userProfile = json
+              .decode(response.body)['user_profile']; // Access 'user_profile'
         });
       } else {
         throw Exception(
@@ -125,6 +118,39 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
       }
     } catch (error) {
       print('Error getting user profile: $error');
+    }
+  }
+
+  Future<List<dynamic>> fetchRandomListings() async {
+    final token = await secureStorage.getToken();
+    if (token == null) throw Exception('Token is null');
+
+    try {
+      final apiUrl = Uri.parse('$baseURL/random/listings/');
+      final response = await http.get(
+        apiUrl,
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(utf8.decode(response.bodyBytes));
+        print('Fetched Data: $data'); // Debugging output
+        if (data is List) {
+          return data
+              .where((item) => item != null)
+              .toList(); // Filter null items
+        } else {
+          throw Exception('Failed to parse listings');
+        }
+      } else {
+        throw Exception('Failed to load listings');
+      }
+    } catch (e) {
+      print('Error: $e'); // Debugging output
+      throw Exception('Failed to load listings');
     }
   }
 
@@ -189,301 +215,409 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                     ),
                   ),
                   // Details section
-                  Container(
-                    padding: const EdgeInsets.all(15),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        GestureDetector(
-                          onTap: () {
-                            // Navigate to the new screen
-                          },
-                          child: Text(
-                            userProfile != null
-                                ? '${userProfile?['user_prof_fname'] ?? ''} ${userProfile?['user_prof_lname'] ?? ''}'
-                                : "Loading...",
-                            style: const TextStyle(
-                              color: Colors.black,
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        Row(
+                  Expanded(
+                    child: SingleChildScrollView(
+                      child: Container(
+                        padding: const EdgeInsets.all(15),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Icon(
-                              Icons.location_on,
-                              size: 15,
-                              color: Colors.grey,
+                            GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        _userId == widget.assumptorId
+                                            ? ProfileScreen()
+                                            : OtherProfileScreen(
+                                                userId: widget.assumptorId,
+                                              ),
+                                  ),
+                                );
+                              },
+                              child: Text(
+                                userProfile != null
+                                    ? '${userProfile?['user_prof_fname'] ?? ''} ${userProfile?['user_prof_lname'] ?? ''}'
+                                    : "Loading...",
+                                style: const TextStyle(
+                                  color: Colors.black,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                             ),
-                            const SizedBox(width: 4),
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment
+                                  .start, // Aligns the icon and text at the top
+                              children: [
+                                const Icon(
+                                  Icons.location_on,
+                                  size: 15,
+                                  color: Colors.red,
+                                ),
+                                const SizedBox(width: 4),
+                                Flexible(
+                                  // Allows text to wrap within available space
+                                  child: Text(
+                                    listingDetail?.address ?? 'Loading...',
+                                    style: const TextStyle(
+                                      color: Colors.black,
+                                      fontWeight: FontWeight.w200,
+                                      fontSize: 10,
+                                    ),
+                                    softWrap:
+                                        true, // Enables wrapping of text to the next line
+                                    overflow: TextOverflow
+                                        .clip, // Prevents text from being cut off
+                                  ),
+                                ),
+                              ],
+                            ),
+
+                            const SizedBox(height: 10),
+
+                            if (listingDetail?.category == "Motorcycle" ||
+                                listingDetail?.category == "Car") ...[
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      'Title: ${listingDetail?.make ?? "Loading..."} (${listingDetail?.model ?? "Unknown model"}) - ${listingDetail?.transmission ?? "Unknow transmission"}',
+                                      style: const TextStyle(
+                                        color: Colors.black,
+                                        fontWeight: FontWeight.w900,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                  ),
+                                  Icon(
+                                    listingDetail?.category == "Car"
+                                        ? Icons.directions_car
+                                        : Icons.motorcycle,
+                                    size: 24,
+                                    color: listingDetail?.color != null
+                                        ? listingDetail!.extractColor() ??
+                                            Colors.black
+                                        : Colors.black,
+                                  ),
+                                ],
+                              ),
+                            ],
+                            if (listingDetail?.category == "Real Estate") ...[
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      'Title: ${listingDetail?.title ?? "N/A"}',
+                                      style: const TextStyle(
+                                        color: Colors.black,
+                                        fontWeight: FontWeight.w900,
+                                        fontSize: 17,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  const Icon(
+                                    Icons.house,
+                                    size: 24,
+                                    color: Colors.black,
+                                  ),
+                                ],
+                              ),
+                            ],
+                            const SizedBox(height: 10),
                             Text(
-                              listingDetail?.address ?? 'Loading...',
+                              'Details (${listingDetail?.category ?? "Loading..."}):',
                               style: const TextStyle(
                                 color: Colors.black,
-                                fontWeight: FontWeight.w600,
+                                fontWeight: FontWeight.w900,
+                                fontSize: 17,
                               ),
                             ),
+
+                            // Title Section
+                            Table(
+                              columnWidths: const {
+                                0: FlexColumnWidth(3), // Label column
+                                1: FlexColumnWidth(1), // Space column
+                                2: FlexColumnWidth(3), // Value column
+                                3: FlexColumnWidth(1), // Space column
+                              },
+                              children: [
+                                TableRow(
+                                  children: [
+                                    const Text(
+                                      'Price:',
+                                      style: TextStyle(color: Colors.black),
+                                    ),
+                                    const SizedBox(),
+                                    Text(
+                                      listingDetail?.price != null
+                                          ? '${listingDetail!.formattedPrice}'
+                                          : "Loading...",
+                                      style:
+                                          const TextStyle(color: Colors.black),
+                                    ),
+                                    const SizedBox(),
+                                  ],
+                                ),
+
+                                // Label: Down Payment
+                                TableRow(
+                                  children: [
+                                    const Text(
+                                      'Down Payment:',
+                                      style: TextStyle(color: Colors.black),
+                                    ),
+                                    const SizedBox(),
+                                    Text(
+                                      listingDetail?.formattedDownPayment !=
+                                              null
+                                          ? '${listingDetail!.formattedDownPayment}'
+                                          : "Loading...",
+                                      style:
+                                          const TextStyle(color: Colors.black),
+                                    ),
+                                    const SizedBox(),
+                                  ],
+                                ),
+                                // Common fields for both Motorcycles and Cars
+                                TableRow(
+                                  children: [
+                                    const Text(
+                                      'Monthly Payment:',
+                                      style: TextStyle(color: Colors.black),
+                                    ),
+                                    const SizedBox(),
+                                    Text(
+                                      listingDetail?.formattedMonthlyPayment !=
+                                              null
+                                          ? '${listingDetail!.formattedMonthlyPayment}'
+                                          : "Loading...",
+                                      style:
+                                          const TextStyle(color: Colors.black),
+                                    ),
+                                    const SizedBox(),
+                                  ],
+                                ),
+                                TableRow(
+                                  children: [
+                                    const Text(
+                                      'Total Payment Made:',
+                                      style: TextStyle(color: Colors.black),
+                                    ),
+                                    const SizedBox(),
+                                    Text(
+                                      '${listingDetail?.formattedTotalPaymentMade ?? "N/A"}',
+                                      style:
+                                          const TextStyle(color: Colors.black),
+                                    ),
+                                    const SizedBox(),
+                                  ],
+                                ),
+                                TableRow(
+                                  children: [
+                                    const Text(
+                                      'No. of Months Paid:',
+                                      style: TextStyle(color: Colors.black),
+                                    ),
+                                    const SizedBox(),
+                                    Text(
+                                      listingDetail
+                                                  ?.formattedNumberOfMonthsPaid !=
+                                              null
+                                          ? '${listingDetail!.formattedNumberOfMonthsPaid}'
+                                          : "Loading...",
+                                      style:
+                                          const TextStyle(color: Colors.black),
+                                    ),
+                                    const SizedBox(),
+                                  ],
+                                ),
+                                // Label: Loan Duration
+                                TableRow(
+                                  children: [
+                                    const Text(
+                                      'Loan Duration:',
+                                      style: TextStyle(color: Colors.black),
+                                    ),
+                                    const SizedBox(),
+                                    Text(
+                                      '${listingDetail?.formattedLoanDuration ?? "N/A"}',
+                                      style:
+                                          const TextStyle(color: Colors.black),
+                                    ),
+                                    const SizedBox(),
+                                  ],
+                                ),
+                                // Conditionally rendered rows based on the category
+                                if (listingDetail?.category ==
+                                    "Real Estate") ...[
+                                  //Lot Area
+                                  TableRow(
+                                    children: [
+                                      const Text(
+                                        'Lot Area:',
+                                        style: TextStyle(color: Colors.black),
+                                      ),
+                                      const SizedBox(),
+                                      Text(
+                                        '${listingDetail?.lotArea ?? "N/A"} sq. ft.',
+                                        style: const TextStyle(
+                                            color: Colors.black),
+                                      ),
+                                      const SizedBox(),
+                                    ],
+                                  ),
+                                  // Label: Floor Area
+                                  TableRow(
+                                    children: [
+                                      const Text(
+                                        'Floor Area:',
+                                        style: TextStyle(color: Colors.black),
+                                      ),
+                                      const SizedBox(),
+                                      Text(
+                                        '${listingDetail?.floorArea ?? "N/A"} sq. ft.',
+                                        style: const TextStyle(
+                                            color: Colors.black),
+                                      ),
+                                      const SizedBox(),
+                                    ],
+                                  ),
+                                  // Label: Bedrooms
+                                  TableRow(
+                                    children: [
+                                      const Text(
+                                        'Bedrooms:',
+                                        style: TextStyle(color: Colors.black),
+                                      ),
+                                      const SizedBox(),
+                                      Text(
+                                        listingDetail?.bedrooms ?? "N/A",
+                                        style: const TextStyle(
+                                            color: Colors.black),
+                                      ),
+                                      const SizedBox(),
+                                    ],
+                                  ),
+                                  // Label: Bathrooms
+                                  TableRow(
+                                    children: [
+                                      const Text(
+                                        'Bathrooms:',
+                                        style: TextStyle(color: Colors.black),
+                                      ),
+                                      const SizedBox(),
+                                      Text(
+                                        listingDetail?.bathrooms ?? "N/A",
+                                        style: const TextStyle(
+                                            color: Colors.black),
+                                      ),
+                                      const SizedBox(),
+                                    ],
+                                  ),
+                                ] else if (listingDetail?.category ==
+                                        "Motorcycle" ||
+                                    listingDetail?.category == "Car") ...[
+                                  TableRow(
+                                    children: [
+                                      const Text(
+                                        'Mileage:',
+                                        style: TextStyle(color: Colors.black),
+                                      ),
+                                      const SizedBox(),
+                                      Text(
+                                        listingDetail?.mileage ?? "N/A",
+                                        style: const TextStyle(
+                                            color: Colors.black),
+                                      ),
+                                      const SizedBox(),
+                                    ],
+                                  ),
+
+                                  TableRow(
+                                    children: [
+                                      const Text(
+                                        'Fuel Type:',
+                                        style: TextStyle(color: Colors.black),
+                                      ),
+                                      const SizedBox(),
+                                      Text(
+                                        listingDetail?.fuelType ?? "N/A",
+                                        style: const TextStyle(
+                                            color: Colors.black),
+                                      ),
+                                      const SizedBox(),
+                                    ],
+                                  ),
+                                  // Label: Parking Space
+                                  TableRow(
+                                    children: [
+                                      const Text(
+                                        'Parking Space:',
+                                        style: TextStyle(color: Colors.black),
+                                      ),
+                                      const SizedBox(),
+                                      Text(
+                                        listingDetail?.parkingSpace ?? "N/A",
+                                        style: const TextStyle(
+                                            color: Colors.black),
+                                      ),
+                                      const SizedBox(),
+                                    ],
+                                  ),
+                                ],
+                              ],
+                            ),
+
+                            const SizedBox(height: 30),
+                            SingleChildScrollView(
+                              child: Text(
+                                'Description: ${listingDetail?.description ?? "Loading..."}',
+                                style: const TextStyle(
+                                  color: Colors.black,
+                                  fontWeight: FontWeight.w400,
+                                ),
+                                maxLines: null, // Allows unlimited lines
+                                overflow:
+                                    TextOverflow.visible, // Prevents truncation
+                              ),
+                            ),
+
+                            const SizedBox(height: 20),
+
+                            // Styling the section title text
+                            const Text(
+                              'More Listings',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors
+                                    .black87, // Slightly muted color for readability
+                                letterSpacing:
+                                    0.5, // Adds spacing for a cleaner look
+                                shadows: [
+                                  Shadow(
+                                    // Adds a subtle shadow for depth
+                                    blurRadius: 2.0,
+                                    color: Colors.grey,
+                                    offset: Offset(1, 1),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                            buildSuggestionsList(fetchRandomListings()),
+                            const SizedBox(height: 20),
                           ],
                         ),
-                        const SizedBox(height: 10),
-
-                        if (listingDetail?.category == "Motorcycles" ||
-                            listingDetail?.category == "Cars") ...[
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  'Title: ${listingDetail?.make ?? "Loading..."} (${listingDetail?.model ?? "Unknown model"})',
-                                  style: const TextStyle(
-                                    color: Colors.black,
-                                    fontWeight: FontWeight.w900,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                              ),
-                              Icon(
-                                listingDetail?.category == "Cars"
-                                    ? Icons.directions_car
-                                    : Icons.motorcycle,
-                                size: 24,
-                                color: listingDetail?.color != null
-                                    ? listingDetail!.extractColor() ??
-                                        Colors.black
-                                    : Colors.black,
-                              ),
-                            ],
-                          ),
-                        ],
-                        if (listingDetail?.category == "House and Lot") ...[
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  'Title: ${listingDetail?.title ?? "N/A"}',
-                                  style: const TextStyle(
-                                    color: Colors.black,
-                                    fontWeight: FontWeight.w900,
-                                    fontSize: 17,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              const Icon(
-                                Icons.house,
-                                size: 24,
-                                color: Colors.black,
-                              ),
-                            ],
-                          ),
-                        ],
-                        const SizedBox(height: 10),
-                        Text(
-                          'Details (${listingDetail?.category ?? "Loading..."}):',
-                          style: const TextStyle(
-                            color: Colors.black,
-                            fontWeight: FontWeight.w900,
-                            fontSize: 17,
-                          ),
-                        ),
-
-                        // Title Section
-                        Table(
-                          columnWidths: const {
-                            0: FlexColumnWidth(3), // Label column
-                            1: FlexColumnWidth(1), // Space column
-                            2: FlexColumnWidth(3), // Value column
-                            3: FlexColumnWidth(1), // Space column
-                          },
-                          children: [
-                            TableRow(
-                              children: [
-                                const Text(
-                                  'Price:',
-                                  style: TextStyle(color: Colors.black),
-                                ),
-                                const SizedBox(),
-                                Text(
-                                  listingDetail?.price != null
-                                      ? '${listingDetail!.price}'
-                                      : "Loading...",
-                                  style: const TextStyle(color: Colors.black),
-                                ),
-                                const SizedBox(),
-                              ],
-                            ),
-                            // Conditionally rendered rows based on the category
-                            if (listingDetail?.category == "House and Lot") ...[
-                              // Label: Bedrooms
-                              TableRow(
-                                children: [
-                                  const Text(
-                                    'Bedrooms:',
-                                    style: TextStyle(color: Colors.black),
-                                  ),
-                                  const SizedBox(),
-                                  Text(
-                                    listingDetail?.bedrooms ?? "N/A",
-                                    style: const TextStyle(color: Colors.black),
-                                  ),
-                                  const SizedBox(),
-                                ],
-                              ),
-                              // Label: Bathrooms
-                              TableRow(
-                                children: [
-                                  const Text(
-                                    'Bathrooms:',
-                                    style: TextStyle(color: Colors.black),
-                                  ),
-                                  const SizedBox(),
-                                  Text(
-                                    listingDetail?.bathrooms ?? "N/A",
-                                    style: const TextStyle(color: Colors.black),
-                                  ),
-                                  const SizedBox(),
-                                ],
-                              ),
-                              // Label: Lot Area
-                              TableRow(
-                                children: [
-                                  const Text(
-                                    'Lot Area:',
-                                    style: TextStyle(color: Colors.black),
-                                  ),
-                                  const SizedBox(),
-                                  Text(
-                                    '${listingDetail?.lotArea ?? "N/A"} sq. ft.',
-                                    style: const TextStyle(color: Colors.black),
-                                  ),
-                                  const SizedBox(),
-                                ],
-                              ),
-                              // Label: Floor Area
-                              TableRow(
-                                children: [
-                                  const Text(
-                                    'Floor Area:',
-                                    style: TextStyle(color: Colors.black),
-                                  ),
-                                  const SizedBox(),
-                                  Text(
-                                    '${listingDetail?.floorArea ?? "N/A"} sq. ft.',
-                                    style: const TextStyle(color: Colors.black),
-                                  ),
-                                  const SizedBox(),
-                                ],
-                              ),
-                              // Label: Down Payment
-                              TableRow(
-                                children: [
-                                  const Text(
-                                    'Down Payment:',
-                                    style: TextStyle(color: Colors.black),
-                                  ),
-                                  const SizedBox(),
-                                  Text(
-                                    listingDetail?.downPayment ?? "N/A",
-                                    style: const TextStyle(color: Colors.black),
-                                  ),
-                                  const SizedBox(),
-                                ],
-                              ),
-                              // Label: Loan Duration
-                              TableRow(
-                                children: [
-                                  const Text(
-                                    'Loan Duration:',
-                                    style: TextStyle(color: Colors.black),
-                                  ),
-                                  const SizedBox(),
-                                  Text(
-                                    '${listingDetail?.loanDuration ?? "N/A"} months',
-                                    style: const TextStyle(color: Colors.black),
-                                  ),
-                                  const SizedBox(),
-                                ],
-                              ),
-                            ] else if (listingDetail?.category ==
-                                    "Motorcycles" ||
-                                listingDetail?.category == "Cars") ...[
-                              // Label: Parking Space
-                              TableRow(
-                                children: [
-                                  const Text(
-                                    'Parking Space:',
-                                    style: TextStyle(color: Colors.black),
-                                  ),
-                                  const SizedBox(),
-                                  Text(
-                                    listingDetail?.parkingSpace ?? "N/A",
-                                    style: const TextStyle(color: Colors.black),
-                                  ),
-                                  const SizedBox(),
-                                ],
-                              ),
-                            ],
-                            // Common fields for both Motorcycles and Cars
-                            TableRow(
-                              children: [
-                                const Text(
-                                  'Monthly Payment:',
-                                  style: TextStyle(color: Colors.black),
-                                ),
-                                const SizedBox(),
-                                Text(
-                                  listingDetail?.monthlyPayment != null
-                                      ? '${listingDetail!.monthlyPayment}'
-                                      : "Loading...",
-                                  style: const TextStyle(color: Colors.black),
-                                ),
-                                const SizedBox(),
-                              ],
-                            ),
-                            TableRow(
-                              children: [
-                                const Text(
-                                  'Total Payment Made:',
-                                  style: TextStyle(color: Colors.black),
-                                ),
-                                const SizedBox(),
-                                Text(
-                                  '${listingDetail?.totalPaymentMade ?? "N/A"}',
-                                  style: const TextStyle(color: Colors.black),
-                                ),
-                                const SizedBox(),
-                              ],
-                            ),
-                            TableRow(
-                              children: [
-                                const Text(
-                                  'No. of Months Paid:',
-                                  style: TextStyle(color: Colors.black),
-                                ),
-                                const SizedBox(),
-                                Text(
-                                  listingDetail?.numberOfMonthsPaid != null
-                                      ? '${listingDetail!.numberOfMonthsPaid}'
-                                      : "Loading...",
-                                  style: const TextStyle(color: Colors.black),
-                                ),
-                                const SizedBox(),
-                              ],
-                            ),
-                          ],
-                        ),
-
-                        const SizedBox(height: 40),
-                        Text(
-                          'Description: ${listingDetail?.description ?? "Loading..."}',
-                          style: const TextStyle(
-                            color: Colors.black,
-                            fontWeight: FontWeight.w400,
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
                   ),
                 ],
@@ -719,24 +853,25 @@ class ListingDetail {
   final List<String> images;
   final String category;
   final String description;
-  final String downPayment;
   final String loanDuration;
   final String parkingSpace;
   final String address;
   final String make;
   final String model;
+  final String transmission;
+  final String mileage;
+  final String fuelType;
   final String color;
 
-  // Optional fields for specific categories
   String? lotArea;
   String? bedrooms;
   String? bathrooms;
   String? floorArea;
   List<String>? documents;
 
-  // Numerical fields
   final double price;
   final double monthlyPayment;
+  final int downPayment;
   final int totalPaymentMade;
   final int numberOfMonthsPaid;
 
@@ -756,6 +891,9 @@ class ListingDetail {
     required this.make,
     required this.model,
     required this.color,
+    required this.transmission,
+    required this.mileage,
+    required this.fuelType,
     this.lotArea,
     this.bedrooms,
     this.bathrooms,
@@ -766,13 +904,11 @@ class ListingDetail {
   factory ListingDetail.fromJson(Map<String, dynamic> json) {
     var content = json['list_content'] ?? {};
 
-    // Parse price and monthly payment
     double parsedMonthlyPayment =
         double.tryParse(content['monthlyPayment']?.toString() ?? '0') ?? 0;
     int parsedNumberOfMonthsPaid =
         int.tryParse(content['numberOfMonthsPaid']?.toString() ?? '0') ?? 0;
 
-    // Calculate price based on monthlyPayment * numberOfMonthsPaid
     double calculatedPrice = parsedMonthlyPayment * parsedNumberOfMonthsPaid;
 
     return ListingDetail(
@@ -784,7 +920,9 @@ class ListingDetail {
       category: content['category']?.toString() ?? 'Uncategorized',
       description:
           content['description']?.toString() ?? 'No description available',
-      downPayment: content['downPayment']?.toString() ?? '0',
+      downPayment: (content['downPayment'] is String)
+          ? int.tryParse(content['downPayment']) ?? 0
+          : (content['downPayment'] as num?)?.toInt() ?? 0,
       loanDuration: content['loanDuration']?.toString() ?? '0 months',
       parkingSpace: content['parkingSpace']?.toString() ?? '0',
       monthlyPayment: parsedMonthlyPayment,
@@ -795,13 +933,46 @@ class ListingDetail {
       bathrooms: content['bathrooms']?.toString(),
       floorArea: content['floorArea']?.toString(),
       address: content['address']?.toString() ?? 'Unknown Location',
-      make: content['make']?.toString() ?? 'Unknown make',
+      //make: content['make:']?.toString() ?? 'Unknown make',
+      make: content['make:']?.toString() ?? 'Unknown make',
       model: content['model']?.toString() ?? 'Unknown model',
+      transmission:
+          content['transmission']?.toString() ?? 'Unknown transmission',
+      mileage: content['mileage']?.toString() ?? 'Unknown mileage',
+      fuelType: content['fuelType'].toString(),
       color: content['color']?.toString() ?? 'Unknown color',
     );
   }
 
+  static String convertMonthsToYears(int months) {
+    int years = months ~/ 12;
+    int remainingMonths = months % 12;
+
+    String yearPart = years > 0 ? "$years year${years > 1 ? 's' : ''}" : "";
+    String monthPart = remainingMonths > 0
+        ? "$remainingMonths month${remainingMonths > 1 ? 's' : ''}"
+        : "";
+
+    // Combine the parts with a comma if both parts are present
+    if (yearPart.isNotEmpty && monthPart.isNotEmpty) {
+      return "$yearPart, $monthPart";
+    } else {
+      return yearPart + monthPart; // Return whichever part is not empty
+    }
+  }
+
+  String get formattedPrice => formatCurrency(price);
+  String get formattedMonthlyPayment => formatCurrency(monthlyPayment);
+  String get formattedTotalPaymentMade =>
+      formatCurrency(totalPaymentMade.toDouble());
+  String get formattedDownPayment => formatCurrency(downPayment.toDouble());
+  String get formattedNumberOfMonthsPaid =>
+      convertMonthsToYears(numberOfMonthsPaid);
+  String get formattedLoanDuration =>
+      convertMonthsToYears(int.parse(loanDuration));
+
   Color? extractColor() {
+    // ignore: unnecessary_null_comparison
     if (color == null) return null;
     final regex = RegExp(r'Color\(0xff([0-9a-fA-F]+)\)');
     final match = regex.firstMatch(color);
@@ -826,6 +997,8 @@ Future<void> offerDialog(BuildContext context, String listId) async {
     try {
       final response = await apiService.makeOffer(
           listId, double.parse(amount.replaceAll(',', '')));
+
+      print(response);
 
       if (response.containsKey('user_id')) {
         Navigator.of(context).push(MaterialPageRoute(
@@ -922,6 +1095,63 @@ Future<void> offerDialog(BuildContext context, String listId) async {
           ),
         ],
       );
+    },
+  );
+}
+
+Widget buildSuggestionsList(Future<List<dynamic>> futureListings) {
+  return FutureBuilder<List<dynamic>>(
+    future: futureListings,
+    builder: (context, snapshot) {
+      if (snapshot.connectionState == ConnectionState.waiting) {
+        return const Center(child: CircularProgressIndicator());
+      } else if (snapshot.hasError) {
+        return const Center(child: Text('Failed to load listings'));
+      } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+        return const Center(child: Text('No listings available'));
+      } else {
+        return Container(
+          height: 1000, // Set a fixed height that fits your layout
+          child: GridView.builder(
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2, // Number of items per row
+              crossAxisSpacing: 5, // Spacing between columns
+              mainAxisSpacing: 5, // Spacing between rows
+              mainAxisExtent: MediaQuery.of(context).size.width * .50,
+            ),
+            physics: const NeverScrollableScrollPhysics(), // Disable scrolling
+            itemCount: snapshot.data!.length,
+            itemBuilder: (context, index) {
+              var listing = snapshot.data![index];
+              if (listing == null) {
+                return const Center(child: Text('No Listing Data'));
+              }
+              var content = listing['list_content'];
+              var title;
+
+              // Set the title based on the category
+              if (content['category'] == "Car" ||
+                  content['category'] == "Motorcycle") {
+                title =
+                    '${content['make:'] ?? 'Unknown make'} (${content['model'] ?? 'Unknown model'})';
+              } else if (content['category'] == "Real Estate") {
+                title = content['title'] ?? 'No Title';
+              } else {
+                title = content['title'] ?? 'No Title';
+              }
+
+              return ListingItem(
+                title: title,
+                imageUrl: content['images'],
+                description: content['description'] ?? 'No Description',
+                listingId: listing['list_id'].toString(),
+                assumptorId: listing['user_id'].toString(),
+                price: content['price'].toString(),
+              );
+            },
+          ),
+        );
+      }
     },
   );
 }

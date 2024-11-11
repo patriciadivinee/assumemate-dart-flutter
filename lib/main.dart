@@ -1,3 +1,4 @@
+import 'package:assumemate/provider/follow_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -23,12 +24,14 @@ void main() async {
 
   final profileProvider = ProfileProvider();
   final faveProvider = FavoriteProvider();
+  final followProvider = FollowProvider();
 
   final token = await profileProvider.secureStorage.getToken();
 
   if (token != null && token.isNotEmpty) {
     await profileProvider.initializeToken();
     await faveProvider.initializeFave();
+    await followProvider.initializeFollow();
   }
 
   SystemChrome.setSystemUIOverlayStyle(
@@ -48,6 +51,7 @@ void main() async {
         providers: [
           ChangeNotifierProvider(create: (_) => profileProvider),
           ChangeNotifierProvider(create: (_) => faveProvider),
+          ChangeNotifierProvider(create: (_) => followProvider),
           ChangeNotifierProvider(create: (_) => PhotosPermission()),
           ChangeNotifierProvider(create: (_) => StoragePermission()),
         ],
@@ -87,6 +91,7 @@ class MyApp extends StatelessWidget {
             selectionHandleColor: const Color(0xff4A8AF0)),
         fontFamily: GoogleFonts.poppins().fontFamily,
         scaffoldBackgroundColor: const Color(0xffFFFCF1),
+        appBarTheme: const AppBarTheme(backgroundColor: Color(0xffFFFCF1)),
         primaryColor: const Color(0xff4A8AF0),
         brightness: Brightness.light,
       ),

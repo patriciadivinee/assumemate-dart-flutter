@@ -1,6 +1,4 @@
-import 'package:assumemate/provider/profile_provider.dart';
-import 'package:assumemate/screens/profile_screen.dart';
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:assumemate/screens/search_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -13,6 +11,8 @@ import 'package:assumemate/provider/favorite_provider.dart';
 import 'package:assumemate/screens/favorites_screen.dart';
 import 'package:assumemate/screens/highlighted_item_screen.dart';
 import 'package:assumemate/screens/listing/add_car_listing.dart';
+import 'package:flutter_speed_dial/flutter_speed_dial.dart';
+
 import 'package:assumemate/storage/secure_storage.dart';
 import 'package:provider/provider.dart';
 
@@ -87,7 +87,6 @@ class _FeedScreenState extends State<FeedScreen> {
     }
   }
 
-  // Refactored method to build listing grid
   Widget buildListingGrid(Future<List<dynamic>> futureListings) {
     return FutureBuilder<List<dynamic>>(
       future: futureListings,
@@ -116,12 +115,13 @@ class _FeedScreenState extends State<FeedScreen> {
               var content = listing['list_content'];
               var title;
 
-              // Check the category and set the title accordingly
+              print(content);
+
               if (content['category'] == "Cars" ||
                   content['category'] == "Motorcycle") {
                 title =
                     '${content['make'] ?? 'Unknown make'} (${content['model'] ?? 'Unknown model'})';
-              } else if (content['category'] == "House and Lot") {
+              } else if (content['category'] == "Real Estate") {
                 title = content['title'] ?? 'No Title';
               } else {
                 title = content['title'] ??
@@ -134,6 +134,7 @@ class _FeedScreenState extends State<FeedScreen> {
                 description: content['description'] ?? 'No Description',
                 listingId: listing['list_id'].toString(),
                 assumptorId: listing['user_id'].toString(),
+                price: content['price'].toString(),
               );
             },
           );
@@ -153,6 +154,7 @@ class _FeedScreenState extends State<FeedScreen> {
     return DefaultTabController(
       length: 3,
       child: Scaffold(
+        backgroundColor: const Color(0xffFFFCF1),
         appBar: AppBar(
           backgroundColor: const Color(0xffFFFCF1),
           title: Row(children: [
@@ -163,7 +165,13 @@ class _FeedScreenState extends State<FeedScreen> {
             ),
             const Spacer(),
             IconButton(
-                onPressed: () {},
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const SearchScreen(),
+                    ),
+                  );
+                },
                 icon: const Icon(Icons.search,
                     size: 40, color: Color(0xff4A8AF0))),
             Stack(
@@ -213,144 +221,216 @@ class _FeedScreenState extends State<FeedScreen> {
             )
           ]),
         ),
-        body: Column(
-          children: [
-            Container(
-              margin: const EdgeInsets.only(top: 2, bottom: 2, left: 8),
-              alignment: Alignment.centerLeft,
-              child: TextButton(
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                        builder: (context) => const HighlightedItemScreen()),
-                  );
-                },
-                style: TextButton.styleFrom(
-                  foregroundColor: Colors.black,
-                  textStyle: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w300,
-                    decoration: TextDecoration.underline,
-                    decorationThickness: 2,
+        body: NestedScrollView(
+          headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
+            return [
+              SliverAppBar(
+                backgroundColor: const Color(0xffFFFCF1),
+                forceElevated: true,
+                pinned: false,
+                floating: true,
+                expandedHeight: MediaQuery.of(context).size.height / 3.5,
+                flexibleSpace: FlexibleSpaceBar(
+                  background: Container(
+                    color: const Color(0xffFFFCF1),
+                    child: Column(
+                      children: [
+                        Container(
+                          margin:
+                              const EdgeInsets.only(top: 2, bottom: 2, left: 8),
+                          alignment: Alignment.centerLeft,
+                          child: TextButton(
+                            onPressed: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                    builder: (context) =>
+                                        const HighlightedItemScreen()),
+                              );
+                            },
+                            style: TextButton.styleFrom(
+                              foregroundColor: Colors.black,
+                              textStyle: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w300,
+                                decoration: TextDecoration.underline,
+                                decorationThickness: 2,
+                              ),
+                            ),
+                            child: const Text(
+                              'Highlighted Items',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
+                        SizedBox(
+                          height: MediaQuery.of(context).size.height / 3.5 - 75,
+                          child: PageView.builder(
+                            controller: pageController,
+                            onPageChanged: (index) {
+                              setState(() {
+                                pageNo = index; // Update pageNo on page change
+                              });
+                            },
+                            itemBuilder: (_, index) {
+                              return const HighlightedItemBanner();
+                            },
+                            itemCount: 5,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: List.generate(
+                            5,
+                            (index) => Container(
+                              margin: const EdgeInsets.all(2),
+                              child: Icon(
+                                Icons.circle,
+                                size: 8,
+                                color: pageNo == index
+                                    ? const Color(0xff4A8AF0)
+                                    : Colors.grey.shade300,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                child: const Text(
-                  'Highlighted Items',
-                  style: TextStyle(fontWeight: FontWeight.bold),
+                  collapseMode: CollapseMode.none,
                 ),
               ),
-            ),
-            SizedBox(
-              height: 180,
-              child: PageView.builder(
-                controller: pageController,
-                onPageChanged: (index) {
-                  setState(() {
-                    pageNo = index; // Update pageNo on page change
-                  });
-                },
-                itemBuilder: (_, index) {
-                  return AnimatedBuilder(
-                    animation: pageController,
-                    builder: (context, child) {
-                      return child!;
-                    },
-                    child: const HighlightedItemBanner(),
-                  );
-                },
-                itemCount: 5,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(
-                5,
-                (index) => Container(
-                  margin: const EdgeInsets.all(2),
-                  child: Icon(
-                    Icons.circle,
-                    size: 8,
-                    color: pageNo == index
-                        ? const Color(0xff4A8AF0)
-                        : Colors.grey.shade300,
-                  ),
-                ),
-              ),
-            ),
-            TabBar(
-              labelColor: Colors.black,
-              labelStyle: const TextStyle(fontWeight: FontWeight.bold),
-              indicatorSize: TabBarIndicatorSize.tab,
-              indicator: UnderlineTabIndicator(
-                borderSide: const BorderSide(
-                  width: 4,
-                  color: Color(0xff4A8AF0),
-                ),
-                insets: const EdgeInsets.symmetric(
-                  horizontal: (30 - 4) / 2,
-                ),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              tabs: [
-                Tab(
-                    child: Text(
-                  'House & Lot',
-                  style: tabTextStyle,
-                )),
-                Tab(
-                    child: Text(
-                  'Cars',
-                  style: tabTextStyle,
-                )),
-                Tab(
-                    child: Text(
-                  'Motorcycles',
-                  style: tabTextStyle,
-                )),
+              SliverPersistentHeader(
+                  pinned: true,
+                  delegate: TabBarHeader(
+                    TabBar(
+                      labelColor: Colors.black,
+                      labelStyle: const TextStyle(fontWeight: FontWeight.bold),
+                      indicatorSize: TabBarIndicatorSize.tab,
+                      indicator: UnderlineTabIndicator(
+                        borderSide: const BorderSide(
+                          width: 4,
+                          color: Color(0xff4A8AF0),
+                        ),
+                        insets: const EdgeInsets.symmetric(
+                          horizontal: (30 - 4) / 2,
+                        ),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      tabs: [
+                        Tab(child: Text('House & Lot', style: tabTextStyle)),
+                        Tab(child: Text('Cars', style: tabTextStyle)),
+                        Tab(child: Text('Motorcycles', style: tabTextStyle)),
+                      ],
+                    ),
+                  )),
+            ];
+          },
+          body: Container(
+            padding: const EdgeInsets.all(10),
+            child: TabBarView(
+              children: [
+                buildListingGrid(houseAndLotListings),
+                buildListingGrid(carListings),
+                buildListingGrid(motorcycleListings),
               ],
             ),
-            Expanded(
-              child: Container(
-                padding: const EdgeInsets.only(left: 10, right: 10, top: 5),
-                child: TabBarView(
-                  children: [
-                    // Real Estate Listings
-                    buildListingGrid(houseAndLotListings),
-                    // Car Listings
-                    buildListingGrid(carListings),
-                    // Motorcycle Listings
-                    buildListingGrid(motorcycleListings),
-                  ],
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
         floatingActionButton: _userType == 'assumptor'
-            ? FloatingActionButton(
-                onPressed: () async {
-                  Navigator.of(context).push(MaterialPageRoute(
-                    builder: (context) => AddListing(),
-                  ));
-                },
-                heroTag: null,
+            ? SpeedDial(
+                icon: Icons.add,
+                activeIcon: Icons.close,
                 backgroundColor: const Color(0xff4A8AF0),
-                shape: const CircleBorder(),
-                child: const Icon(
-                  Icons.add,
-                  size: 30,
-                  color: Color(0xffFFFCF1),
-                ),
-              )
+                foregroundColor: Colors.white,
+                spaceBetweenChildren: 4,
+                overlayColor: Colors.white,
+                curve: Curves.bounceIn,
+                children: [
+                    SpeedDialChild(
+                      shape: const CircleBorder(),
+                      child: const Icon(Icons.motorcycle, color: Colors.white),
+                      label: 'Motorcycle',
+                      labelStyle: const TextStyle(fontWeight: FontWeight.w400),
+                      backgroundColor: const Color(0xff4A8AF0),
+                      elevation: 3,
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                AddListing(category: 'Motorcycle'),
+                          ),
+                        );
+                      },
+                    ),
+                    SpeedDialChild(
+                      shape: const CircleBorder(),
+                      child:
+                          const Icon(Icons.directions_car, color: Colors.white),
+                      label: 'Car',
+                      labelStyle: const TextStyle(fontWeight: FontWeight.w400),
+                      backgroundColor: const Color(0xff4A8AF0),
+                      elevation: 3,
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => AddListing(category: 'Car'),
+                          ),
+                        );
+                      },
+                    ),
+                    SpeedDialChild(
+                      shape: const CircleBorder(),
+                      child:
+                          const Icon(Icons.house_outlined, color: Colors.white),
+                      label: 'Real Estate',
+                      labelStyle: const TextStyle(fontWeight: FontWeight.w400),
+                      backgroundColor: const Color(0xff4A8AF0),
+                      elevation: 3,
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                AddListing(category: 'Real Estate'),
+                          ),
+                        );
+                      },
+                    ),
+                  ])
             : null,
       ),
     );
   }
 
-  // @override
-  // void dispose() {
-  //   pageController.dispose();
-  //   super.dispose();
-  // }
+  @override
+  void dispose() {
+    pageController.dispose();
+    super.dispose();
+  }
+}
+
+class TabBarHeader extends SliverPersistentHeaderDelegate {
+  final TabBar tabBar;
+
+  TabBarHeader(this.tabBar);
+
+  @override
+  Widget build(
+      BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return Container(
+      color: const Color(0xffFFFCF1), // Adjust the background color as needed
+      child: tabBar,
+    );
+  }
+
+  @override
+  double get maxExtent => tabBar.preferredSize.height;
+
+  @override
+  double get minExtent => tabBar.preferredSize.height;
+
+  @override
+  bool shouldRebuild(SliverPersistentHeaderDelegate oldDelegate) {
+    return false;
+  }
 }

@@ -15,7 +15,7 @@ class DatabaseService {
       },
       body: json.encode({
         'list_content': listingContent,
-        'list_status': 'active',
+        'list_status': 'pending',
         'list_duration': DateTime.now().toIso8601String(),
       }),
     );

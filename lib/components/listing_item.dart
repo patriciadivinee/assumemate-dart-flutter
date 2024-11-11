@@ -1,4 +1,5 @@
 import 'dart:convert'; // for JSON decoding
+import 'package:assumemate/format.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -13,8 +14,8 @@ class ListingItem extends StatefulWidget {
   final List<dynamic> imageUrl;
   final String description;
   final String listingId;
-  final String
-      assumptorId; // Assuming assumptorId is the user ID for profile fetching
+  final String assumptorId;
+  final String price;
 
   const ListingItem({
     required this.title,
@@ -22,6 +23,7 @@ class ListingItem extends StatefulWidget {
     required this.description,
     required this.listingId,
     required this.assumptorId,
+    required this.price,
     super.key,
   });
 
@@ -35,13 +37,14 @@ class _ListingItemState extends State<ListingItem> {
   bool isError = false; // For error state
 
   // Method to fetch user profile
-  void fetchUserProfile(String assumptorId) async {
+  Future<void> fetchUserProfile() async {
     final SecureStorage secureStorage = SecureStorage();
     String? token = await secureStorage.getToken(); // Retrieve the token
 
     try {
       final response = await http.get(
-        Uri.parse('${dotenv.env['API_URL']}/view/$assumptorId/profile/'),
+        Uri.parse(
+            '${dotenv.env['API_URL']}/view/${widget.assumptorId}/profile/'),
         headers: {
           'Authorization': 'Bearer $token',
         },
@@ -69,9 +72,8 @@ class _ListingItemState extends State<ListingItem> {
 
   @override
   void initState() {
-    fetchUserProfile(widget
-        .assumptorId); // Fetch the user profile when the widget is initialized
     super.initState();
+    fetchUserProfile(); // Fetch the user profile when the widget is initialized
   }
 
   @override
@@ -97,7 +99,6 @@ class _ListingItemState extends State<ListingItem> {
           ),
           child: Column(
             children: [
-              // Listing image
               ClipRRect(
                 borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(15),
@@ -121,84 +122,91 @@ class _ListingItemState extends State<ListingItem> {
                   fit: BoxFit.cover,
                 ),
               ),
-
-              Padding(
-                padding: const EdgeInsets.all(5),
-                child: Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 16,
-                      backgroundColor: Colors.grey.shade300,
-                      backgroundImage: isLoading
-                          ? null // Display nothing while loading
-                          : isError
-                              ? const NetworkImage(
-                                  'https://pbs.twimg.com/media/GV_AI3pawAA-fU3?format=jpg&name=4096x4096') // Error state placeholder
-                              : NetworkImage(
-                                  userProfile?['user_prof_pic'] ??
-                                      'https://pbs.twimg.com/media/GV_AI3pawAA-fU3?format=jpg&name=4096x4096', // User's profile image
-                                ),
-                    ),
-                    const SizedBox(width: 5),
-                    Expanded(
-                      child: Column(
+              Expanded(
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        widget.title,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        widget.description,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const Spacer(),
+                      Row(
                         mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           Text(
-                            widget.title,
+                            formatCurrency(double.parse(widget.price)),
                             style: const TextStyle(
-                              fontSize: 9,
-                              fontWeight: FontWeight.bold,
-                            ),
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xff4A8AF0)),
                           ),
-                          Text(
-                            widget.description,
-                            style: const TextStyle(
-                              fontSize: 9,
-                              fontWeight: FontWeight.bold,
-                            ),
+                          const Spacer(),
+                          Consumer<FavoriteProvider>(
+                            builder: (context, favoriteProvider, child) {
+                              final isFavorited = favoriteProvider
+                                  .isFavorited(widget.listingId);
+
+                              return GestureDetector(
+                                onTap: () async {
+                                  final token =
+                                      await SecureStorage().getToken();
+                                  if (token != null) {
+                                    try {
+                                      String message = await favoriteProvider
+                                          .toggleFavorite(widget.listingId);
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        SnackBar(content: Text(message)),
+                                      );
+                                    } catch (error) {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        SnackBar(
+                                            content: Text('Error: $error')),
+                                      );
+                                    }
+                                  }
+                                },
+                                child: Icon(
+                                  isFavorited
+                                      ? Icons.favorite
+                                      : Icons.favorite_outline,
+                                  color: isFavorited
+                                      ? const Color(0xffFF0000)
+                                      : Colors.black,
+                                ),
+                              );
+                            },
                           ),
                         ],
                       ),
-                    ),
-                    Consumer<FavoriteProvider>(
-                      builder: (context, favoriteProvider, child) {
-                        final isFavorited =
-                            favoriteProvider.isFavorited(widget.listingId);
-
-                        return GestureDetector(
-                          onTap: () async {
-                            final token = await SecureStorage().getToken();
-                            if (token != null) {
-                              try {
-                                String message = await favoriteProvider
-                                    .toggleFavorite(widget.listingId);
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text(message)));
-                              } catch (error) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('Error: $error')),
-                                );
-                              }
-                            }
-                          },
-                          child: Icon(
-                            isFavorited
-                                ? Icons.favorite
-                                : Icons.favorite_outline,
-                            color: isFavorited
-                                ? const Color(0xffFF0000)
-                                : Colors.black,
-                          ),
-                        );
-                      },
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
+              )
             ],
           ),
         ));
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
   }
 }

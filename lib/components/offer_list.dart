@@ -39,15 +39,18 @@ class _OfferListState extends State<OfferList> {
     return ListTile(
       tileColor: const Color(0xffFFFCA1),
       contentPadding: const EdgeInsets.symmetric(horizontal: 5, vertical: 7),
-      minTileHeight: 50,
-      leading: AspectRatio(
-        aspectRatio: 1,
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(6),
-          child: CachedNetworkImage(
-            imageUrl: widget.listImage,
-            height: 50,
-            fit: BoxFit.cover,
+      minTileHeight: 60,
+      leading: Padding(
+        padding: const EdgeInsets.only(left: 5),
+        child: AspectRatio(
+          aspectRatio: 1,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: CachedNetworkImage(
+              imageUrl: widget.listImage,
+              height: 60,
+              fit: BoxFit.cover,
+            ),
           ),
         ),
       ),

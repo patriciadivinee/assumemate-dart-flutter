@@ -1,4 +1,5 @@
 import 'package:assumemate/format.dart';
+import 'package:assumemate/provider/follow_provider.dart';
 import 'package:flutter/material.dart';
 // import 'package:assumemate/logo/check_splash.dart';
 // import 'package:assumemate/screens/user_auth/create_profile_screen.dart';
@@ -42,7 +43,6 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _signInWithGoogle() async {
     final user = await GoogleSignInApi.login();
     if (user == null) {
-      popUp(context, 'User cancelled');
       return;
     }
 
@@ -76,12 +76,20 @@ class _LoginScreenState extends State<LoginScreen> {
       final response = await apiService.loginUser(token, email, password);
 
       if (response.containsKey('error')) {
+        await GoogleSignInApi.logout();
         popUp(context, response['error']);
       } else {
         await Provider.of<ProfileProvider>(context, listen: false)
             .initializeToken();
         await Provider.of<FavoriteProvider>(context, listen: false)
             .initializeFave();
+        await Provider.of<FollowProvider>(context, listen: false)
+            .initializeFollow();
+
+        final count = await Provider.of<FollowProvider>(context, listen: false)
+            .followingCount;
+
+        print(count);
         // final status = response['is_approved'];
         // final token = response['access_token'];
         Navigator.pushAndRemoveUntil(
@@ -91,6 +99,7 @@ class _LoginScreenState extends State<LoginScreen> {
         );
       }
     } catch (e) {
+      await GoogleSignInApi.logout();
       popUp(context, 'Error occured: $e');
     } finally {
       setState(() {
@@ -273,17 +282,21 @@ class _LoginScreenState extends State<LoginScreen> {
                                   _loginWithPassword();
                                 }
                               },
-                        style: ElevatedButton.styleFrom(
+                        style: ButtonStyle(
                           backgroundColor:
-                              const Color(0xFF4A8AF0), // Custom button color
-                          // padding: const EdgeInsets.all(20),
-                          minimumSize: const Size(double.infinity, 50),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30.0),
+                              WidgetStateProperty.all(const Color(0xff4A8AF0)),
+                          minimumSize: WidgetStateProperty.all(
+                              const Size(double.infinity, 50)),
+                          shape: WidgetStateProperty.all(
+                            RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(30.0),
+                            ),
                           ),
                         ),
                         child: (_isLoading)
-                            ? const Center(
+                            ? const SizedBox(
+                                height: 30,
+                                width: 30,
                                 child: CircularProgressIndicator(
                                   color: Color(0xffFFFCF1),
                                 ),
@@ -332,37 +345,52 @@ class _LoginScreenState extends State<LoginScreen> {
                       const SizedBox(height: 22),
 
                       ElevatedButton.icon(
-                          onPressed: () {
-                            // Navigator.push(
-                            //   context,
-                            //   MaterialPageRoute(
-                            //       builder: (context) => const SignupScreen()),
-                            // );
-                            _signInWithGoogle();
-                          },
-                          icon: const Padding(
-                            padding: EdgeInsets.only(right: 8),
-                            child: FaIcon(
-                              FontAwesomeIcons.google,
-                              color: Colors.white,
-                              size: 25,
+                          onPressed: _isLoading
+                              ? null
+                              : () {
+                                  // Navigator.push(
+                                  //   context,
+                                  //   MaterialPageRoute(
+                                  //       builder: (context) => const SignupScreen()),
+                                  // );
+                                  _signInWithGoogle();
+                                },
+                          icon: _isLoading
+                              ? null
+                              : const Padding(
+                                  padding: EdgeInsets.only(right: 8),
+                                  child: FaIcon(
+                                    FontAwesomeIcons.google,
+                                    color: Colors.white,
+                                    size: 25,
+                                  ),
+                                ),
+                          style: ButtonStyle(
+                            backgroundColor: WidgetStateProperty.all(
+                                const Color(0xffF04F4F)),
+                            minimumSize: WidgetStateProperty.all(
+                                const Size(double.infinity, 50)),
+                            shape: WidgetStateProperty.all(
+                              RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(30.0),
+                              ),
                             ),
                           ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xffF04F4F),
-                            // padding: const EdgeInsets.all(20),
-                            minimumSize: const Size(double.infinity, 50),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(30),
-                            ),
-                          ),
-                          label: const Text(
-                            'Sign in with Google',
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 15,
-                                fontWeight: FontWeight.w500),
-                          )),
+                          label: _isLoading
+                              ? const SizedBox(
+                                  height: 30,
+                                  width: 30,
+                                  child: CircularProgressIndicator(
+                                    color: Color(0xffFFFCF1),
+                                  ),
+                                )
+                              : const Text(
+                                  'Sign in with Google',
+                                  style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w500),
+                                )),
 
                       const SizedBox(height: 16),
 

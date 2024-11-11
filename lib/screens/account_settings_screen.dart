@@ -1,9 +1,13 @@
+import 'dart:convert';
+import 'package:assumemate/screens/user_auth/login_screen.dart';
+import 'package:assumemate/storage/secure_storage.dart';
 import 'package:flutter/material.dart';
-import 'package:assumemate/provider/favorite_provider.dart';
 import 'package:assumemate/screens/user_auth/change_password_screen.dart';
 import 'package:assumemate/service/service.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
+import 'package:http/http.dart' as http;
+import 'package:url_launcher/url_launcher.dart';
 
 class AccontSettingsScreen extends StatelessWidget {
   const AccontSettingsScreen({
@@ -15,6 +19,33 @@ class AccontSettingsScreen extends StatelessWidget {
     final ApiService apiService = ApiService();
     final subtitleStyle = GoogleFonts.poppins();
     // final favoriteProvider = Provider.of<FavoriteProvider>(context);
+    final SecureStorage secureStorage = SecureStorage();
+
+    Future<void> initiateOnboarding() async {
+      final token = await secureStorage.getToken();
+      final String? url = dotenv.env['API_URL'];
+
+      final response = await http.get(
+        Uri.parse('$url/paypal/onboard/'),
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> responseData = json.decode(response.body);
+        final String onboardingUrl = responseData['onboarding_url'];
+
+        if (await canLaunchUrl(Uri.parse(onboardingUrl))) {
+          await launchUrl(Uri.parse(onboardingUrl));
+        } else {
+          throw 'Could not launch $onboardingUrl';
+        }
+      } else {
+        throw 'Failed to start onboarding process.';
+      }
+    }
 
     return Scaffold(
         appBar: AppBar(
@@ -130,14 +161,72 @@ class AccontSettingsScreen extends StatelessWidget {
                         ],
                       ),
                     )),
+                InkWell(
+                    onTap: () {
+                      initiateOnboarding();
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(10),
+                      child: Row(
+                        children: [
+                          const Padding(
+                              padding: EdgeInsets.only(left: 3),
+                              child: Icon(
+                                Icons.paypal_outlined,
+                                color: Color.fromRGBO(74, 138, 240, 1),
+                                size: 36,
+                              )),
+                          const SizedBox(width: 15),
+                          Expanded(
+                            child: RichText(
+                              text: TextSpan(
+                                  style: subtitleStyle,
+                                  children: const <TextSpan>[
+                                    TextSpan(
+                                      text:
+                                          'Link PayPal account\n', // Bold title
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 13,
+                                          color: Colors
+                                              .black // Optional: make the title a bit larger
+                                          ),
+                                    ),
+                                    TextSpan(
+                                      text:
+                                          'Link your PayPal account to receive payments', // Detail
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: Colors.black87,
+                                      ),
+                                    ),
+                                  ]),
+                            ),
+                          ),
+                          Text(
+                            'Unlink',
+                            style: TextStyle(
+                              color: const Color(0xFF4A8AF0),
+                            ),
+                          )
+                        ],
+                      ),
+                    )),
                 const SizedBox(height: 20),
                 ElevatedButton(
                     onPressed: () async {
                       await apiService.sessionExpired();
+                      await GoogleSignInApi.logout();
+
+                      Navigator.pushAndRemoveUntil(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => const LoginScreen()),
+                        (Route<dynamic> route) => false,
+                      );
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor:
-                          const Color(0xFF4A8AF0), // Custom button color
+                      backgroundColor: const Color(0xFF4A8AF0),
                       padding: const EdgeInsets.symmetric(
                           horizontal: 40, vertical: 8),
                       shape: RoundedRectangleBorder(

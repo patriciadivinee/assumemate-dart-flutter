@@ -65,10 +65,13 @@ class _ChatMessageState extends State<ChatMessageScreen> {
 
   Future<void> _getUserType() async {
     _userType = await secureStorage.getUserType();
+    _userId = await secureStorage.getUserId();
+
+    print(_userId);
+    print(_userType);
   }
 
   Future<void> _initializeIsReadWebSocket() async {
-    _userId = await secureStorage.getUserId();
     final token = await secureStorage.getToken();
 
     if (_userId != null) {
@@ -101,7 +104,6 @@ class _ChatMessageState extends State<ChatMessageScreen> {
   }
 
   Future<void> _initializeInboxWebsocket() async {
-    _userId = await secureStorage.getUserId();
     final token = await secureStorage.getToken();
     if (_userId != null) {
       try {
@@ -123,7 +125,6 @@ class _ChatMessageState extends State<ChatMessageScreen> {
   }
 
   Future<void> _initializeWebSocket() async {
-    _userId = await secureStorage.getUserId();
     final token = await secureStorage.getToken();
     if (_userId != null) {
       try {
@@ -303,7 +304,7 @@ class _ChatMessageState extends State<ChatMessageScreen> {
     }
   }
 
-  void _updateOffer(String status) {
+  void _updateOffer(String status) async {
     if (_channel != null) {
       _channel!.sink.add(jsonEncode({
         'type': 'offer_update',
@@ -322,6 +323,12 @@ class _ChatMessageState extends State<ChatMessageScreen> {
       };
 
       _sendInboxUpdate(message, false);
+
+      if (status == 'ACCEPTED') {
+        final response = await apiService.createOrder(offerDetails['offerId']);
+
+        print(response);
+      }
     }
   }
 
@@ -484,7 +491,9 @@ class _ChatMessageState extends State<ChatMessageScreen> {
               InkWell(
                 onTap: () {
                   Navigator.of(context).push(MaterialPageRoute(
-                    builder: (context) => const OtherProfileScreen(),
+                    builder: (context) => OtherProfileScreen(
+                      userId: widget.receiverId,
+                    ),
                   ));
                 },
                 child: CircleAvatar(

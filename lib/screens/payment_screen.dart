@@ -1,7 +1,5 @@
-import 'dart:developer';
 import 'package:flutter/material.dart';
-import 'package:flutter_paypal_payment/flutter_paypal_payment.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:assumemate/screens/waiting_area/paypal.dart';
 
 class PaymentScreen extends StatelessWidget {
   final Function(int) addCoins; // Function to add coins
@@ -12,9 +10,6 @@ class PaymentScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final amounts = [20, 50, 100, 150, 200, 300, 500, 1000, 2000, 3000, 4000];
     final coins = [20, 50, 100, 150, 200, 300, 500, 1000, 2000, 3000, 4000];
-
-    final String? clientId = dotenv.env['PAYPAL_CLIENT_ID'];
-    final String? secretKey = dotenv.env['PAYPAL_SECRET_KEY'];
 
     return Scaffold(
       backgroundColor: Colors.black.withOpacity(0.5),
@@ -67,80 +62,14 @@ class PaymentScreen extends StatelessWidget {
                   return Container(
                     margin: EdgeInsets.symmetric(vertical: 8),
                     child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (BuildContext context) =>
-                                PaypalCheckoutView(
-                              sandboxMode: true,
-                              clientId: clientId,
-                              secretKey: secretKey,
-                              transactions: [
-                                {
-                                  "amount": {
-                                    "total": amounts[index].toString(),
-                                    "currency": "PHP",
-                                    "details": {
-                                      "subtotal": amounts[index].toString(),
-                                      "shipping": '0',
-                                      "shipping_discount": 0,
-                                    },
-                                  },
-                                  "description": "Payment for coins.",
-                                  "item_list": {
-                                    "items": [
-                                      {
-                                        "name": "Coin Purchase",
-                                        "quantity": 1,
-                                        "price": amounts[index].toString(),
-                                        "currency": "PHP"
-                                      }
-                                    ],
-                                  },
-                                  "application_context": {
-                                    "user_action": "PAY_NOW",
-                                  },
-                                }
-                              ],
-                              note: "Thank you for your purchase.",
-                              onSuccess: (Map params) async {
-                                log("Payment Success: $params");
-                                addCoins(coins[
-                                    index]); // Add coins based on the button pressed
+                      onPressed: () async {
+                        double selectedAmount = amounts[index].toDouble();
 
-                                // Show dialog with a message and an "Ok" button
-                                showDialog(
-                                  context: context,
-                                  builder: (BuildContext context) {
-                                    return AlertDialog(
-                                      title: Text('Payment Completed'),
-                                      content: Text(
-                                          'You have received ${coins[index]} coins.'),
-                                      actions: [
-                                        TextButton(
-                                          child: Text('Ok'),
-                                          onPressed: () {
-                                            Navigator.pop(
-                                                context); // Close the dialog
-                                            Navigator.pop(
-                                                context); // Pop the PayPal screen
-                                            Navigator.pop(context);
-                                          },
-                                        ),
-                                      ],
-                                    );
-                                  },
-                                );
-                              },
-                              onError: (error) {
-                                log("Payment Error: $error");
-                                Navigator.pop(context);
-                              },
-                              onCancel: (params) {
-                                log("Payment Cancelled: $params");
-                                Navigator.pop(context);
-                              },
-                            ),
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                PayPalPaymentScreen(amount: selectedAmount),
                           ),
                         );
                       },

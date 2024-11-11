@@ -60,7 +60,7 @@ class WelcomeScreen extends StatelessWidget {
               },
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.all(15),
-                minimumSize: const Size(double.infinity, 40),
+                minimumSize: const Size(double.infinity, 50),
                 backgroundColor: const Color(0xFF4A8AF0),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(30.0),
@@ -90,7 +90,7 @@ class WelcomeScreen extends StatelessWidget {
               },
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.all(15),
-                minimumSize: const Size(double.infinity, 40),
+                minimumSize: const Size(double.infinity, 50),
                 side: const BorderSide(color: Color(0xff4A8AF0), width: 2),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(30.0),

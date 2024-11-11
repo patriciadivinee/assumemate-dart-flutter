@@ -112,20 +112,28 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 ])),
             const SizedBox(height: 30),
             ElevatedButton(
-              onPressed: () {
-                if (_formKey.currentState!.validate()) {
-                  _requestResetPassword();
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF4A8AF0),
-                minimumSize: const Size(double.infinity, 50),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30.0),
+              onPressed: (_isLoading)
+                  ? null
+                  : () {
+                      if (_formKey.currentState!.validate()) {
+                        _requestResetPassword();
+                      }
+                    },
+              style: ButtonStyle(
+                backgroundColor:
+                    WidgetStateProperty.all(const Color(0xff4A8AF0)),
+                minimumSize:
+                    WidgetStateProperty.all(const Size(double.infinity, 50)),
+                shape: WidgetStateProperty.all(
+                  RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30.0),
+                  ),
                 ),
               ),
               child: (_isLoading)
-                  ? const Center(
+                  ? const SizedBox(
+                      height: 30,
+                      width: 30,
                       child: CircularProgressIndicator(
                         color: Color(0xffFFFCF1),
                       ),

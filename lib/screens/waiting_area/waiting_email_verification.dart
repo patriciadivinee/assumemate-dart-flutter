@@ -27,6 +27,7 @@ class _WaitingEmailVerificationState extends State<WaitingEmailVerification> {
   final ApiService apiService = ApiService();
   Timer? _timer;
   int _countdown = 60;
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -82,6 +83,7 @@ class _WaitingEmailVerificationState extends State<WaitingEmailVerification> {
             }
           }
         } else {
+          timer.cancel();
           Navigator.pop(navigatorKey.currentState!.context);
         }
       } catch (e) {
@@ -94,82 +96,118 @@ class _WaitingEmailVerificationState extends State<WaitingEmailVerification> {
 
   void _emailVerify() async {
     String email = widget.email;
-    final response = await apiService.emailVerification(email);
 
-    if (response.containsKey('success')) {
-      popUp(context, 'Verification link has been sent!',
-          align: TextAlign.center);
-    } else {
-      popUp(context, response['error']);
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final response = await apiService.emailVerification(email);
+      if (response.containsKey('success')) {
+        popUp(context, 'Verification link has been sent!',
+            align: TextAlign.center);
+        setState(() {
+          _countdown = 60;
+          _startCountdown();
+        });
+      } else {
+        popUp(context, response['error']);
+      }
+    } catch (e) {
+      popUp(context, 'An error occured: $e');
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
     waitForVerification();
-    return Scaffold(
-      body: Align(
-        alignment: Alignment.center,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(50),
-                    color: const Color(0xff4A8AF0)),
-                padding: const EdgeInsets.all(8),
-                child: const Icon(
-                  Icons.mark_email_read,
-                  size: 60,
-                  color: Color(0xffFFFEF7),
-                ),
-              ),
-              const SizedBox(height: 15),
-              const Text(
-                'Verify your email address',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 17),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 25),
-                child: Text(
-                  'We\'ve sent an email to ${widget.email} to verify your email address and activate your account. The link in the email will expire in 24 hours.',
-                  style: const TextStyle(
-                      fontSize: 14, fontWeight: FontWeight.w500),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-              const SizedBox(height: 17),
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 25),
-                child: Text(
-                  'If you didn\'t recieved the email, please click the button below.',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-              const SizedBox(height: 24),
-              ElevatedButton(
-                  onPressed: (_countdown == 0) ? _emailVerify : null,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xff4A8AF0),
-                    padding: const EdgeInsets.all(18),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30.0),
-                    ),
+    return PopScope(
+      canPop: true,
+      onPopInvoked: (didPop) async {
+        _timer?.cancel();
+      },
+      child: Scaffold(
+        body: Align(
+          alignment: Alignment.center,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(50),
+                      color: const Color(0xff4A8AF0)),
+                  padding: const EdgeInsets.all(8),
+                  child: const Icon(
+                    Icons.mark_email_read,
+                    size: 60,
+                    color: Color(0xffFFFEF7),
                   ),
+                ),
+                const SizedBox(height: 15),
+                const Text(
+                  'Verify your email address',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 17),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 25),
                   child: Text(
-                    (_countdown == 0)
-                        ? 'Resend verification email'
-                        : 'Resend in $_countdown seconds',
+                    'We\'ve sent an email to ${widget.email} to verify your email address and activate your account. The link in the email will expire in 24 hours.',
                     style: const TextStyle(
-                        color: Color(0xffFFFEF7),
-                        fontWeight: FontWeight.bold,
-                        fontSize: 17),
-                  )),
-            ],
+                        fontSize: 14, fontWeight: FontWeight.w500),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                const SizedBox(height: 17),
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 25),
+                  child: Text(
+                    'If you didn\'t recieved the email, please click the button below.',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton(
+                    onPressed:
+                        (_countdown == 0 && !_isLoading) ? _emailVerify : null,
+                    style: ButtonStyle(
+                      backgroundColor: WidgetStateProperty.all(_countdown != 0
+                          ? Colors.grey.shade400
+                          : const Color(0xff4A8AF0)),
+                      minimumSize: WidgetStateProperty.all(
+                          const Size(double.infinity, 50)),
+                      shape: WidgetStateProperty.all(
+                        RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30.0),
+                        ),
+                      ),
+                    ),
+                    child: _isLoading
+                        ? const SizedBox(
+                            height: 30,
+                            width: 30,
+                            child: CircularProgressIndicator(
+                              color: Color(0xffFFFCF1),
+                            ),
+                          )
+                        : Text(
+                            (_countdown == 0)
+                                ? 'Resend verification email'
+                                : 'Resend in $_countdown seconds',
+                            style: const TextStyle(
+                                color: Color(0xffFFFEF7),
+                                fontWeight: FontWeight.bold,
+                                fontSize: 17),
+                          )),
+              ],
+            ),
           ),
         ),
       ),
