@@ -31,6 +31,12 @@ dependencies:
   flutter:
     sdk: flutter
 
+  #jericho
+  flutter_local_notifications: ^18.0.0
+  firebase_core: ^3.7.0
+  firebase_messaging: ^15.1.4
+  firebase_auth: ^5.0.0
+  shared_preferences: ^2.0.18
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -72,10 +78,13 @@ dependencies:
   flutter_map: ^7.0.2
   latlong2: ^0.9.1
   flutter_speed_dial: ^7.0.0
+  onesignal_flutter: ^5.2.7
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  # flutter_launcher_icons: ^0.14.1
+
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
@@ -84,9 +93,14 @@ dev_dependencies:
   # rules and activating additional ones.
   flutter_lints: ^3.0.0
 
+# flutter_launcher_icons:
+#   android: true
+#   ios: true
+#   image_path: "assets/images/logo-white.png"
+
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
-
+    
 # The following section is specific to Flutter packages.
 flutter:
 

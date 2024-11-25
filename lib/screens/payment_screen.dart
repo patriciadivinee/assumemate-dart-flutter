@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:assumemate/screens/waiting_area/paypal.dart';
+import 'package:assumemate/service/paypal_topup.dart';
 
 class PaymentScreen extends StatelessWidget {
   final Function(int) addCoins; // Function to add coins

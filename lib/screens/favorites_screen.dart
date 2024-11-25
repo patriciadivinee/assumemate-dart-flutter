@@ -5,7 +5,6 @@ import 'dart:convert';
 import 'package:assumemate/storage/secure_storage.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
-import 'item_detail_screen.dart'; // Import the ItemDetailScreen
 
 class FavoritesScreen extends StatefulWidget {
   const FavoritesScreen({super.key});

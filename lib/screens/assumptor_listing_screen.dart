@@ -1,4 +1,9 @@
+import 'package:assumemate/components/listing_item.dart';
 import 'package:assumemate/logo/pop_up.dart';
+import 'package:assumemate/storage/secure_storage.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import 'package:assumemate/service/service.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -11,28 +16,99 @@ class AssumptorListingScreen extends StatefulWidget {
 }
 
 class _AssumptorListingScreenState extends State<AssumptorListingScreen> {
-  List<Map<String, dynamic>> _listings = [];
-  final ApiService apiService = ApiService();
+  // List<Map<String, dynamic>> _listings = [];
+  late Future<List<dynamic>> _activeListings;
+  late Future<List<dynamic>> _reservedListings;
+  late Future<List<dynamic>> _archivedListings;
 
-  Future<void> _getListings() async {
-    try {
-      final response = await apiService.assumptorListings();
-      if (response.containsKey('listings')) {
-        setState(() {
-          _listings = List<Map<String, dynamic>>.from(response['listings']);
-        });
-        print('yawa');
-        print(_listings);
-      }
-    } catch (e) {
-      popUp(context, 'Error: $e');
+  final ApiService apiService = ApiService();
+  final SecureStorage secureStorage = SecureStorage();
+
+  Future<List<dynamic>> fetchUserListings(String status) async {
+    final token = await secureStorage.getToken();
+
+    final String? baseURL = dotenv.env['API_URL'];
+
+    final response = await http.get(
+      Uri.parse('$baseURL/assumptor/all/$status/listings/'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> data = json.decode(response.body);
+      print(data);
+      return data['listings'];
+    } else {
+      // Return an empty list and show a message instead of throwing an error
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to load $status listings'),
+          duration: Duration(seconds: 3),
+        ),
+      );
+      return []; // Return an empty list in case of failure
     }
+  }
+
+  Widget buildListingGrid(Future<List<dynamic>> futureListings) {
+    return FutureBuilder<List<dynamic>>(
+      future: futureListings,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        } else if (snapshot.hasError) {
+          return Center(
+              child: Text('Failed to load listings: ${snapshot.error}'));
+        } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return const Center(child: Text('No listings available'));
+        } else {
+          return GridView.builder(
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 5,
+              mainAxisSpacing: 5,
+              mainAxisExtent: MediaQuery.of(context).size.width * .50,
+            ),
+            physics: const BouncingScrollPhysics(),
+            itemCount: snapshot.data!.length,
+            itemBuilder: (context, index) {
+              var listing = snapshot.data![index];
+              var content = listing['list_content'];
+
+              String title = 'No title';
+
+              if (content['category'] == 'Real Estate') {
+                // title = content['title'];
+                title = 'No title';
+              } else {
+                title =
+                    '${content['make']} ${content['model']} (${content['year']}) - ${content['transmission']}';
+              }
+
+              return ListingItem(
+                title: title,
+                imageUrl: content['images'],
+                description: content['description'] ?? 'No Description',
+                listingId: listing['list_id'].toString(),
+                assumptorId: listing['user_id'].toString(),
+                price: content['price'].toString(),
+              );
+            },
+          );
+        }
+      },
+    );
   }
 
   @override
   void initState() {
+    _activeListings = fetchUserListings('ACTIVE');
+    _reservedListings = fetchUserListings('RESERVED');
+    _archivedListings = fetchUserListings('ARCHIVED');
     super.initState();
-    _getListings();
   }
 
   @override
@@ -41,60 +117,63 @@ class _AssumptorListingScreenState extends State<AssumptorListingScreen> {
         GoogleFonts.poppins(textStyle: const TextStyle(fontSize: 13));
 
     return DefaultTabController(
-        length: 3,
-        child: Scaffold(
-            appBar: AppBar(
-              leading: IconButton(
-                splashColor: Colors.transparent,
-                icon: const Icon(
-                  Icons.arrow_back_ios,
-                ),
-                onPressed: () {
-                  Navigator.pop(context);
-                },
+      length: 3,
+      child: Scaffold(
+          appBar: AppBar(
+            leading: IconButton(
+              splashColor: Colors.transparent,
+              icon: const Icon(
+                Icons.arrow_back_ios,
               ),
-              title: const Text('Listings',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              backgroundColor: const Color(0xffFFFCF1),
-              bottom: TabBar(
-                labelColor: Colors.black,
-                labelStyle: const TextStyle(fontWeight: FontWeight.bold),
-                indicatorSize: TabBarIndicatorSize.tab,
-                indicator: UnderlineTabIndicator(
-                  borderSide: const BorderSide(
-                    width: 4,
-                    color: Color(0xff4A8AF0),
-                  ),
-                  insets: const EdgeInsets.symmetric(
-                    horizontal: (30 - 4) / 2,
-                  ),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                tabs: [
-                  Tab(
-                      child: Text(
-                    'Active',
-                    style: tabTextStyle,
-                  )),
-                  Tab(
-                      child: Text(
-                    'Pending',
-                    style: tabTextStyle,
-                  )),
-                  Tab(
-                      child: Text(
-                    'Archive',
-                    style: tabTextStyle,
-                  )),
-                ],
-              ),
+              onPressed: () {
+                Navigator.pop(context);
+              },
             ),
-            body: const TabBarView(
-              children: [
-                Icon(Icons.directions_car),
-                Icon(Icons.directions_transit),
-                Icon(Icons.directions_bike),
+            title: const Text('Listings',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            backgroundColor: const Color(0xffFFFCF1),
+            bottom: TabBar(
+              labelColor: Colors.black,
+              labelStyle: const TextStyle(fontWeight: FontWeight.bold),
+              indicatorSize: TabBarIndicatorSize.tab,
+              indicator: UnderlineTabIndicator(
+                borderSide: const BorderSide(
+                  width: 4,
+                  color: Color(0xff4A8AF0),
+                ),
+                insets: const EdgeInsets.symmetric(
+                  horizontal: (30 - 4) / 2,
+                ),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              tabs: [
+                Tab(
+                    child: Text(
+                  'Active',
+                  style: tabTextStyle,
+                )),
+                Tab(
+                    child: Text(
+                  'Reserved',
+                  style: tabTextStyle,
+                )),
+                Tab(
+                    child: Text(
+                  'Archive',
+                  style: tabTextStyle,
+                )),
               ],
-            )));
+            ),
+          ),
+          body: Container(
+              padding: const EdgeInsets.all(10),
+              child: TabBarView(
+                children: [
+                  buildListingGrid(_activeListings),
+                  buildListingGrid(_reservedListings),
+                  buildListingGrid(_archivedListings),
+                ],
+              ))),
+    );
   }
 }

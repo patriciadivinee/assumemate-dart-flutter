@@ -31,7 +31,7 @@ class FavoriteProvider with ChangeNotifier {
   // Method to fetch favorites from the server
   Future<void> fetchFavorites() async {
     final response = await http.get(
-      Uri.parse('${dotenv.env['API_URL']}/favorites/mark'),
+      Uri.parse('${dotenv.env['API_URL']}/favorites/'),
       headers: {
         'Authorization': 'Bearer $_token',
         'Content-Type': 'application/json',

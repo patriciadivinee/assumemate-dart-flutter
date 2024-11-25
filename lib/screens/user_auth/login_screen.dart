@@ -34,6 +34,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final ApiService apiService = ApiService();
   late bool users;
   bool _isLoading = false;
+  bool _isGoogleLoading = false;
 
   void clearControllers() {
     _emailController.clear();
@@ -68,9 +69,15 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _loginUser(String? token, String? email, String? password) async {
-    setState(() {
-      _isLoading = true;
-    });
+    if (token != null) {
+      setState(() {
+        _isGoogleLoading = true;
+      });
+    } else {
+      setState(() {
+        _isLoading = true;
+      });
+    }
 
     try {
       final response = await apiService.loginUser(token, email, password);
@@ -104,6 +111,7 @@ class _LoginScreenState extends State<LoginScreen> {
     } finally {
       setState(() {
         _isLoading = false;
+        _isGoogleLoading = false;
       });
     }
   }
@@ -274,7 +282,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                       // Login Button
                       ElevatedButton(
-                        onPressed: _isLoading
+                        onPressed: _isLoading || _isGoogleLoading
                             ? null
                             : () {
                                 if (_formKey.currentState!.validate()) {
@@ -345,7 +353,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       const SizedBox(height: 22),
 
                       ElevatedButton.icon(
-                          onPressed: _isLoading
+                          onPressed: _isLoading || _isGoogleLoading
                               ? null
                               : () {
                                   // Navigator.push(
@@ -355,7 +363,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   // );
                                   _signInWithGoogle();
                                 },
-                          icon: _isLoading
+                          icon: _isGoogleLoading
                               ? null
                               : const Padding(
                                   padding: EdgeInsets.only(right: 8),
@@ -376,7 +384,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                             ),
                           ),
-                          label: _isLoading
+                          label: _isGoogleLoading
                               ? const SizedBox(
                                   height: 30,
                                   width: 30,

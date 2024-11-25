@@ -29,6 +29,7 @@ class _OtherProfileScreenState extends State<OtherProfileScreen> {
   int _followerCount = 0;
   late String profileError;
   bool _isLoading = false;
+  bool _isActive = true;
 
   final SecureStorage secureStorage = SecureStorage();
   final ApiService apiService = ApiService();
@@ -47,6 +48,7 @@ class _OtherProfileScreenState extends State<OtherProfileScreen> {
         setState(() {
           _userProfile = response['user_profile'];
           _followerCount = _userProfile['followers'];
+          _isActive = response['isActive'];
           profileError = '';
         });
         print(_userProfile);
@@ -101,6 +103,89 @@ class _OtherProfileScreenState extends State<OtherProfileScreen> {
           fontSize: 20,
         ),
       ));
+    }
+
+    if (!_isActive) {
+      return Scaffold(
+          body: SafeArea(
+              child: Column(
+        children: [
+          Stack(
+            children: [
+              Container(
+                color: Colors.grey,
+                child: Image.network(
+                  'https://pbs.twimg.com/media/GQ6Tse_aQAABFI2?format=jpg&name=large',
+                  height: 250,
+                  fit: BoxFit.cover, // Ensure the image covers the entire area
+                ),
+              ),
+              Positioned(
+                bottom: 15,
+                left: 10,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    const CircleAvatar(
+                      backgroundImage:
+                          AssetImage('assets/images/no-profile.jpg'),
+                      radius: 40,
+                    ),
+                    const SizedBox(
+                      width: 10,
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            '${_userProfile['user_prof_fname']} ${_userProfile['user_prof_lname']}',
+                            style: const TextStyle(
+                              color: Color(0xffFFFFFF),
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18,
+                            ),
+                          ),
+                          Text(
+                            '0 Follower',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xffFFFFFF),
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  ],
+                ),
+              ),
+              Positioned(
+                top: 10,
+                left: 10,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    IconButton(
+                        onPressed: Navigator.of(context).pop,
+                        icon: const Icon(
+                          Icons.arrow_back_ios,
+                          color: Color(0xffFFFCF1),
+                          size: 24,
+                        )),
+                  ],
+                ),
+              )
+            ],
+          ),
+          const Expanded(
+              child: Center(
+            child: Text('This user has deactivated'),
+          ))
+        ],
+      )));
     }
 
     return Scaffold(
@@ -344,7 +429,7 @@ class _OtherProfileScreenState extends State<OtherProfileScreen> {
                       if (listing['list_content']['category'] == "Cars" ||
                           listing['list_content']['category'] == "Motorcycle") {
                         title =
-                            '${listing['list_content']['make'] ?? 'Unknown make'} (${listing['list_content']['model'] ?? 'Unknown model'})';
+                            '${listing['list_content']['model'] ?? 'Unknown make'} ${listing['list_content']['make'] ?? 'Unknown model'} ${listing['list_content']['year'] ?? 'Unknown year'}';
                       } else if (listing['list_content']['category'] ==
                           "Real Estate") {
                         title = listing['list_content']['title'] ?? 'No Title';

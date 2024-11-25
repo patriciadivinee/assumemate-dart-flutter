@@ -285,7 +285,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                                 children: [
                                   Expanded(
                                     child: Text(
-                                      'Title: ${listingDetail?.make ?? "Loading..."} (${listingDetail?.model ?? "Unknown model"}) - ${listingDetail?.transmission ?? "Unknow transmission"}',
+                                      'Title: ${listingDetail?.make ?? "Loading..."} (${listingDetail?.model ?? "Unknown model"}) - ${listingDetail?.transmission ?? "Unknown transmission"}',
                                       style: const TextStyle(
                                         color: Colors.black,
                                         fontWeight: FontWeight.w900,
@@ -658,13 +658,29 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                         size: 24,
                       ),
                     ),
-                    IconButton(
-                      onPressed: () {},
-                      icon: const Icon(
-                        Icons.more_vert,
-                        color: Color(0xffFFFCF1),
-                        size: 30,
-                      ),
+                    PopupMenuButton<int>(
+                      color: const Color(0xffFCFCFC),
+                      icon:
+                          const Icon(Icons.more_vert, color: Color(0xff4A8AF0)),
+                      iconSize: 26,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 0),
+                      itemBuilder: (context) => [
+                        const PopupMenuItem(
+                            height: 25,
+                            child: Row(children: [
+                              Expanded(
+                                child: Text(
+                                  'Report',
+                                  style: TextStyle(fontSize: 14),
+                                ),
+                              ),
+                              Icon(
+                                Icons.flag_outlined,
+                                color: Color(0xffFF0000),
+                              ),
+                            ]))
+                      ],
                     ),
                   ],
                 ),
@@ -934,7 +950,7 @@ class ListingDetail {
       floorArea: content['floorArea']?.toString(),
       address: content['address']?.toString() ?? 'Unknown Location',
       //make: content['make:']?.toString() ?? 'Unknown make',
-      make: content['make:']?.toString() ?? 'Unknown make',
+      make: content['make']?.toString() ?? 'Unknown make',
       model: content['model']?.toString() ?? 'Unknown model',
       transmission:
           content['transmission']?.toString() ?? 'Unknown transmission',
@@ -1129,15 +1145,15 @@ Widget buildSuggestionsList(Future<List<dynamic>> futureListings) {
               var content = listing['list_content'];
               var title;
 
-              // Set the title based on the category
               if (content['category'] == "Car" ||
                   content['category'] == "Motorcycle") {
                 title =
-                    '${content['make:'] ?? 'Unknown make'} (${content['model'] ?? 'Unknown model'})';
+                    '${content['model'] ?? 'Unknown model'} ${content['make'] ?? 'Unknown make'} ${content['year'] ?? 'Unknown year'}';
               } else if (content['category'] == "Real Estate") {
                 title = content['title'] ?? 'No Title';
               } else {
-                title = content['title'] ?? 'No Title';
+                title = content['title'] ??
+                    'No Title'; // Default case if category doesn't match
               }
 
               return ListingItem(

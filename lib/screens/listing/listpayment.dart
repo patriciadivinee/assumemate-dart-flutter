@@ -24,6 +24,15 @@ class PaymentService {
       try {
         final userId = int.parse(userIdString); // Convert to int
 
+        // Check the current status of the listing
+        final listingStatus =
+            await apiService1.fetchListingStatus(listingId, token);
+
+        if (listingStatus == 'ACTIVE') {
+          _showMessage(context, 'Listing is already active.');
+          return;
+        }
+
         // Deduct the specified amount from the user's wallet
         await apiService1.deductCoins(listingId, userId, amountToPay, token);
 
@@ -39,7 +48,6 @@ class PaymentService {
     }
   }
 
-// Function to update the listing status
   // Show the confirmation dialog
   Future<bool> _showConfirmationDialog(
       BuildContext context, double amount) async {

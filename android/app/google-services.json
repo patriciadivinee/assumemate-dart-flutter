@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "723928324731",
+    "project_id": "messagetrial1",
+    "storage_bucket": "messagetrial1.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:723928324731:android:26e907669c88e6eadce0de",
+        "android_client_info": {
+          "package_name": "com.example.assumemate"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAjM8dRt4m1pJzrU3_hjxteG72SYHc7xvU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:723928324731:android:b91b5b9bd53c586adce0de",
+        "android_client_info": {
+          "package_name": "com.example.messagetrial"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAjM8dRt4m1pJzrU3_hjxteG72SYHc7xvU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

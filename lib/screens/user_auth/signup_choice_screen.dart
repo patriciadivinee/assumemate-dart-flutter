@@ -27,13 +27,9 @@ class _SignupScreenState extends State<SignupScreen> {
   final TextEditingController _emailController = TextEditingController();
   final ApiService apiService = ApiService();
   bool _isLoading = false;
-
-  static final _clientIdWeb = dotenv.env['CLIENT_ID'];
-  // static final _googleSignIn = GoogleSignIn(clientId: _clientIdWeb);
-  // static Future<GoogleSignInAccount?> login() => _googleSignIn.signIn();
+  bool _isGoogleLoading = false;
 
   Future<void> signUpWithGoogle() async {
-    print(_clientIdWeb);
     final user = await GoogleSignInApi.login();
     if (user == null) {
       return;
@@ -41,17 +37,12 @@ class _SignupScreenState extends State<SignupScreen> {
 
     final googleAuth = await user.authentication;
 
-    final String googleId = user.id;
-    final String email = user.email;
-
-    print(googleAuth.idToken!);
-
     _checkEmail(googleAuth.idToken!);
   }
 
   void _checkEmail(String token) async {
     setState(() {
-      _isLoading = true;
+      _isGoogleLoading = true;
     });
 
     try {
@@ -67,11 +58,15 @@ class _SignupScreenState extends State<SignupScreen> {
                   email: response['email'], googleId: response['google_id'])),
         );
       } else {
+        await GoogleSignInApi.logout();
         popUp(context, response['error']);
       }
+    } catch (e) {
+      await GoogleSignInApi.logout();
+      popUp(context, 'An error occured: $e');
     } finally {
       setState(() {
-        _isLoading = false;
+        _isGoogleLoading = false;
       });
     }
   }
@@ -195,7 +190,7 @@ class _SignupScreenState extends State<SignupScreen> {
                     ),
                     SizedBox(height: 30),
                     ElevatedButton(
-                      onPressed: _isLoading
+                      onPressed: _isLoading || _isGoogleLoading
                           ? null
                           : () {
                               if (_formKey.currentState!.validate()) {
@@ -261,12 +256,12 @@ class _SignupScreenState extends State<SignupScreen> {
                     ]),
                     const SizedBox(height: 22),
                     ElevatedButton.icon(
-                        onPressed: _isLoading
+                        onPressed: _isGoogleLoading || _isLoading
                             ? null
                             : () {
                                 signUpWithGoogle();
                               },
-                        icon: _isLoading
+                        icon: _isGoogleLoading
                             ? null
                             : const Padding(
                                 padding: EdgeInsets.only(right: 8),
@@ -287,7 +282,7 @@ class _SignupScreenState extends State<SignupScreen> {
                             ),
                           ),
                         ),
-                        label: _isLoading
+                        label: _isGoogleLoading
                             ? const SizedBox(
                                 height: 30,
                                 width: 30,

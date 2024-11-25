@@ -50,24 +50,8 @@ class _GoogleCreateProfileScreenState extends State<GoogleCreateProfileScreen> {
   String? _pictureError;
 
   bool _isLoading = false;
-  Uint8List? _imageBytes;
 
   final SecureStorage secureStorage = SecureStorage();
-
-  Future<void> _pickImageWeb(String type) async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.image,
-    );
-
-    if (result != null) {
-      Uint8List? fileBytes = result.files.first.bytes;
-      setState(() {
-        if (type == 'validID') {
-          _imageBytes = fileBytes;
-        }
-      });
-    }
-  }
 
   void _register() async {
     setState(() {

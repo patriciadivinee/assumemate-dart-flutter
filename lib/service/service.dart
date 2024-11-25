@@ -1,12 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
-import 'package:assumemate/logo/welcome.dart';
-import 'package:assumemate/main.dart';
 import 'package:assumemate/storage/secure_storage.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
@@ -119,14 +117,9 @@ class ApiService {
 
       if (response.statusCode == 201) {
         final responseData = jsonDecode(response.body);
-        String token = responseData['access'] ?? '';
-        String refreshToken = responseData['refresh'] ?? '';
-        await secureStorage.storeToken(token);
-        await secureStorage.storeRefreshToken(refreshToken);
-
         final user = responseData['user'];
 
-        String userId = responseData['id'] ?? '';
+        String userId = user['id'].toString();
         await secureStorage.storeUserId(userId);
 
         if (user['is_assumptor'] == true) {
@@ -146,7 +139,7 @@ class ApiService {
           'user_prof_valid_id': validIDBase64,
           'user_prof_pic': picBase64,
         };
-
+        print(user['id']);
         try {
           final profile = await http.post(
             profAPI,
@@ -157,6 +150,11 @@ class ApiService {
           );
           if (profile.statusCode == 201) {
             final profileDetail = jsonDecode(profile.body);
+
+            String token = profileDetail['access'] ?? '';
+            String refreshToken = profileDetail['refresh'] ?? '';
+            await secureStorage.storeToken(token);
+            await secureStorage.storeRefreshToken(refreshToken);
             await secureStorage.storeApplicationStatus('PENDING');
             return {'profile': profileDetail, 'credential': responseData};
           } else {
@@ -236,6 +234,12 @@ class ApiService {
             await secureStorage.storeUserType('assumee');
           }
         }
+        // Save FCM token after login
+        String? fcmToken = await FirebaseMessaging.instance.getToken();
+        if (fcmToken != null) {
+          // Send FCM token to the backend for saving
+          await saveFcmToken(fcmToken);
+        }
         return {
           'access_token': responseData['access'],
           'is_approved': responseData['user']['is_approved']
@@ -248,6 +252,92 @@ class ApiService {
       }
     } catch (e) {
       return {'error': e.toString()};
+    }
+  }
+
+  Future<void> removeFcmToken(String fcmToken) async {
+    final userId = await secureStorage.getUserId(); // Assuming user ID is saved
+
+    // Check if userId and fcmToken are available
+    if (userId == null || userId.isEmpty) {
+      print("Error: User ID not found in storage.");
+      return;
+    }
+
+    if (fcmToken.isEmpty) {
+      print("Error: FCM Token is empty.");
+      return;
+    }
+
+    final apiUrl = Uri.parse('$baseURL/remove_fcm_token/');
+
+    final Map<String, dynamic> fcmData = {
+      'user_id': userId,
+      'fcm_token': fcmToken,
+    };
+
+    try {
+      print("Removing FCM token from backend: $fcmData");
+
+      final response = await http.post(
+        apiUrl,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: jsonEncode(fcmData),
+      );
+
+      if (response.statusCode == 200) {
+        print("FCM Token removed successfully!");
+      } else {
+        print(
+            "Failed to remove FCM Token. Status code: ${response.statusCode}");
+        print("Response body: ${response.body}");
+      }
+    } catch (e) {
+      print("Error removing FCM Token: $e");
+    }
+  }
+
+  Future<void> saveFcmToken(String fcmToken) async {
+    final userId = await secureStorage.getUserId(); // Assuming user ID is saved
+
+    // Check if userId and fcmToken are available
+    if (userId == null || userId.isEmpty) {
+      print("Error: User ID not found in storage.");
+      return;
+    }
+    if (fcmToken.isEmpty) {
+      print("Error: FCM Token is empty.");
+      return;
+    }
+
+    final apiUrl = Uri.parse('$baseURL/save_fcm_token/');
+
+    final Map<String, dynamic> fcmData = {
+      'user_id': userId,
+      'fcm_token': fcmToken,
+    };
+
+    try {
+      print("Sending FCM token to backend: $fcmData");
+
+      final response = await http.post(
+        apiUrl,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: jsonEncode(fcmData),
+      );
+
+      if (response.statusCode == 200) {
+        print("FCM Token saved successfully!");
+      } else {
+        print("Failed to save FCM Token. Status code: ${response.statusCode}");
+        print("Response body: ${response.body}");
+      }
+    } catch (e) {
+      print("Error saving FCM Token: $e");
     }
   }
 
@@ -279,6 +369,54 @@ class ApiService {
       }
     } catch (e) {
       print('Error refreshing token: $e');
+    }
+  }
+
+  Future<Map<String, dynamic>> viewInfoApplication() async {
+    final apiUrl = Uri.parse('$baseURL/view/user/application/');
+    final token = await secureStorage.getToken();
+
+    try {
+      final response = await http.get(
+        apiUrl,
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
+      );
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {'error': 'An error occured: $e'};
+    }
+  }
+
+  Future<Map<String, dynamic>> updateApplicationDetails(
+      Map<String, dynamic> profileData) async {
+    final apiUrl = Uri.parse('$baseURL/update/user/application/');
+    final token = await secureStorage.getToken();
+
+    try {
+      final response = await http.put(
+        apiUrl,
+        headers: {
+          "Content-Type": "application/json; charset=UTF-8",
+          "Authorization": "Bearer $token",
+        },
+        body: jsonEncode(profileData),
+      );
+
+      if (response.statusCode == 200) {
+        final decoded = jsonDecode(response.body);
+        await secureStorage.storeApplicationStatus(decoded['status']);
+        return {
+          'success': 'Profile update successfully',
+          'status': decoded['status']
+        };
+      } else {
+        return {'error': 'Failed to update profile'};
+      }
+    } catch (e) {
+      return {'error': 'An error occured: $e'};
     }
   }
 
@@ -415,6 +553,30 @@ class ApiService {
       }
     } catch (e) {
       return {'error': 'An error ocuured: $e'};
+    }
+  }
+
+  Future<Map<String, dynamic>> cancelOffer(
+      String offerId, String status) async {
+    final apiUrl = Uri.parse('$baseURL/cancel/offer/');
+    final token = await secureStorage.getToken();
+
+    final Map<String, dynamic> offer = {'offer_id': offerId, 'status': status};
+
+    try {
+      final response = await http.put(
+        apiUrl,
+        headers: {
+          "Content-Type": "application/json; charset=UTF-8",
+          "Authorization": "Bearer $token",
+        },
+        body: jsonEncode(offer),
+      );
+
+      final decodedRes = jsonDecode(response.body);
+      return decodedRes;
+    } catch (e) {
+      return {'error': 'An error occured: $e'};
     }
   }
 
@@ -783,6 +945,31 @@ class ApiService {
     }
   }
 
+  Future<Map<String, dynamic>> deactivate() async {
+    final apiUrl = Uri.parse('$baseURL/deactivate/');
+    final token = await secureStorage.getToken();
+
+    try {
+      final response = await http.get(
+        apiUrl,
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
+      );
+
+      final decodedResponse = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        return decodedResponse;
+      } else {
+        return decodedResponse;
+      }
+    } catch (e) {
+      return {'error': 'An error occured: $e'};
+    }
+  }
+
   Future<Map<String, dynamic>> getFollowers() async {
     final apiUrl = Uri.parse('$baseURL/follower/list/');
     final token = await secureStorage.getToken();
@@ -808,7 +995,7 @@ class ApiService {
   }
 
   Future<Map<String, dynamic>> createOrder(String offerId) async {
-    final apiUrl = Uri.parse('$baseURL/paypal/create/order/');
+    final apiUrl = Uri.parse('$baseURL/create/order/');
     final token = await secureStorage.getToken();
 
     final Map<String, dynamic> data = {'offer_id': offerId};
@@ -820,6 +1007,44 @@ class ApiService {
             "Authorization": "Bearer $token",
           },
           body: jsonEncode(data));
+
+      return jsonDecode(response.body);
+    } catch (e) {
+      return ({'error': 'An error occured: $e'});
+    }
+  }
+
+  Future<Map<String, dynamic>> cancelOrder(String orderId) async {
+    final apiUrl = Uri.parse('$baseURL/cancel/order/$orderId');
+    final token = await secureStorage.getToken();
+
+    try {
+      final response = await http.get(
+        apiUrl,
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
+      );
+
+      return jsonDecode(response.body);
+    } catch (e) {
+      return ({'error': 'An error occured: $e'});
+    }
+  }
+
+  Future<Map<String, dynamic>> viewOrder(String orderId) async {
+    final apiUrl = Uri.parse('$baseURL/view/order/$orderId');
+    final token = await secureStorage.getToken();
+
+    try {
+      final response = await http.get(
+        apiUrl,
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
+      );
 
       return jsonDecode(response.body);
     } catch (e) {
@@ -860,6 +1085,25 @@ class ApiService {
     if (response.statusCode != 200) {
       throw Exception(
           'Failed to deduct coins: ${response.statusCode} - ${response.body}');
+    }
+  }
+
+  Future<String> fetchListingStatus(String listingId, String token) async {
+    final response = await http.get(
+      Uri.parse('$baseURL/listingstats/$listingId/'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      return data[
+          'list_status']; // Ensure 'list_status' exists in your response
+    } else {
+      throw Exception(
+          'Failed to fetch listing status: ${response.statusCode} - ${response.body}');
     }
   }
 

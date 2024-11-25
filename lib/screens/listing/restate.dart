@@ -7,6 +7,7 @@ import 'package:assumemate/storage/secure_storage.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter/services.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:dropdown_button2/dropdown_button2.dart';
 import 'db_helper.dart'; // Assuming this is your database helper
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
@@ -46,7 +47,8 @@ class _Restate extends State<Restate> {
   );
 
   final List<String> years =
-      List.generate(30, (index) => (1995 + index).toString()).reversed.toList();
+      List.generate(30, (index) => (DateTime.now().year - index).toString())
+          .toList();
   String? selectedYear,
       selectedBedrooms,
       selectedBathrooms,
@@ -88,6 +90,26 @@ class _Restate extends State<Restate> {
     downPaymentController.dispose();
     numberOfMonthsPaidController.dispose();
     super.dispose();
+  }
+
+  void _showAlert(String message) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Validation Error'),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the dialog
+              },
+              child: Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   void _formatAndSetText(String value, TextEditingController controller) {
@@ -203,13 +225,13 @@ class _Restate extends State<Restate> {
       children: [
         OutlinedButton(
           style: OutlinedButton.styleFrom(
-            side: BorderSide(color: Colors.blueAccent, width: 1.5),
+            side: const BorderSide(color: Colors.blueAccent, width: 1.5),
           ),
           onPressed: _pickAndUploadImages,
-          child:
-              Text('Select Photos', style: TextStyle(color: Colors.blueAccent)),
+          child: const Text('Select Photos',
+              style: TextStyle(color: Colors.blueAccent)),
         ),
-        SizedBox(height: 10),
+        const SizedBox(height: 10),
         Wrap(
           spacing: 8,
           runSpacing: 8,
@@ -231,7 +253,7 @@ class _Restate extends State<Restate> {
                           borderRadius: BorderRadius.circular(8),
                           color: Colors.grey[300],
                         ),
-                        child: Center(child: CircularProgressIndicator()),
+                        child: const Center(child: CircularProgressIndicator()),
                       )
                     : Container(
                         width: 100,
@@ -249,7 +271,7 @@ class _Restate extends State<Restate> {
                       ),
                 if (!isProcessing)
                   IconButton(
-                    icon: Icon(Icons.remove_circle, color: Colors.red),
+                    icon: const Icon(Icons.remove_circle, color: Colors.red),
                     onPressed: () async {
                       final indexToRemove = _imageFiles!.indexOf(file);
 
@@ -283,9 +305,9 @@ class _Restate extends State<Restate> {
             );
           }).toList(),
         ),
-        SizedBox(height: 30),
+        const SizedBox(height: 30),
         if (cloudinaryImageUrls.length < _imageFiles!.length)
-          Text('Images still processing',
+          const Text('Images still processing',
               style: TextStyle(color: Colors.orange)),
       ],
     );
@@ -333,23 +355,24 @@ class _Restate extends State<Restate> {
       }
     } else if (permissionStatus.isDenied) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Permission to access storage is required.')),
+        const SnackBar(
+            content: Text('Permission to access storage is required.')),
       );
     } else if (permissionStatus.isPermanentlyDenied) {
       bool? openSettings = await showDialog(
         context: context,
         builder: (context) => AlertDialog(
-          title: Text('Permission Needed'),
-          content: Text(
+          title: const Text('Permission Needed'),
+          content: const Text(
               'Permission to access storage is permanently denied. Please enable it in the app settings.'),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: Text('Cancel'),
+              child: const Text('Cancel'),
             ),
             TextButton(
               onPressed: () => Navigator.pop(context, true),
-              child: Text('Open Settings'),
+              child: const Text('Open Settings'),
             ),
           ],
         ),
@@ -383,13 +406,13 @@ class _Restate extends State<Restate> {
         // Upload Button with matching OutlinedButton styling
         OutlinedButton(
           style: OutlinedButton.styleFrom(
-            side: BorderSide(color: Colors.blueAccent, width: 1.5),
+            side: const BorderSide(color: Colors.blueAccent, width: 1.5),
           ),
           onPressed: () async {
             FilePickerResult? result = await FilePicker.platform.pickFiles(
               allowMultiple: true,
               type: FileType.custom,
-              allowedExtensions: ['pdf', 'docx', 'jpg', 'png'],
+              allowedExtensions: ['pdf', 'docx'],
             );
 
             if (result != null) {
@@ -419,11 +442,11 @@ class _Restate extends State<Restate> {
               print('File picking canceled.');
             }
           },
-          child: Text('Upload Ownership Proof Documents',
+          child: const Text('Upload Ownership Proof Documents',
               style: TextStyle(color: Colors.blueAccent)),
         ),
 
-        SizedBox(height: 10),
+        const SizedBox(height: 10),
 
         // Document Thumbnails Display
         Wrap(
@@ -453,18 +476,19 @@ class _Restate extends State<Restate> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.description,
+                        const Icon(Icons.description,
                             size: 40, color: Colors.blueAccent),
-                        SizedBox(height: 5),
+                        const SizedBox(height: 5),
                         Text(
                           fileName,
-                          style: TextStyle(fontSize: 12),
+                          style: const TextStyle(fontSize: 12),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                         Text(
                           fileExtension.toUpperCase(),
-                          style: TextStyle(fontSize: 10, color: Colors.grey),
+                          style:
+                              const TextStyle(fontSize: 10, color: Colors.grey),
                         ),
                       ],
                     ),
@@ -473,7 +497,7 @@ class _Restate extends State<Restate> {
                     top: -5,
                     right: -5,
                     child: IconButton(
-                      icon: Icon(Icons.remove_circle, color: Colors.red),
+                      icon: const Icon(Icons.remove_circle, color: Colors.red),
                       onPressed: () async {
                         final indexToRemove = _DocFiles!.indexOf(file);
                         if (indexToRemove != -1) {
@@ -481,7 +505,7 @@ class _Restate extends State<Restate> {
                           if (cloudinaryDocumentUrls.isEmpty ||
                               cloudinaryDocumentUrls.length <= indexToRemove) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
+                              const SnackBar(
                                 content: Text(
                                     'Document processing unable to delete'),
                                 backgroundColor: Colors.orange,
@@ -539,29 +563,78 @@ class _Restate extends State<Restate> {
 
   @override
   Widget build(BuildContext context) {
+    final OutlineInputBorder borderStyle = OutlineInputBorder(
+      borderRadius: BorderRadius.circular(30.0),
+      borderSide: const BorderSide(color: Colors.black),
+    );
+
     return Form(
       key: _localFormKey,
       child: Column(
         children: [
           TextFormField(
+            controller: titleController,
+            decoration: InputDecoration(
+              labelText: 'Title',
+              floatingLabelStyle: const TextStyle(color: Color(0xff4A8AF0)),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+              enabledBorder: borderStyle,
+              focusedBorder: borderStyle,
+              border: borderStyle,
+            ),
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                _showAlert('Please enter a title');
+                return 'Please enter a title'; // Prevent form submission
+              }
+              // Additional title validation logic can be added here
+              return null; // No validation error
+            },
+            onChanged: (value) {
+              // If you have specific logic for titles, it can be added here
+              titleController.text = value.trim();
+            },
+          ),
+          const SizedBox(
+            height: 15.0,
+          ),
+          TextFormField(
             controller: priceController,
-            decoration: InputDecoration(labelText: 'Price'),
+            decoration: InputDecoration(
+              labelText: 'Price',
+              floatingLabelStyle: const TextStyle(color: Color(0xff4A8AF0)),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+              enabledBorder: borderStyle,
+              focusedBorder: borderStyle,
+              border: borderStyle,
+            ),
             keyboardType: TextInputType.number,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
             validator: (value) {
               if (value == null || value.isEmpty) {
-                return 'Please enter a price';
-              } else if (int.tryParse(value.replaceAll(',', '')) == 0) {
-                return 'Price cannot be zero';
+                _showAlert('Please enter a price');
+                return 'Please enter a price'; // Prevent form submission
               }
-              return null;
+
+              final price = int.tryParse(value.replaceAll(',', ''));
+              if (price == null || price <= 0) {
+                _showAlert('Price must be a positive value');
+                return 'Price must be a positive value'; // Prevent form submission
+              } else if (price > totalPaymentMade) {
+                _showAlert(
+                    'Price must not exceed total payment made (\₱${numberFormat.format(totalPaymentMade)})');
+                return 'Price must not exceed total payment made'; // Prevent form submission
+              }
+              return null; // No validation error
             },
             onChanged: (value) {
               _formatAndSetText(value, priceController);
             },
           ),
-          SizedBox(
-            height: 10.0,
+          const SizedBox(
+            height: 15.0,
           ),
           Align(
             alignment: Alignment.centerLeft, // Aligns everything to the right
@@ -569,9 +642,18 @@ class _Restate extends State<Restate> {
               crossAxisAlignment: CrossAxisAlignment
                   .start, // Keeps elements aligned to the left within the column
               children: [
-                DropdownButton<String>(
+                DropdownButtonHideUnderline(
+                    child: DropdownButton2<String>(
+                  isExpanded: true,
+                  buttonStyleData: ButtonStyleData(
+                    padding: const EdgeInsets.only(right: 18),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(30.0),
+                      border: Border.all(color: Colors.black),
+                    ),
+                  ),
                   value: selectedYear,
-                  hint: Text('Select Year'),
+                  hint: const Text('Select Year'),
                   items: years.map<DropdownMenuItem<String>>((String value) {
                     return DropdownMenuItem<String>(
                       value: value,
@@ -583,13 +665,22 @@ class _Restate extends State<Restate> {
                       selectedYear = value;
                     });
                   },
+                )),
+                const SizedBox(
+                  height: 15.0,
                 ),
-                SizedBox(
-                  height: 10.0,
-                ),
-                DropdownButton<String>(
+                DropdownButtonHideUnderline(
+                    child: DropdownButton2<String>(
+                  isExpanded: true,
+                  buttonStyleData: ButtonStyleData(
+                    padding: const EdgeInsets.only(right: 18),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(30.0),
+                      border: Border.all(color: Colors.black),
+                    ),
+                  ),
                   value: selectedBedrooms,
-                  hint: Text('Bedrooms (Optional)'),
+                  hint: const Text('Bedrooms (Optional)'),
                   items: [
                     '0 Bedrooms',
                     '1 Bedroom',
@@ -609,37 +700,47 @@ class _Restate extends State<Restate> {
                       selectedBedrooms = value;
                     });
                   },
+                )),
+                const SizedBox(
+                  height: 15.0,
                 ),
-                SizedBox(
-                  height: 10.0,
-                ),
-                DropdownButton<String>(
-                  value: selectedBathrooms,
-                  hint: Text('Bathrooms (Optional)'),
-                  items: [
-                    '0 Bathrooms',
-                    '1 Bathrooms',
-                    '2 Bathrooms',
-                    '3 Bathrooms',
-                    '4 Bathrooms',
-                    '5 Bathrooms',
-                    '5+ Bathrooms'
-                  ].map<DropdownMenuItem<String>>((String value) {
-                    return DropdownMenuItem<String>(
-                      value: value,
-                      child: Text(value),
-                    );
-                  }).toList(),
-                  onChanged: (value) {
-                    setState(() {
-                      selectedBathrooms = value;
-                    });
-                  },
-                ),
+                DropdownButtonHideUnderline(
+                  child: DropdownButton2<String>(
+                    isExpanded: true,
+                    buttonStyleData: ButtonStyleData(
+                      padding: const EdgeInsets.only(right: 18),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(30.0),
+                        border: Border.all(color: Colors.black),
+                      ),
+                    ),
+                    value: selectedBathrooms,
+                    hint: const Text('Bathrooms (Optional)'),
+                    items: [
+                      '0 Bathrooms',
+                      '1 Bathrooms',
+                      '2 Bathrooms',
+                      '3 Bathrooms',
+                      '4 Bathrooms',
+                      '5 Bathrooms',
+                      '5+ Bathrooms'
+                    ].map<DropdownMenuItem<String>>((String value) {
+                      return DropdownMenuItem<String>(
+                        value: value,
+                        child: Text(value),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      setState(() {
+                        selectedBathrooms = value;
+                      });
+                    },
+                  ),
+                )
               ],
             ),
           ),
-          SizedBox(
+          const SizedBox(
             height: 10.0,
           ),
           TextFormField(
@@ -647,6 +748,12 @@ class _Restate extends State<Restate> {
             decoration: InputDecoration(
               labelText: 'Floor Area',
               suffixText: 'sqm',
+              floatingLabelStyle: const TextStyle(color: Color(0xff4A8AF0)),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+              enabledBorder: borderStyle,
+              focusedBorder: borderStyle,
+              border: borderStyle,
             ),
             keyboardType: TextInputType.numberWithOptions(decimal: true),
             inputFormatters: [
@@ -662,7 +769,7 @@ class _Restate extends State<Restate> {
               return null;
             },
           ),
-          SizedBox(
+          const SizedBox(
             height: 10.0,
           ),
           TextFormField(
@@ -670,8 +777,14 @@ class _Restate extends State<Restate> {
             decoration: InputDecoration(
               labelText: 'Lot Area (Optional)',
               suffixText: 'sqm',
+              floatingLabelStyle: const TextStyle(color: Color(0xff4A8AF0)),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+              enabledBorder: borderStyle,
+              focusedBorder: borderStyle,
+              border: borderStyle,
             ),
-            keyboardType: TextInputType.numberWithOptions(decimal: true),
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
             inputFormatters: [
               FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
             ],
@@ -685,46 +798,78 @@ class _Restate extends State<Restate> {
               return null; // Allows optional empty field
             },
           ),
-          SizedBox(
+          const SizedBox(
             height: 10.0,
           ),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
+              const Text(
                 'Parking Space (Optional)',
                 style: TextStyle(
                   fontSize: 16,
                 ), // Customize the style as needed
               ),
-              SizedBox(
+              const SizedBox(
                   height: 8), // Add some space between the text and the chips
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
                   ChoiceChip(
-                    label: Text('0'),
+                    label: const Text('0'),
+                    backgroundColor: const Color(0xffFFFCF1),
+                    selectedColor: const Color(0xff4A8AF0),
+                    showCheckmark: false,
+                    labelStyle: TextStyle(
+                      color: selectedParkingSpace == '0'
+                          ? Colors.white
+                          : Colors.black,
+                    ),
                     selected: selectedParkingSpace == '0',
                     onSelected: (selected) {
                       setState(() => selectedParkingSpace = '0');
                     },
                   ),
                   ChoiceChip(
-                    label: Text('1'),
+                    label: const Text('1'),
+                    backgroundColor: const Color(0xffFFFCF1),
+                    selectedColor: const Color(0xff4A8AF0),
+                    showCheckmark: false,
+                    labelStyle: TextStyle(
+                      color: selectedParkingSpace == '1'
+                          ? Colors.white
+                          : Colors.black,
+                    ),
                     selected: selectedParkingSpace == '1',
                     onSelected: (selected) {
                       setState(() => selectedParkingSpace = '1');
                     },
                   ),
                   ChoiceChip(
-                    label: Text('2'),
+                    label: const Text('2'),
+                    backgroundColor: const Color(0xffFFFCF1),
+                    selectedColor: const Color(0xff4A8AF0),
+                    showCheckmark: false,
+                    labelStyle: TextStyle(
+                      color: selectedParkingSpace == '2'
+                          ? Colors.white
+                          : Colors.black,
+                    ),
                     selected: selectedParkingSpace == '2',
                     onSelected: (selected) {
                       setState(() => selectedParkingSpace = '2');
                     },
                   ),
                   ChoiceChip(
-                    label: Text('2+'),
+                    label: const Text('2+'),
+                    backgroundColor: const Color(0xffFFFCF1),
+                    selectedColor: const Color(0xff4A8AF0),
+                    showCheckmark: false,
+                    labelStyle: TextStyle(
+                      color: selectedParkingSpace == '2+'
+                          ? Colors.white
+                          : Colors.black,
+                    ),
                     selected: selectedParkingSpace == '2+',
                     onSelected: (selected) {
                       setState(() => selectedParkingSpace = '2+');
@@ -734,7 +879,7 @@ class _Restate extends State<Restate> {
               ),
             ],
           ),
-          SizedBox(
+          const SizedBox(
             height: 10.0,
           ),
 
@@ -742,41 +887,45 @@ class _Restate extends State<Restate> {
             crossAxisAlignment:
                 CrossAxisAlignment.start, // Aligns the label to the left
             children: [
-              Text(
+              const Text(
                 "Sale Preference:",
                 style: TextStyle(fontSize: 16),
               ),
-              SizedBox(height: 8), // Add spacing between label and chips
+              const SizedBox(height: 8), // Add spacing between label and chips
               Center(
                 child: Row(
                   mainAxisAlignment:
                       MainAxisAlignment.center, // Centers the ChoiceChips
                   children: [
                     ChoiceChip(
-                      label: Text('Buy Only'),
+                      label: const Text('Buy Only'),
+                      backgroundColor: const Color(0xffFFFCF1),
+                      selectedColor: const Color(0xff4A8AF0),
+                      showCheckmark: false,
                       selected: selectedPreference == 'Buy Only',
                       onSelected: (bool selected) {
                         setState(() {
                           selectedPreference = selected ? 'Buy Only' : null;
                         });
                       },
-                      selectedColor: Colors.blue,
                       labelStyle: TextStyle(
                         color: selectedPreference == 'Buy Only'
                             ? Colors.white
                             : Colors.black,
                       ),
                     ),
-                    SizedBox(width: 10),
+                    const SizedBox(width: 10),
                     ChoiceChip(
-                      label: Text('Allow Offers'),
+                      label: const Text('Allow Offers'),
                       selected: selectedPreference == 'Allow Offers',
                       onSelected: (bool selected) {
                         setState(() {
                           selectedPreference = selected ? 'Allow Offers' : null;
                         });
                       },
-                      selectedColor: Colors.blue,
+                      backgroundColor: const Color(0xffFFFCF1),
+                      selectedColor: const Color(0xff4A8AF0),
+                      showCheckmark: false,
                       labelStyle: TextStyle(
                         color: selectedPreference == 'Allow Offers'
                             ? Colors.white
@@ -791,7 +940,7 @@ class _Restate extends State<Restate> {
 
           /// Address Field
           Padding(
-            padding: const EdgeInsets.all(8.0),
+            padding: const EdgeInsets.symmetric(vertical: 8.0),
             child: TextField(
               controller: addressController,
               onChanged: (value) {
@@ -805,7 +954,12 @@ class _Restate extends State<Restate> {
               },
               decoration: InputDecoration(
                 labelText: 'Enter an Address',
-                border: OutlineInputBorder(),
+                floatingLabelStyle: const TextStyle(color: Color(0xff4A8AF0)),
+                contentPadding: const EdgeInsets.only(
+                    left: 18, right: 15, top: 10, bottom: 10),
+                enabledBorder: borderStyle,
+                focusedBorder: borderStyle,
+                border: borderStyle,
               ),
             ),
           ),
@@ -855,7 +1009,7 @@ class _Restate extends State<Restate> {
                         width: 80.0,
                         height: 80.0,
                         child: Container(
-                          child: Icon(Icons.location_on,
+                          child: const Icon(Icons.location_on,
                               color: Colors.red, size: 40),
                         ),
                       ),
@@ -865,9 +1019,18 @@ class _Restate extends State<Restate> {
             ),
           ),
 
+          const SizedBox(height: 15),
           TextFormField(
             controller: monthlyPaymentController,
-            decoration: InputDecoration(labelText: 'Monthly Payment'),
+            decoration: InputDecoration(
+              labelText: 'Monthly Payment',
+              floatingLabelStyle: const TextStyle(color: Color(0xff4A8AF0)),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+              enabledBorder: borderStyle,
+              focusedBorder: borderStyle,
+              border: borderStyle,
+            ),
             keyboardType: TextInputType.number,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
             validator: (value) {
@@ -883,37 +1046,72 @@ class _Restate extends State<Restate> {
               _computeTotalPayment();
             },
           ),
+
+          const SizedBox(height: 15),
           TextFormField(
             controller: loanDurationController,
-            decoration: InputDecoration(labelText: 'Loan Duration (Months)'),
+            decoration: InputDecoration(
+              labelText: 'Loan Duration (Months)',
+              floatingLabelStyle: const TextStyle(color: Color(0xff4A8AF0)),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+              enabledBorder: borderStyle,
+              focusedBorder: borderStyle,
+              border: borderStyle,
+            ),
             keyboardType: TextInputType.number,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
             validator: (value) {
               if (value == null || value.isEmpty) {
-                return 'Please enter a loan duration';
-              } else if (int.tryParse(value.replaceAll(',', '')) == 0) {
-                return 'Loan duration cannot be zero';
+                _showAlert('Please enter a loan duration');
+                return 'Please enter a loan duration'; // Prevent form submission
               }
-              return null;
+
+              final duration = int.tryParse(value.replaceAll(',', ''));
+              if (duration == null || duration < 12 || duration > 360) {
+                _showAlert(
+                    'Loan duration for real estate is at least 12(1 year) months to 360 months (30 years)');
+                return 'Loan duration for real estate is at least 12(1 year) months to 360 months (30 years)'; // Prevent form submission
+              }
+
+              final monthsPaid = int.tryParse(
+                  numberOfMonthsPaidController.text.replaceAll(',', ''));
+              if (monthsPaid != null && monthsPaid > duration) {
+                return 'Number of months paid cannot exceed loan duration'; // Prevent form submission
+              }
+              return null; // No validation error
             },
           ),
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 16),
             child: Text(
               'Total Payment Made: \₱${numberFormat.format(totalPaymentMade)}',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
           ),
           TextFormField(
             controller: downPaymentController,
-            decoration: InputDecoration(labelText: 'Down Payment'),
+            decoration: InputDecoration(
+              labelText: 'Down Payment',
+              floatingLabelStyle: const TextStyle(color: Color(0xff4A8AF0)),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+              enabledBorder: borderStyle,
+              focusedBorder: borderStyle,
+              border: borderStyle,
+            ),
             keyboardType: TextInputType.number,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
             validator: (value) {
               if (value == null || value.isEmpty) {
                 return 'Please enter a down payment';
-              } else if (int.tryParse(value.replaceAll(',', '')) == 0) {
-                return 'Down payment cannot be zero';
+              }
+              final downPayment = int.tryParse(value.replaceAll(',', ''));
+
+              if (downPayment == null) {
+                return 'Please enter a valid number';
+              } else if (downPayment < 0) {
+                return 'Down payment cannot be less than zero';
               }
               return null;
             },
@@ -922,33 +1120,63 @@ class _Restate extends State<Restate> {
               _computeTotalPayment();
             },
           ),
+          const SizedBox(height: 15),
           TextFormField(
             controller: numberOfMonthsPaidController,
-            decoration: InputDecoration(labelText: 'Number of Months Paid'),
+            decoration: InputDecoration(
+              labelText: 'Number of Months Paid',
+              floatingLabelStyle: const TextStyle(color: Color(0xff4A8AF0)),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+              enabledBorder: borderStyle,
+              focusedBorder: borderStyle,
+              border: borderStyle,
+            ),
             keyboardType: TextInputType.number,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
             validator: (value) {
               if (value == null || value.isEmpty) {
-                return 'Please enter number of months paid';
-              } else if (int.tryParse(value.replaceAll(',', '')) == 0) {
-                return 'Number of months paid cannot be zero';
+                _showAlert('Please enter the number of months paid');
+                return 'Please enter the number of months paid'; // Prevent form submission
               }
-              return null;
+
+              final monthsPaid = int.tryParse(value.replaceAll(',', ''));
+              if (monthsPaid == null || monthsPaid <= 0) {
+                _showAlert('Number of months paid must be greater than zero');
+                return 'Number of months paid must be greater than zero'; // Prevent form submission
+              }
+
+              final loanDuration =
+                  int.tryParse(loanDurationController.text.replaceAll(',', ''));
+              if (loanDuration != null && monthsPaid > loanDuration) {
+                _showAlert(
+                    'Number of months paid cannot exceed loan duration ($loanDuration)');
+                return 'Number of months paid cannot exceed loan duration'; // Prevent form submission
+              }
+              return null; // No validation error
             },
             onChanged: (value) {
               _formatAndSetText(value, numberOfMonthsPaidController);
               _computeTotalPayment();
             },
           ),
+          const SizedBox(height: 15),
           TextField(
             controller: descriptionController,
             maxLines: 3,
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               hintText: 'Put Description here',
-              border: OutlineInputBorder(),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+              enabledBorder:
+                  borderStyle.copyWith(borderRadius: BorderRadius.circular(15)),
+              focusedBorder:
+                  borderStyle.copyWith(borderRadius: BorderRadius.circular(15)),
+              border:
+                  borderStyle.copyWith(borderRadius: BorderRadius.circular(15)),
             ),
           ),
-          SizedBox(
+          const SizedBox(
             height: 10.0,
           ),
           _buildDocumentUploader(), // Space between sections
@@ -960,6 +1188,27 @@ class _Restate extends State<Restate> {
                 if (_imageFiles == null || _imageFiles!.isEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text('Please select at least one image')),
+                  );
+                  return;
+                }
+                if (selectedYear == null || selectedYear!.isEmpty) {
+                  // Show an alert or a message indicating that the year is required
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Please select a year')),
+                  );
+                  return;
+                }
+                if (selectedPreference == null) {
+                  // Show an alert or a message indicating that the selection is required
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Please select a sale preference')),
+                  );
+                  return;
+                }
+                if (addressController.text.isEmpty) {
+                  // Show a message if the address is empty
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Please enter an address')),
                   );
                   return;
                 }
@@ -975,6 +1224,7 @@ class _Restate extends State<Restate> {
                 // Prepare the listing content
                 Map<String, dynamic> listingContent = {
                   'category': 'Real Estate',
+                  'title': titleController.text,
                   'year': selectedYear,
                   'address': addressController.text,
                   'preference': selectedPreference,
@@ -995,9 +1245,7 @@ class _Restate extends State<Restate> {
                   'monthlyPayment': double.tryParse(
                           monthlyPaymentController.text.replaceAll(',', '')) ??
                       0.0,
-                  'loanDuration': double.tryParse(
-                          loanDurationController.text.replaceAll(',', '')) ??
-                      0.0,
+                  'loanDuration': loanDurationController.text,
                   'totalPaymentMade': totalPaymentMade,
                   'downPayment': double.tryParse(
                           downPaymentController.text.replaceAll(',', '')) ??
@@ -1018,7 +1266,7 @@ class _Restate extends State<Restate> {
                   await dbService.addCarListing(token!, listingContent);
                   // Show success message
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Submitted Successfully')),
+                    const SnackBar(content: Text('Submitted Successfully')),
                   );
 
                   // Navigate back to the previous screen
@@ -1030,7 +1278,10 @@ class _Restate extends State<Restate> {
                 }
               }
             },
-            child: Text('Submit for Review'),
+            style: ElevatedButton.styleFrom(
+                foregroundColor: const Color(0xffFFFCF1),
+                backgroundColor: const Color(0xff4A8AF0)),
+            child: const Text('Submit for Review'),
           ),
         ],
       ),

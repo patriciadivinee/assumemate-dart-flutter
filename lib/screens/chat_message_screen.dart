@@ -2,6 +2,9 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:assumemate/format.dart';
+import 'package:assumemate/screens/Report_user.dart';
+import 'package:assumemate/screens/rating.dart';
+import 'package:assumemate/screens/waiting_area/payment_confirmation_screen.dart';
 import 'package:currency_text_input_formatter/currency_text_input_formatter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -57,6 +60,7 @@ class _ChatMessageState extends State<ChatMessageScreen> {
 
   String name = '';
   String picture = '';
+  bool isActive = true;
 
   bool _hasOffer = false;
   String? offerStatus;
@@ -66,9 +70,6 @@ class _ChatMessageState extends State<ChatMessageScreen> {
   Future<void> _getUserType() async {
     _userType = await secureStorage.getUserType();
     _userId = await secureStorage.getUserId();
-
-    print(_userId);
-    print(_userType);
   }
 
   Future<void> _initializeIsReadWebSocket() async {
@@ -160,6 +161,7 @@ class _ChatMessageState extends State<ChatMessageScreen> {
                 _hasOffer = true;
                 offerDetails['offerStatus'] = offerStatus;
               });
+              print(_hasOffer);
             } else {
               setState(() {
                 offerDetails.clear();
@@ -305,6 +307,34 @@ class _ChatMessageState extends State<ChatMessageScreen> {
   }
 
   void _updateOffer(String status) async {
+    if (status == 'ACCEPTED') {
+      final response = await apiService.createOrder(offerDetails['offerId']);
+
+      if (response.containsKey('message')) {
+        setState(() {
+          offerDetails['order_id'] = response['order_id'];
+        });
+      } else {
+        popUp(context, 'Error accepting offer');
+        return;
+      }
+    }
+
+    if (status == 'CANCELLED' && offerDetails['offerStatus'] == 'ACCEPTED') {
+      if (offerDetails.containsKey('order_id')) {
+        final response = await apiService.cancelOrder(offerDetails['order_id']);
+
+        if (response.containsKey('message')) {
+          popUp(context, response['message']);
+        } else {
+          popUp(context, response['error']);
+          return;
+        }
+      } else {
+        return;
+      }
+    }
+
     if (_channel != null) {
       _channel!.sink.add(jsonEncode({
         'type': 'offer_update',
@@ -323,12 +353,26 @@ class _ChatMessageState extends State<ChatMessageScreen> {
       };
 
       _sendInboxUpdate(message, false);
+    }
+  }
 
-      if (status == 'ACCEPTED') {
-        final response = await apiService.createOrder(offerDetails['offerId']);
+  void _cancelOffer(String status) async {
+    print(offerDetails);
+    try {
+      final response = await apiService.cancelOffer(
+          offerDetails['offerId'].toString(), status);
 
-        print(response);
+      if (response.containsKey('message')) {
+        setState(() {
+          offerDetails.clear();
+          _hasOffer = false;
+        });
+        popUp(context, response['message']);
+      } else {
+        popUp(context, response['error']);
       }
+    } catch (e) {
+      popUp(context, 'An error occured: $e');
     }
   }
 
@@ -358,7 +402,10 @@ class _ChatMessageState extends State<ChatMessageScreen> {
         setState(() {
           name = '${profile['user_prof_fname']} ${profile['user_prof_lname']}';
           picture = profile['user_prof_pic'];
+          isActive = response['isActive'];
         });
+        print('isActive');
+        print(isActive);
       } else {
         popUp(context, response['error']);
       }
@@ -385,7 +432,11 @@ class _ChatMessageState extends State<ChatMessageScreen> {
           offerDetails['listingId'] = list['list_id'];
           offerDetails['offerPrice'] = offer['offer_price'];
           offerDetails['offerStatus'] = offer['offer_status'];
+          if (offer.containsKey('order_id')) {
+            offerDetails['order_id'] = offer['order_id'];
+          }
         });
+        print(_hasOffer);
       }
     } catch (e) {
       popUp(context, 'An error occured: $e');
@@ -455,8 +506,9 @@ class _ChatMessageState extends State<ChatMessageScreen> {
 
   @override
   void initState() {
-    super.initState();
+    // print(baseURL);
     initialization();
+    super.initState();
   }
 
   @override
@@ -500,8 +552,7 @@ class _ChatMessageState extends State<ChatMessageScreen> {
                   radius: 20,
                   backgroundImage: (picture != '')
                       ? NetworkImage(picture)
-                      : const NetworkImage(
-                          'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png'),
+                      : const AssetImage('assets/images/no-profile.jpg'),
                 ),
               ),
               const SizedBox(
@@ -515,16 +566,59 @@ class _ChatMessageState extends State<ChatMessageScreen> {
             ],
           ),
         ),
+        // actions: [
+        //   PopupMenuButton<int>(
+        //     color: const Color(0xffFCFCFC),
+        //     icon: const Icon(Icons.more_vert, color: Color(0xff4A8AF0)),
+        //     iconSize: 26,
+        //     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+        //     itemBuilder: (context) => [
+        //       const PopupMenuItem(
+        //           height: 25,
+        //           child: Row(children: [
+        //             Expanded(
+        //               child: Text(
+        //                 'Report',
+        //                 style: TextStyle(fontSize: 14),
+        //               ),
+        //             ),
+        //             Icon(
+        //               Icons.flag_outlined,
+        //               color: Color(0xffFF0000),
+        //             ),
+        //           ]))
+        //     ],
+        //   ),
+        // ],
         actions: [
           PopupMenuButton<int>(
             color: const Color(0xffFCFCFC),
             icon: const Icon(Icons.more_vert, color: Color(0xff4A8AF0)),
             iconSize: 26,
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+            onSelected: (value) {
+              if (value == 0) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) =>
+                          ReportUserScreen(widget.receiverId)),
+                );
+              } else if (value == 1) {
+                // Navigate to rating screen (replace with your own logic)
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => RateUserPage(widget.receiverId)),
+                );
+              }
+            },
             itemBuilder: (context) => [
-              const PopupMenuItem(
-                  height: 25,
-                  child: Row(children: [
+              const PopupMenuItem<int>(
+                value: 0,
+                height: 25,
+                child: Row(
+                  children: [
                     Expanded(
                       child: Text(
                         'Report',
@@ -535,9 +629,29 @@ class _ChatMessageState extends State<ChatMessageScreen> {
                       Icons.flag_outlined,
                       color: Color(0xffFF0000),
                     ),
-                  ]))
+                  ],
+                ),
+              ),
+              const PopupMenuItem<int>(
+                value: 1,
+                height: 25,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Rate',
+                        style: TextStyle(fontSize: 14),
+                      ),
+                    ),
+                    Icon(
+                      Icons.star_border,
+                      color: Color(0xffFFD700),
+                    ),
+                  ],
+                ),
+              ),
             ],
-          ),
+          )
         ],
       ),
       body: Column(
@@ -552,11 +666,13 @@ class _ChatMessageState extends State<ChatMessageScreen> {
                     children: [
                       InkWell(
                           onTap: () {
-                            Navigator.of(context).push(MaterialPageRoute(
-                              builder: (context) => ItemDetailScreen(
-                                  listingId: offerDetails['listingId'],
-                                  assumptorId: widget.receiverId),
-                            ));
+                            (!isActive)
+                                ? popUp(context, 'Listing not found')
+                                : Navigator.of(context).push(MaterialPageRoute(
+                                    builder: (context) => ItemDetailScreen(
+                                        listingId: offerDetails['listingId'],
+                                        assumptorId: widget.receiverId),
+                                  ));
                           },
                           child: AspectRatio(
                             aspectRatio: 4 / 3,
@@ -612,10 +728,10 @@ class _ChatMessageState extends State<ChatMessageScreen> {
                                       : (offerDetails['offerStatus'] ==
                                               'ACCEPTED')
                                           ? actionButtons(
-                                              'RESERVED',
                                               'CANCEL',
-                                              () {},
-                                              () => _updateOffer('CANCELLED'))
+                                              'PAY NOW',
+                                              () => _updateOffer('CANCELLED'),
+                                              () => {})
                                           : const SizedBox()
                             ]),
                       )
@@ -734,73 +850,78 @@ class _ChatMessageState extends State<ChatMessageScreen> {
                   ))
               : const SizedBox(),
           Container(
-            margin: const EdgeInsets.only(top: 5, bottom: 4),
-            padding: const EdgeInsets.symmetric(vertical: 5),
-            decoration: BoxDecoration(borderRadius: BorderRadius.circular(30)),
-            child: Row(
-              children: [
-                IconButton(
-                  onPressed: () => _pickDocument(),
-                  icon: const Icon(Icons.attach_file),
-                  color: const Color(0xff4A8AF0),
-                  padding: const EdgeInsets.only(left: 8, right: 4),
-                  constraints:
-                      const BoxConstraints(), // override default min size of 48px
-                  style: ButtonStyle(
-                      tapTargetSize:
-                          MaterialTapTargetSize.shrinkWrap, // the '2023' part
-                      overlayColor:
-                          WidgetStateProperty.all(Colors.transparent)),
-                ),
-                IconButton(
-                  onPressed: () => _pickImage(),
-                  icon: const Icon(Icons.photo_outlined),
-                  color: const Color(0xff4A8AF0),
-                  padding: const EdgeInsets.only(left: 4, right: 8),
-                  constraints:
-                      const BoxConstraints(), // override default min size of 48px
-                  style: ButtonStyle(
-                      tapTargetSize:
-                          MaterialTapTargetSize.shrinkWrap, // the '2023' part
-                      overlayColor:
-                          WidgetStateProperty.all(Colors.transparent)),
-                ),
-                Expanded(
-                  child: TextFormField(
-                    controller: _messageController,
-                    onChanged: _handleTyping,
-                    minLines: 1,
-                    maxLines: 4,
-                    decoration: InputDecoration(
-                        hintStyle: const TextStyle(fontSize: 12),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12.0),
-                          borderSide: BorderSide.none,
+              margin: const EdgeInsets.only(top: 5, bottom: 4),
+              padding: const EdgeInsets.symmetric(vertical: 5),
+              decoration:
+                  BoxDecoration(borderRadius: BorderRadius.circular(30)),
+              child: isActive
+                  ? Row(
+                      children: [
+                        IconButton(
+                          onPressed: () => _pickDocument(),
+                          icon: const Icon(Icons.attach_file),
+                          color: const Color(0xff4A8AF0),
+                          padding: const EdgeInsets.only(left: 8, right: 4),
+                          constraints:
+                              const BoxConstraints(), // override default min size of 48px
+                          style: ButtonStyle(
+                              tapTargetSize: MaterialTapTargetSize
+                                  .shrinkWrap, // the '2023' part
+                              overlayColor:
+                                  WidgetStateProperty.all(Colors.transparent)),
                         ),
-                        hintText: 'Write a message...',
-                        filled: true,
-                        fillColor: const Color(0xffFCFCFC),
-                        contentPadding: const EdgeInsets.symmetric(
-                            vertical: 0, horizontal: 12.0)),
-                    style: const TextStyle(fontSize: 12),
-                  ),
-                ),
-                IconButton(
-                  onPressed: _sendMessage,
-                  icon: const Icon(Icons.send),
-                  color: const Color(0xff4A8AF0),
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  constraints:
-                      const BoxConstraints(), // override default min size of 48px
-                  style: ButtonStyle(
-                      tapTargetSize:
-                          MaterialTapTargetSize.shrinkWrap, // the '2023' part
-                      overlayColor:
-                          WidgetStateProperty.all(Colors.transparent)),
-                ),
-              ],
-            ),
-          )
+                        IconButton(
+                          onPressed: () => _pickImage(),
+                          icon: const Icon(Icons.photo_outlined),
+                          color: const Color(0xff4A8AF0),
+                          padding: const EdgeInsets.only(left: 4, right: 8),
+                          constraints:
+                              const BoxConstraints(), // override default min size of 48px
+                          style: ButtonStyle(
+                              tapTargetSize: MaterialTapTargetSize
+                                  .shrinkWrap, // the '2023' part
+                              overlayColor:
+                                  WidgetStateProperty.all(Colors.transparent)),
+                        ),
+                        Expanded(
+                          child: TextFormField(
+                            controller: _messageController,
+                            onChanged: _handleTyping,
+                            minLines: 1,
+                            maxLines: 4,
+                            decoration: InputDecoration(
+                                hintStyle: const TextStyle(fontSize: 12),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12.0),
+                                  borderSide: BorderSide.none,
+                                ),
+                                hintText: 'Write a message...',
+                                filled: true,
+                                fillColor: const Color(0xffFCFCFC),
+                                contentPadding: const EdgeInsets.symmetric(
+                                    vertical: 0, horizontal: 12.0)),
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: _sendMessage,
+                          icon: const Icon(Icons.send),
+                          color: const Color(0xff4A8AF0),
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          constraints:
+                              const BoxConstraints(), // override default min size of 48px
+                          style: ButtonStyle(
+                              tapTargetSize: MaterialTapTargetSize
+                                  .shrinkWrap, // the '2023' part
+                              overlayColor:
+                                  WidgetStateProperty.all(Colors.transparent)),
+                        ),
+                      ],
+                    )
+                  : const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [Text('Cannot reply to this conversation')],
+                    ))
         ],
       ),
     );
@@ -822,7 +943,12 @@ class _ChatMessageState extends State<ChatMessageScreen> {
       mainAxisSize: MainAxisSize.min,
       children: [
         OutlinedButton(
-          onPressed: (label1 == 'RESERVED') ? null : () => action1(),
+          onPressed: () {
+            final status = label1 == 'CANCEL' ? 'CANCELLED' : 'REJECTED';
+            !isActive && (label1 == 'CANCEL' || label1 == 'REJECT')
+                ? _cancelOffer(status)
+                : action1();
+          },
           style: OutlinedButton.styleFrom(
             side: const BorderSide(
               color: Color(0xff683131),
@@ -842,20 +968,22 @@ class _ChatMessageState extends State<ChatMessageScreen> {
           ),
         ),
         const SizedBox(width: 10),
-        ElevatedButton(
-          onPressed: () => action2(),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xff4A8AF0),
-            foregroundColor: Colors.white,
-          ),
-          child: Text(
-            label2,
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 11,
-            ),
-          ),
-        ),
+        isActive
+            ? ElevatedButton(
+                onPressed: () => action2(),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xff4A8AF0),
+                  foregroundColor: Colors.white,
+                ),
+                child: Text(
+                  label2,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 11,
+                  ),
+                ),
+              )
+            : const SizedBox.shrink()
       ],
     );
   }

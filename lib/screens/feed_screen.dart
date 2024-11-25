@@ -1,3 +1,4 @@
+import 'package:assumemate/logo/pop_up.dart';
 import 'package:assumemate/screens/search_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -32,6 +33,8 @@ class _FeedScreenState extends State<FeedScreen> {
   late Future<List<dynamic>> carListings;
   late Future<List<dynamic>> motorcycleListings;
   String? _userType;
+  String? _appStatus;
+  final ValueNotifier<bool> _isSpeedDialOpen = ValueNotifier(false);
 
   Future<void> _getUserType() async {
     String? userType = await secureStorage.getUserType();
@@ -40,11 +43,19 @@ class _FeedScreenState extends State<FeedScreen> {
     });
   }
 
+  Future<void> _getappStatus() async {
+    String? appStats = await secureStorage.getApplicationStatus();
+    setState(() {
+      _appStatus = appStats;
+    });
+  }
+
   @override
   void initState() {
     super.initState();
     pageController = PageController(initialPage: 0, viewportFraction: 0.95);
     _getUserType();
+    _getappStatus();
 
     // Fetch listings for each category
     houseAndLotListings = fetchListingsByCategory('Real Estate');
@@ -117,12 +128,12 @@ class _FeedScreenState extends State<FeedScreen> {
 
               print(content);
 
-              if (content['category'] == "Cars" ||
+              if (content['category'] == "Car" ||
                   content['category'] == "Motorcycle") {
                 title =
-                    '${content['make'] ?? 'Unknown make'} (${content['model'] ?? 'Unknown model'})';
+                    '${content['model'] ?? 'Unknown model'} ${content['make'] ?? 'Unknown make'} ${content['year'] ?? 'Unknown year'}';
               } else if (content['category'] == "Real Estate") {
-                title = content['title'] ?? 'No Title';
+                title = '${content['title'] ?? 'No Title'}';
               } else {
                 title = content['title'] ??
                     'No Title'; // Default case if category doesn't match
@@ -141,6 +152,14 @@ class _FeedScreenState extends State<FeedScreen> {
         }
       },
     );
+  }
+
+  void onClickFAB() {
+    if (_appStatus != 'APPROVED') {
+      popUp(context, 'You need to be verified to create a listing.');
+    } else {
+      _isSpeedDialOpen.value = true;
+    }
   }
 
   @override
@@ -337,9 +356,10 @@ class _FeedScreenState extends State<FeedScreen> {
             ),
           ),
         ),
-        floatingActionButton: _userType == 'assumptor'
+        floatingActionButton: (_userType == 'assumptor')
             ? SpeedDial(
                 icon: Icons.add,
+                openCloseDial: _isSpeedDialOpen,
                 activeIcon: Icons.close,
                 backgroundColor: const Color(0xff4A8AF0),
                 foregroundColor: Colors.white,

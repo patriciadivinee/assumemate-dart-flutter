@@ -1,6 +1,4 @@
-import 'package:assumemate/screens/user_auth/google_create_profile_screen.dart';
 import 'package:flutter/material.dart';
-import 'package:assumemate/screens/user_auth/create_profile_screen.dart';
 import 'package:assumemate/screens/user_auth/login_screen.dart';
 import 'package:assumemate/screens/user_auth/signup_choice_screen.dart';
 
@@ -81,11 +79,8 @@ class WelcomeScreen extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                      builder: (context) => const CreateProfileScreen(
-                            email: 'example@gmail.com',
-                          )
-                      // const SignupScreen(),
-                      ),
+                    builder: (context) => const SignupScreen(),
+                  ),
                 );
               },
               style: OutlinedButton.styleFrom(

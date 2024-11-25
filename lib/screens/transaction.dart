@@ -89,8 +89,8 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
                     : '-${transaction.amount}';
                 final amountColor =
                     transaction.category == 'TOPUP' ? Colors.green : Colors.red;
-                final formattedDate = DateFormat('MMM dd, yyyy, h:mm a')
-                    .format(DateTime.parse(transaction.transactionDate));
+                final formattedDate = DateFormat('MMM dd, yyyy, h:mm a').format(
+                    DateTime.parse(transaction.transactionDate).toLocal());
 
                 return Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -120,8 +120,8 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      // Third Column (Status)
-                      Text(transaction.transactionStatus),
+                      // // Third Column (Status)
+                      // Text(transaction.transactionStatus),
                     ],
                   ),
                 );
@@ -136,23 +136,23 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
 
 class Transaction {
   final String amount;
-  final String transactionStatus;
+  // final String transactionStatus;
   final String transactionDate;
   final String category;
 
   Transaction({
     required this.amount,
-    required this.transactionStatus,
+    // required this.transactionStatus,
     required this.transactionDate,
     required this.category,
   });
 
   factory Transaction.fromJson(Map<String, dynamic> json) {
     return Transaction(
-      amount: json['amount'].toString(),
-      transactionStatus: json['transaction_status'],
+      amount: json['transaction_amount'].toString(),
+      // transactionStatus: json['transaction_status'],
       transactionDate: json['transaction_date'],
-      category: json['category'],
+      category: json['transaction_type'],
     );
   }
 }

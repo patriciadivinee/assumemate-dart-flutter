@@ -1,21 +1,19 @@
-import 'dart:async';
-import 'dart:convert';
 import 'package:assumemate/provider/favorite_provider.dart';
 import 'package:assumemate/provider/profile_provider.dart';
-import 'package:assumemate/screens/user_auth/login_screen.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
-import 'package:assumemate/logo/welcome.dart';
 import 'package:assumemate/screens/home_screen.dart';
 import 'package:assumemate/storage/secure_storage.dart';
-import 'package:assumemate/main.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
+import 'package:assumemate/api/firebase_api.dart';
+import 'package:assumemate/service/service.dart';
 
 class PendingApplicationScreen extends StatelessWidget {
   PendingApplicationScreen({super.key});
 
   final SecureStorage secureStorage = SecureStorage();
-
+  final FirebaseApi firebaseApi = FirebaseApi();
+  final ApiService apiService = ApiService();
   // get http => null;
 
   // void waitForVerification() {
@@ -94,6 +92,15 @@ class PendingApplicationScreen extends StatelessWidget {
                       .initializeToken();
                   await Provider.of<FavoriteProvider>(context, listen: false)
                       .initializeFave();
+
+                  await firebaseApi.requestNotificationPermission();
+
+                  String? token = await FirebaseMessaging.instance.getToken();
+                  if (token != null && token.isNotEmpty) {
+                    await apiService.saveFcmToken(token);
+                  } else {
+                    print("Error: Failed to retrieve FCM token.");
+                  }
 
                   Navigator.pushAndRemoveUntil(
                     context,

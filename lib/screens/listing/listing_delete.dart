@@ -12,6 +12,16 @@ class DeleteService {
 
     if (shouldDelete) {
       try {
+        // Fetch the listing status before proceeding
+        final listingStatus =
+            await apiService1.fetchListingStatus(listingId, token!);
+
+        if (listingStatus == 'ARCHIVED') {
+          // If the listing is already archived, show a message and return early
+          _showMessage(context, 'Listing is already archived.');
+          return;
+        }
+
         // Call the delete method in the API service to handle deletion
         await apiService1.deleteListing(listingId, token!);
 

@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:cloudinary/cloudinary.dart';
 import 'package:assumemate/storage/secure_storage.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/services.dart';
 import 'package:file_picker/file_picker.dart';
 import 'db_helper.dart'; // Assuming this is your database helper
@@ -44,8 +45,10 @@ class _CarFormState extends State<CarForm> {
     apiSecret: 'gKCMD_fCso--h1CIyPGxTWsp9As',
     cloudName: 'dqfvxj9h0',
   );
+
   final List<String> years =
-      List.generate(30, (index) => (1995 + index).toString()).reversed.toList();
+      List.generate(7, (index) => (DateTime.now().year - index).toString())
+          .toList();
   String? selectedYear,
       selectedTransmission,
       selectedFuelType,
@@ -88,6 +91,26 @@ class _CarFormState extends State<CarForm> {
     numberOfMonthsPaidController.dispose();
     addressController.dispose();
     super.dispose();
+  }
+
+  void _showAlert(String message) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Validation Error'),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the dialog
+              },
+              child: Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   Future<void> deleteImageFromCloudinary(String publicId) async {
@@ -382,7 +405,7 @@ class _CarFormState extends State<CarForm> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Align(
+        const Align(
           alignment: Alignment.centerLeft,
           child: Text(
             'Select Color:',
@@ -390,12 +413,14 @@ class _CarFormState extends State<CarForm> {
           ),
         ),
         Wrap(
-          spacing: 8,
+          spacing: 1,
           children: colors.map((color) {
             return ChoiceChip(
+              backgroundColor: const Color(0xffFFFCF1),
+              padding: EdgeInsets.zero,
               label: Container(width: 20, height: 20, color: color),
               selected: selectedColor == color,
-              showCheckmark: false, // Only remove the checkmark
+              showCheckmark: false,
               onSelected: (selected) {
                 setState(() {
                   selectedColor = selected ? color : null;
@@ -420,7 +445,7 @@ class _CarFormState extends State<CarForm> {
             FilePickerResult? result = await FilePicker.platform.pickFiles(
               allowMultiple: true,
               type: FileType.custom,
-              allowedExtensions: ['pdf', 'docx', 'jpg', 'png'],
+              allowedExtensions: ['pdf', 'docx'],
             );
 
             if (result != null) {
@@ -570,14 +595,32 @@ class _CarFormState extends State<CarForm> {
 
   @override
   Widget build(BuildContext context) {
+    final OutlineInputBorder borderStyle = OutlineInputBorder(
+      borderRadius: BorderRadius.circular(30.0),
+      borderSide: const BorderSide(color: Colors.black),
+    );
+
     return Form(
       key: _localFormKey,
       child: Column(
         children: [
           // Make DropdownButtonFormField
-          DropdownButtonFormField<String>(
+          DropdownButtonFormField2<String>(
+            decoration: InputDecoration(
+              hintText: 'Select Car Make',
+              contentPadding: const EdgeInsets.only(
+                  left: 2, right: 15, top: 10, bottom: 10),
+              enabledBorder: borderStyle,
+              focusedBorder: borderStyle,
+              border: borderStyle,
+            ),
+            dropdownStyleData: DropdownStyleData(
+                decoration: BoxDecoration(
+              color: const Color(0xffFFFCF1),
+              borderRadius: BorderRadius.circular(14),
+            )),
             value: selectedMake,
-            hint: Text('Select Car Make'),
+            hint: const Text('Select Car Make'),
             items: [
               ...carMakesAndModels.map<DropdownMenuItem<String>>((car) {
                 return DropdownMenuItem<String>(
@@ -585,7 +628,7 @@ class _CarFormState extends State<CarForm> {
                   child: Text(car.make),
                 );
               }).toList(),
-              DropdownMenuItem<String>(
+              const DropdownMenuItem<String>(
                 value: 'Other',
                 child: Text('Other'),
               ),
@@ -603,72 +646,136 @@ class _CarFormState extends State<CarForm> {
 
 // Text input for custom make if "Other" is selected
           if (selectedMake == 'Other')
-            TextFormField(
-              decoration: InputDecoration(labelText: 'Enter Custom Make'),
-              onChanged: (value) {
-                setState(() {
-                  customMake = value;
-                });
-              },
-              validator: (value) =>
-                  value == null || value.isEmpty ? 'Please enter a make' : null,
+            Column(
+              children: [
+                const SizedBox(height: 15),
+                TextFormField(
+                  decoration: InputDecoration(
+                    labelText: 'Enter Custom Make',
+                    floatingLabelStyle:
+                        const TextStyle(color: Color(0xff4A8AF0)),
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 18, vertical: 10),
+                    enabledBorder: borderStyle,
+                    focusedBorder: borderStyle,
+                    border: borderStyle,
+                  ),
+                  onChanged: (value) {
+                    setState(() {
+                      customMake = value;
+                    });
+                  },
+                  validator: (value) => value == null || value.isEmpty
+                      ? 'Please enter a make'
+                      : null,
+                ),
+              ],
             ),
 
 // Model DropdownButtonFormField (only show if a make is selected)
           if (selectedMake != null && selectedMake != 'Other')
-            DropdownButtonFormField<String>(
-              value: selectedModel,
-              hint: Text('Select Car Model'),
-              items: carMakesAndModels
-                  .firstWhere((car) => car.make == selectedMake)
-                  .models
-                  .map<DropdownMenuItem<String>>((String model) {
-                return DropdownMenuItem<String>(
-                  value: model,
-                  child: Text(model),
-                );
-              }).toList()
-                ..add(DropdownMenuItem<String>(
-                  value: 'Other',
-                  child: Text('Other'),
-                )),
-              onChanged: (String? newValue) {
-                setState(() {
-                  selectedModel = newValue;
-                });
-              },
-              validator: (value) =>
-                  value == null ? 'Please select a model' : null,
+            Column(
+              children: [
+                const SizedBox(height: 15),
+                DropdownButtonFormField2<String>(
+                  decoration: InputDecoration(
+                    hintText: 'Select Car Model',
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 18, vertical: 10),
+                    enabledBorder: borderStyle,
+                    focusedBorder: borderStyle,
+                    border: borderStyle,
+                  ),
+                  value: selectedModel,
+                  hint: Text('Select Car Model'),
+                  dropdownStyleData: DropdownStyleData(
+                      decoration: BoxDecoration(
+                    color: const Color(0xffFFFCF1),
+                    borderRadius: BorderRadius.circular(14),
+                  )),
+                  items: carMakesAndModels
+                      .firstWhere((car) => car.make == selectedMake)
+                      .models
+                      .map<DropdownMenuItem<String>>((String model) {
+                    return DropdownMenuItem<String>(
+                      value: model,
+                      child: Text(model),
+                    );
+                  }).toList()
+                    ..add(DropdownMenuItem<String>(
+                      value: 'Other',
+                      child: Text('Other'),
+                    )),
+                  onChanged: (String? newValue) {
+                    setState(() {
+                      selectedModel = newValue;
+                    });
+                  },
+                  validator: (value) =>
+                      value == null ? 'Please select a model' : null,
+                ),
+              ],
             ),
 
 // Text input for custom model if "Other" is selected in the Model dropdown
           if (selectedModel == 'Other')
-            TextFormField(
-              decoration: InputDecoration(labelText: 'Enter Custom Model'),
-              onChanged: (value) {
-                setState(() {
-                  customModel = value;
-                });
-              },
-              validator: (value) => value == null || value.isEmpty
-                  ? 'Please enter a model'
-                  : null,
+            Column(
+              children: [
+                const SizedBox(height: 15),
+                TextFormField(
+                  decoration: InputDecoration(
+                    labelText: 'Enter Custom Model',
+                    floatingLabelStyle:
+                        const TextStyle(color: Color(0xff4A8AF0)),
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 18, vertical: 10),
+                    enabledBorder: borderStyle,
+                    focusedBorder: borderStyle,
+                    border: borderStyle,
+                  ),
+                  onChanged: (value) {
+                    setState(() {
+                      customModel = value;
+                    });
+                  },
+                  validator: (value) => value == null || value.isEmpty
+                      ? 'Please enter a model'
+                      : null,
+                ),
+              ],
             ),
           SizedBox(
-            height: 20.0,
+            height: 15.0,
           ),
           TextFormField(
             controller: priceController,
-            decoration: InputDecoration(labelText: 'Price'),
+            decoration: InputDecoration(
+              labelText: 'Price',
+              floatingLabelStyle: const TextStyle(color: Color(0xff4A8AF0)),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+              enabledBorder: borderStyle,
+              focusedBorder: borderStyle,
+              border: borderStyle,
+            ),
             keyboardType: TextInputType.number,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
             validator: (value) {
               if (value == null || value.isEmpty) {
-                return 'Please enter a price';
-              } else if (int.tryParse(value.replaceAll(',', '')) == 0) {
-                return 'Price cannot be zero';
+                _showAlert('Please enter a price');
+                return 'Please enter a price'; // Prevent form submission
               }
-              return null;
+
+              final price = int.tryParse(value.replaceAll(',', ''));
+              if (price == null || price <= 0) {
+                _showAlert('Price must be a positive value');
+                return 'Price must be a positive value'; // Prevent form submission
+              } else if (price > totalPaymentMade) {
+                _showAlert(
+                    'Price must not exceed total payment made (\₱${numberFormat.format(totalPaymentMade)})');
+                return 'Price must not exceed total payment made'; // Prevent form submission
+              }
+              return null; // No validation error
             },
             onChanged: (value) {
               _formatAndSetText(value, priceController);
@@ -676,62 +783,95 @@ class _CarFormState extends State<CarForm> {
           ),
           SizedBox(height: 10),
           Align(
-            alignment: Alignment.centerLeft,
-            child: DropdownButton<String>(
-              value: selectedYear,
-              hint: Text('Select Year'),
-              items: years.map<DropdownMenuItem<String>>((String value) {
-                return DropdownMenuItem<String>(
-                  value: value,
-                  child: Text(value),
-                );
-              }).toList(),
-              onChanged: (value) {
-                setState(() {
-                  selectedYear = value;
-                });
-              },
-            ),
-          ),
-          SizedBox(height: 10),
-          Column(
-            crossAxisAlignment:
-                CrossAxisAlignment.start, // Aligns children to the start
-            children: [
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  'Transmission Type:',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              alignment: Alignment.centerLeft,
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton2<String>(
+                  isExpanded: true,
+                  buttonStyleData: ButtonStyleData(
+                    padding: const EdgeInsets.only(right: 18),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(30.0),
+                      border: Border.all(color: Colors.black),
+                    ),
+                  ),
+                  value: selectedYear,
+                  hint: const Text('Select Year'),
+                  dropdownStyleData: DropdownStyleData(
+                      decoration: BoxDecoration(
+                    color: const Color(0xffFFFCF1),
+                    borderRadius: BorderRadius.circular(14),
+                  )),
+                  items: years.map<DropdownMenuItem<String>>((String value) {
+                    return DropdownMenuItem<String>(
+                      value: value,
+                      child: Text(value),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      selectedYear = value;
+                    });
+                  },
                 ),
+              )),
+          SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              Text(
+                'Transmission Type:',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
-              SizedBox(
-                  height: 8), // Add some spacing between the text and the chips
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  ChoiceChip(
-                    label: Text('Manual'),
-                    selected: selectedTransmission == 'Manual',
-                    onSelected: (selected) =>
-                        setState(() => selectedTransmission = 'Manual'),
-                  ),
-                  ChoiceChip(
-                    label: Text('Automatic'),
-                    selected: selectedTransmission == 'Automatic',
-                    onSelected: (selected) =>
-                        setState(() => selectedTransmission = 'Automatic'),
-                  ),
-                ],
+              ChoiceChip(
+                backgroundColor: const Color(0xffFFFCF1),
+                label: const Text('Manual'),
+                showCheckmark: false,
+                selectedColor: const Color(0xff4A8AF0),
+                labelStyle: TextStyle(
+                  color: selectedTransmission == 'Manual'
+                      ? Colors.white
+                      : Colors.black,
+                ),
+                selected: selectedTransmission == 'Manual',
+                onSelected: (selected) =>
+                    setState(() => selectedTransmission = 'Manual'),
+              ),
+              ChoiceChip(
+                backgroundColor: const Color(0xffFFFCF1),
+                label: const Text('Automatic'),
+                showCheckmark: false,
+                selectedColor: const Color(0xff4A8AF0),
+                selected: selectedTransmission == 'Automatic',
+                labelStyle: TextStyle(
+                  color: selectedTransmission == 'Automatic'
+                      ? Colors.white
+                      : Colors.black,
+                ),
+                onSelected: (selected) =>
+                    setState(() => selectedTransmission = 'Automatic'),
               ),
             ],
           ),
           SizedBox(height: 10),
           Align(
             alignment: Alignment.centerLeft,
-            child: DropdownButton<String>(
+            child: DropdownButtonHideUnderline(
+                child: DropdownButton2<String>(
+              isExpanded: true,
+              buttonStyleData: ButtonStyleData(
+                padding: const EdgeInsets.only(right: 18),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(30.0),
+                  border: Border.all(color: Colors.black),
+                ),
+              ),
               value: selectedFuelType,
-              hint: Text('Select Fuel Type'),
+              hint: const Text('Select Fuel Type'),
+              dropdownStyleData: DropdownStyleData(
+                  decoration: BoxDecoration(
+                color: const Color(0xffFFFCF1),
+                borderRadius: BorderRadius.circular(14),
+              )),
               items: ['Gasoline', 'Diesel', 'LPG', 'Hybrid', 'Electric']
                   .map<DropdownMenuItem<String>>((String value) {
                 return DropdownMenuItem<String>(
@@ -744,107 +884,117 @@ class _CarFormState extends State<CarForm> {
                   selectedFuelType = value;
                 });
               },
-            ),
+            )),
           ),
-          SizedBox(height: 10),
+          const SizedBox(height: 10),
           _buildColorPicker(),
-          SizedBox(height: 10),
+          const SizedBox(height: 10),
           Align(
-            alignment: Alignment.centerLeft, // Aligns to the left
-            child: DropdownButton<String>(
-              value: selectedMileageRange,
-              hint: Text('Select Mileage'),
-              items: [
-                '0-10,000 km',
-                '10,001-20,000 km',
-                '20,001-30,000 km',
-                '30,001-40,000 km',
-                '40,001-50,000 km',
-                '50,001-60,000 km',
-                '60,001-70,000 km',
-                '70,001-80,000 km',
-                '80,001-90,000 km',
-                '90,001-100,000 km',
-                '100,001-110,000 km',
-                '110,001-120,000 km',
-                '120,001-130,000 km',
-                '130,001-140,000 km',
-                '140,001-150,000 km',
-                '150,001-160,000 km',
-                '160,001-170,000 km',
-                '170,001-180,000 km',
-                '180,001-190,000 km',
-                '190,001-200,000 km',
-              ].map<DropdownMenuItem<String>>((String value) {
-                return DropdownMenuItem<String>(
-                  value: value,
-                  child: Text(value),
-                );
-              }).toList(),
-              onChanged: (value) {
-                setState(() {
-                  selectedMileageRange = value;
-                });
-              },
-            ),
-          ),
+              alignment: Alignment.centerLeft, // Aligns to the left
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton2<String>(
+                  isExpanded: true,
+                  buttonStyleData: ButtonStyleData(
+                    padding: const EdgeInsets.only(right: 18),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(30.0),
+                      border: Border.all(color: Colors.black),
+                    ),
+                  ),
+                  value: selectedMileageRange,
+                  hint: const Text('Select Mileage'),
+                  dropdownStyleData: DropdownStyleData(
+                      decoration: BoxDecoration(
+                    color: const Color(0xffFFFCF1),
+                    borderRadius: BorderRadius.circular(14),
+                  )),
+                  items: [
+                    '0-10,000 km',
+                    '10,001-20,000 km',
+                    '20,001-30,000 km',
+                    '30,001-40,000 km',
+                    '40,001-50,000 km',
+                    '50,001-60,000 km',
+                    '60,001-70,000 km',
+                    '70,001-80,000 km',
+                    '80,001-90,000 km',
+                    '90,001-100,000 km',
+                    '100,001-110,000 km',
+                    '110,001-120,000 km',
+                    '120,001-130,000 km',
+                    '130,001-140,000 km',
+                    '140,001-150,000 km',
+                    '150,001-160,000 km',
+                    '160,001-170,000 km',
+                    '170,001-180,000 km',
+                    '180,001-190,000 km',
+                    '190,001-200,000 km',
+                  ].map<DropdownMenuItem<String>>((String value) {
+                    return DropdownMenuItem<String>(
+                      value: value,
+                      child: Text(value),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      selectedMileageRange = value;
+                    });
+                  },
+                ),
+              )),
           SizedBox(height: 10),
 
-          Column(
-            crossAxisAlignment:
-                CrossAxisAlignment.start, // Aligns the label to the left
+          Row(
+            mainAxisAlignment:
+                MainAxisAlignment.spaceEvenly, // Centers the ChoiceChips
             children: [
-              Text(
+              const Text(
                 "Sale Preference:",
                 style: TextStyle(fontSize: 16),
               ),
-              SizedBox(height: 8), // Add spacing between label and chips
-              Center(
-                child: Row(
-                  mainAxisAlignment:
-                      MainAxisAlignment.center, // Centers the ChoiceChips
-                  children: [
-                    ChoiceChip(
-                      label: Text('Buy Only'),
-                      selected: selectedPreference == 'Buy Only',
-                      onSelected: (bool selected) {
-                        setState(() {
-                          selectedPreference = selected ? 'Buy Only' : null;
-                        });
-                      },
-                      selectedColor: Colors.blue,
-                      labelStyle: TextStyle(
-                        color: selectedPreference == 'Buy Only'
-                            ? Colors.white
-                            : Colors.black,
-                      ),
-                    ),
-                    SizedBox(width: 10),
-                    ChoiceChip(
-                      label: Text('Allow Offers'),
-                      selected: selectedPreference == 'Allow Offers',
-                      onSelected: (bool selected) {
-                        setState(() {
-                          selectedPreference = selected ? 'Allow Offers' : null;
-                        });
-                      },
-                      selectedColor: Colors.blue,
-                      labelStyle: TextStyle(
-                        color: selectedPreference == 'Allow Offers'
-                            ? Colors.white
-                            : Colors.black,
-                      ),
-                    ),
-                  ],
+              ChoiceChip(
+                backgroundColor: const Color(0xffFFFCF1),
+                label: Text('Buy Only'),
+                selected: selectedPreference == 'Buy Only',
+                showCheckmark: false,
+                onSelected: (bool selected) {
+                  setState(() {
+                    selectedPreference = selected ? 'Buy Only' : null;
+                  });
+                },
+                selectedColor: const Color(0xff4A8AF0),
+                labelStyle: TextStyle(
+                  color: selectedPreference == 'Buy Only'
+                      ? Colors.white
+                      : Colors.black,
+                ),
+              ),
+              SizedBox(width: 10),
+              ChoiceChip(
+                backgroundColor: const Color(0xffFFFCF1),
+                label: Text('Allow Offers'),
+                showCheckmark: false,
+                selected: selectedPreference == 'Allow Offers',
+                onSelected: (bool selected) {
+                  setState(() {
+                    selectedPreference = selected ? 'Allow Offers' : null;
+                  });
+                },
+                selectedColor: const Color(0xff4A8AF0),
+                labelStyle: TextStyle(
+                  color: selectedPreference == 'Allow Offers'
+                      ? Colors.white
+                      : Colors.black,
                 ),
               ),
             ],
           ),
+
           SizedBox(height: 10),
 
           /// Address Field
           Padding(
-            padding: const EdgeInsets.all(8.0),
+            padding: const EdgeInsets.symmetric(vertical: 8),
             child: TextField(
               controller: addressController,
               onChanged: (value) {
@@ -858,7 +1008,12 @@ class _CarFormState extends State<CarForm> {
               },
               decoration: InputDecoration(
                 labelText: 'Enter an Address',
-                border: OutlineInputBorder(),
+                floatingLabelStyle: const TextStyle(color: Color(0xff4A8AF0)),
+                contentPadding: const EdgeInsets.only(
+                    left: 18, right: 15, top: 10, bottom: 10),
+                enabledBorder: borderStyle,
+                focusedBorder: borderStyle,
+                border: borderStyle,
               ),
             ),
           ),
@@ -918,9 +1073,18 @@ class _CarFormState extends State<CarForm> {
             ),
           ),
 
+          const SizedBox(height: 15),
           TextFormField(
             controller: monthlyPaymentController,
-            decoration: InputDecoration(labelText: 'Monthly Payment'),
+            decoration: InputDecoration(
+              labelText: 'Monthly Payment',
+              floatingLabelStyle: const TextStyle(color: Color(0xff4A8AF0)),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+              enabledBorder: borderStyle,
+              focusedBorder: borderStyle,
+              border: borderStyle,
+            ),
             keyboardType: TextInputType.number,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
             validator: (value) {
@@ -936,18 +1100,39 @@ class _CarFormState extends State<CarForm> {
               _computeTotalPayment();
             },
           ),
+          const SizedBox(height: 15),
           TextFormField(
             controller: loanDurationController,
-            decoration: InputDecoration(labelText: 'Loan Duration (Months)'),
+            decoration: InputDecoration(
+              labelText: 'Loan Duration (Months)',
+              floatingLabelStyle: const TextStyle(color: Color(0xff4A8AF0)),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+              enabledBorder: borderStyle,
+              focusedBorder: borderStyle,
+              border: borderStyle,
+            ),
             keyboardType: TextInputType.number,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
             validator: (value) {
               if (value == null || value.isEmpty) {
-                return 'Please enter a loan duration';
-              } else if (int.tryParse(value.replaceAll(',', '')) == 0) {
-                return 'Loan duration cannot be zero';
+                _showAlert('Please enter a loan duration');
+                return 'Please enter a loan duration'; // Prevent form submission
               }
-              return null;
+
+              final duration = int.tryParse(value.replaceAll(',', ''));
+              if (duration == null || duration < 6 || duration > 84) {
+                _showAlert(
+                    'Loan duration is at least 6 months and a maximum of 84 months(7years) for cars');
+                return 'Loan duration is at least 6 months and a maximum of 84 months(7years) for cars'; // Prevent form submission
+              }
+
+              final monthsPaid = int.tryParse(
+                  numberOfMonthsPaidController.text.replaceAll(',', ''));
+              if (monthsPaid != null && monthsPaid > duration) {
+                return 'Number of months paid cannot exceed loan duration'; // Prevent form submission
+              }
+              return null; // No validation error
             },
           ),
           Padding(
@@ -959,14 +1144,27 @@ class _CarFormState extends State<CarForm> {
           ),
           TextFormField(
             controller: downPaymentController,
-            decoration: InputDecoration(labelText: 'Down Payment'),
+            decoration: InputDecoration(
+              labelText: 'Down Payment',
+              floatingLabelStyle: const TextStyle(color: Color(0xff4A8AF0)),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+              enabledBorder: borderStyle,
+              focusedBorder: borderStyle,
+              border: borderStyle,
+            ),
             keyboardType: TextInputType.number,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
             validator: (value) {
               if (value == null || value.isEmpty) {
                 return 'Please enter a down payment';
-              } else if (int.tryParse(value.replaceAll(',', '')) == 0) {
-                return 'Down payment cannot be zero';
+              }
+              final downPayment = int.tryParse(value.replaceAll(',', ''));
+
+              if (downPayment == null) {
+                return 'Please enter a valid number';
+              } else if (downPayment < 0) {
+                return 'Down payment cannot be less than zero';
               }
               return null;
             },
@@ -975,33 +1173,63 @@ class _CarFormState extends State<CarForm> {
               _computeTotalPayment();
             },
           ),
+          const SizedBox(height: 15),
           TextFormField(
             controller: numberOfMonthsPaidController,
-            decoration: InputDecoration(labelText: 'Number of Months Paid'),
+            decoration: InputDecoration(
+              labelText: 'Number of Months Paid',
+              floatingLabelStyle: const TextStyle(color: Color(0xff4A8AF0)),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+              enabledBorder: borderStyle,
+              focusedBorder: borderStyle,
+              border: borderStyle,
+            ),
             keyboardType: TextInputType.number,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
             validator: (value) {
               if (value == null || value.isEmpty) {
-                return 'Please enter number of months paid';
-              } else if (int.tryParse(value.replaceAll(',', '')) == 0) {
-                return 'Number of months paid cannot be zero';
+                _showAlert('Please enter the number of months paid');
+                return 'Please enter the number of months paid'; // Prevent form submission
               }
-              return null;
+
+              final monthsPaid = int.tryParse(value.replaceAll(',', ''));
+              if (monthsPaid == null || monthsPaid <= 0) {
+                _showAlert('Number of months paid must be greater than zero');
+                return 'Number of months paid must be greater than zero'; // Prevent form submission
+              }
+
+              final loanDuration =
+                  int.tryParse(loanDurationController.text.replaceAll(',', ''));
+              if (loanDuration != null && monthsPaid > loanDuration) {
+                _showAlert(
+                    'Number of months paid cannot exceed loan duration ($loanDuration)');
+                return 'Number of months paid cannot exceed loan duration'; // Prevent form submission
+              }
+              return null; // No validation error
             },
             onChanged: (value) {
               _formatAndSetText(value, numberOfMonthsPaidController);
               _computeTotalPayment();
             },
           ),
+          const SizedBox(height: 15),
           TextField(
             controller: descriptionController,
             maxLines: 3,
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               hintText: 'Put Description here',
-              border: OutlineInputBorder(),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+              enabledBorder:
+                  borderStyle.copyWith(borderRadius: BorderRadius.circular(15)),
+              focusedBorder:
+                  borderStyle.copyWith(borderRadius: BorderRadius.circular(15)),
+              border:
+                  borderStyle.copyWith(borderRadius: BorderRadius.circular(15)),
             ),
           ),
-          SizedBox(height: 10),
+          SizedBox(height: 15),
           _buildDocumentUploader(), // Space between sections
           buildImageUploader(),
           ElevatedButton(
@@ -1011,6 +1239,27 @@ class _CarFormState extends State<CarForm> {
                 if (_imageFiles == null || _imageFiles!.isEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text('Please select at least one image')),
+                  );
+                  return;
+                }
+                if (selectedYear == null || selectedYear!.isEmpty) {
+                  // Show an alert or a message indicating that the year is required
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Please select a year')),
+                  );
+                  return;
+                }
+                if (selectedPreference == null) {
+                  // Show an alert or a message indicating that the selection is required
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Please select a sale preference')),
+                  );
+                  return;
+                }
+                if (addressController.text.isEmpty) {
+                  // Show a message if the address is empty
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Please enter an address')),
                   );
                   return;
                 }
@@ -1042,9 +1291,7 @@ class _CarFormState extends State<CarForm> {
                   'monthlyPayment': double.tryParse(
                           monthlyPaymentController.text.replaceAll(',', '')) ??
                       0.0,
-                  'loanDuration': double.tryParse(
-                          loanDurationController.text.replaceAll(',', '')) ??
-                      0.0,
+                  'loanDuration': loanDurationController.text,
                   'totalPaymentMade': totalPaymentMade,
                   'downPayment': double.tryParse(
                           downPaymentController.text.replaceAll(',', '')) ??
@@ -1080,7 +1327,10 @@ class _CarFormState extends State<CarForm> {
                 }
               }
             },
-            child: Text('Submit for Review'),
+            style: ElevatedButton.styleFrom(
+                foregroundColor: const Color(0xffFFFCF1),
+                backgroundColor: const Color(0xff4A8AF0)),
+            child: const Text('Submit for Review'),
           ),
         ],
       ),

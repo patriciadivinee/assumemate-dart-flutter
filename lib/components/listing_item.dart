@@ -1,5 +1,6 @@
 import 'dart:convert'; // for JSON decoding
 import 'package:assumemate/format.dart';
+import 'package:assumemate/screens/assumptor_list_detail_screen.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -32,13 +33,14 @@ class ListingItem extends StatefulWidget {
 }
 
 class _ListingItemState extends State<ListingItem> {
+  final SecureStorage secureStorage = SecureStorage();
   Map<String, dynamic>? userProfile; // Store user profile data
   bool isLoading = true; // For loading state
   bool isError = false; // For error state
+  String? _userId;
 
   // Method to fetch user profile
   Future<void> fetchUserProfile() async {
-    final SecureStorage secureStorage = SecureStorage();
     String? token = await secureStorage.getToken(); // Retrieve the token
 
     try {
@@ -70,9 +72,14 @@ class _ListingItemState extends State<ListingItem> {
     }
   }
 
+  Future<void> _getUserType() async {
+    _userId = await secureStorage.getUserId();
+  }
+
   @override
   void initState() {
     super.initState();
+    _getUserType();
     fetchUserProfile(); // Fetch the user profile when the widget is initialized
   }
 
@@ -83,10 +90,12 @@ class _ListingItemState extends State<ListingItem> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => ItemDetailScreen(
-                listingId: widget.listingId,
-                assumptorId: widget.assumptorId,
-              ),
+              builder: (context) => (_userId == widget.assumptorId)
+                  ? AssumptorListDetailScreen(listingId: widget.listingId)
+                  : ItemDetailScreen(
+                      listingId: widget.listingId,
+                      assumptorId: widget.assumptorId,
+                    ),
             ),
           );
         },

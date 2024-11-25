@@ -7,7 +7,6 @@ import 'package:assumemate/logo/pop_up.dart';
 import 'package:assumemate/main.dart';
 import 'package:assumemate/screens/user_auth/create_profile_screen.dart';
 // import 'package:assumemate/screens/home_screen.dart';
-import 'package:assumemate/screens/user_auth/login_screen.dart';
 import 'dart:convert';
 
 import 'package:assumemate/service/service.dart';
@@ -36,7 +35,7 @@ class _WaitingEmailVerificationState extends State<WaitingEmailVerification> {
   }
 
   void _startCountdown() {
-    _timer = Timer.periodic(Duration(seconds: 1), (timer) {
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (_countdown > 0) {
         setState(() {
           _countdown--;
