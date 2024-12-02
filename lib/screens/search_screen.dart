@@ -1,4 +1,5 @@
 import 'package:assumemate/components/listing_item.dart';
+import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -50,6 +51,11 @@ class _SearchScreenState extends State<SearchScreen> {
   final List<String> categories = ['Real Estate', 'Car', 'Motorcycle'];
   final List<String> transmissionTypes = ['Manual', 'Automatic', 'Hybrid'];
   final List<String> fuelTypes = ['Gasoline', 'Diesel', 'Electric', 'Hybrid'];
+
+  final OutlineInputBorder borderStyle = OutlineInputBorder(
+    borderRadius: BorderRadius.circular(30.0),
+    borderSide: const BorderSide(color: Colors.black),
+  );
 
   @override
   void initState() {
@@ -394,7 +400,7 @@ class _SearchScreenState extends State<SearchScreen> {
           setState(() => make = value);
         }),
         const SizedBox(height: 8),
-        buildTextInput('Year Model', (value) {
+        buildNumberInput('Year Model', (value) {
           setState(() => yearModel = value);
         }),
         const SizedBox(height: 8),
@@ -457,6 +463,7 @@ class _SearchScreenState extends State<SearchScreen> {
       lotArea = 0.0;
       floorArea = 0.0;
 
+      selectedCategory = '';
       make = '';
       yearModel = '';
       fuelType = '';
@@ -500,7 +507,9 @@ class _SearchScreenState extends State<SearchScreen> {
       value: value.isEmpty ? null : value,
       decoration: InputDecoration(
         labelText: label,
-        border: const OutlineInputBorder(),
+        enabledBorder: borderStyle,
+        focusedBorder: borderStyle,
+        border: borderStyle,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       ),
       items: items.map((String item) {
@@ -536,6 +545,7 @@ class _SearchScreenState extends State<SearchScreen> {
     if (selectedColor != null) activeFilterCount++;
 
     return Drawer(
+      backgroundColor: Color(0xffFFFCF1),
       child: ListView(
         padding: EdgeInsets.zero,
         children: [
@@ -604,6 +614,7 @@ class _SearchScreenState extends State<SearchScreen> {
                 const Text('Price Range (PHP)',
                     style: TextStyle(fontWeight: FontWeight.bold)),
                 RangeSlider(
+                  activeColor: const Color(0xff4A8AF0),
                   values: priceRange,
                   min: 0,
                   max: 10000000,
@@ -634,22 +645,40 @@ class _SearchScreenState extends State<SearchScreen> {
                           filterSearchResults(_searchController.text);
                           Navigator.pop(context);
                         },
-                        child: const Text('Apply Filters'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Color(0xFF4A8AF0),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 30, vertical: 9),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(24.0),
+                          ),
+                        ),
+                        child: const Text(
+                          'Apply Filters',
+                          style: TextStyle(color: Colors.white),
+                        ),
                       ),
                     ),
                     const SizedBox(width: 8),
-                    ElevatedButton(
+                    OutlinedButton(
                       onPressed: () {
+                        print('cleared');
                         setState(() {
                           clearFiltersAndResetListings();
                         });
                       },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red,
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 30, vertical: 9),
+                        side: const BorderSide(
+                            color: Color(0xff4A8AF0), width: 2),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30.0),
+                        ),
                       ),
                       child: const Text(
                         'Clear All',
-                        style: TextStyle(color: Colors.white),
+                        style: TextStyle(color: Color(0xFF4A8AF0)),
                       ),
                     ),
                   ],
@@ -910,7 +939,9 @@ class _SearchScreenState extends State<SearchScreen> {
     return TextField(
       decoration: InputDecoration(
         labelText: label,
-        border: const OutlineInputBorder(),
+        enabledBorder: borderStyle,
+        focusedBorder: borderStyle,
+        border: borderStyle,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       ),
       onChanged: onChanged,
@@ -921,7 +952,9 @@ class _SearchScreenState extends State<SearchScreen> {
     return TextField(
       decoration: InputDecoration(
         labelText: label,
-        border: const OutlineInputBorder(),
+        enabledBorder: borderStyle,
+        focusedBorder: borderStyle,
+        border: borderStyle,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       ),
       keyboardType: TextInputType.number,
@@ -931,13 +964,21 @@ class _SearchScreenState extends State<SearchScreen> {
 
   Widget buildDropdownField(String label, List<String> items, String value,
       Function(String?) onChanged) {
-    return DropdownButtonFormField<String>(
+    return DropdownButtonFormField2<String>(
       value: value.isEmpty ? null : value,
       decoration: InputDecoration(
-        labelText: label,
-        border: const OutlineInputBorder(),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        contentPadding:
+            const EdgeInsets.only(left: 2, right: 15, top: 10, bottom: 10),
+        enabledBorder: borderStyle,
+        focusedBorder: borderStyle,
+        border: borderStyle,
       ),
+      dropdownStyleData: DropdownStyleData(
+          decoration: BoxDecoration(
+        color: const Color(0xffFFFCF1),
+        borderRadius: BorderRadius.circular(14),
+      )),
+      hint: Text(label),
       items: items.map((String item) {
         return DropdownMenuItem(
           value: item,
@@ -957,6 +998,7 @@ class _SearchScreenState extends State<SearchScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        surfaceTintColor: Colors.transparent,
         leading: IconButton(
           splashColor: Colors.transparent,
           icon: const Icon(
@@ -974,15 +1016,15 @@ class _SearchScreenState extends State<SearchScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 8.0),
                 child: TextField(
                   controller: _searchController,
+                  onTapOutside: (event) {
+                    FocusManager.instance.primaryFocus?.unfocus();
+                  },
                   decoration: InputDecoration(
                     hintText: 'Search...',
                     prefixIcon: const Icon(Icons.search),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8.0),
-                      borderSide: BorderSide.none,
-                    ),
-                    filled: true,
-                    fillColor: Colors.grey.shade200,
+                    border: borderStyle,
+                    enabledBorder: borderStyle,
+                    focusedBorder: borderStyle,
                   ),
                 ),
               ),
@@ -1020,6 +1062,18 @@ class _SearchScreenState extends State<SearchScreen> {
         var listing = listings[index];
         var content = listing['list_content'];
 
+        var title;
+        if (content['category'] == "Car" ||
+            content['category'] == "Motorcycle") {
+          title =
+              '${content['model'] ?? 'Unknown model'} ${content['make'] ?? 'Unknown make'} ${content['year'] ?? 'Unknown year'}';
+        } else if (content['category'] == "Real Estate") {
+          title = '${content['title'] ?? 'No Title'}';
+        } else {
+          title = content['title'] ??
+              'No Title'; // Default case if category doesn't match
+        }
+
         var images = (content['images'] is List)
             ? content['images']
             : (content['images'] is String ? [content['images']] : []);
@@ -1029,12 +1083,7 @@ class _SearchScreenState extends State<SearchScreen> {
             : 'https://example.com/placeholder.png';
 
         return ListingItem(
-          title: content['title'] ?? 'No Title',
-          imageUrl: [imageUrl],
-          description: content['description'] ?? 'No Description',
-          listingId: listing['list_id'].toString(),
-          assumptorId: listing['user_id'].toString(),
-          price: content['price'].toString(),
+          listing: listing,
         );
       },
     );

@@ -147,12 +147,12 @@ class _NotificationScreenState extends State<NotificationScreen> {
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
+        surfaceTintColor: Colors.transparent,
         elevation: 0,
         backgroundColor: Colors.white,
         title: const Text(
           'Notifications',
           style: TextStyle(
-            fontSize: 24,
             fontWeight: FontWeight.bold,
             color: Colors.black,
           ),
@@ -160,6 +160,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
       ),
       body: RefreshIndicator(
         onRefresh: _refreshNotifications,
+        color: const Color(0xff4A8AF0),
         child: FutureBuilder<List<NotificationModel>>(
           future: notifications,
           builder: (context, snapshot) {
@@ -218,13 +219,25 @@ class _NotificationScreenState extends State<NotificationScreen> {
                           'ws/chat/${notification.triggeredById}/',
                           arguments: {'userId': notification.triggeredById},
                         );
+                      } else if (notification.notificationType == 'Report' &&
+                          notification.triggeredById != null) {
+                        Navigator.pushNamed(
+                          context,
+                          'reports/received/',
+                        );
+                      } else if (notification.notificationType == 'Report' &&
+                          notification.triggeredById != null) {
+                        Navigator.pushNamed(
+                          context,
+                          'reports/sent/',
+                        );
                       }
 
                       // Mark notification as read
                       markNotificationAsRead(notification.id);
                     },
                     child: Container(
-                      height: 96,
+                      // height: 96,
                       padding: const EdgeInsets.symmetric(
                           horizontal: 16, vertical: 12),
                       child: Row(
@@ -241,7 +254,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                 Text(
                                   notification.message,
                                   style: TextStyle(
-                                    fontSize: 16,
+                                    fontSize: 13,
                                     color: Colors.black87,
                                     fontWeight: notification.isRead
                                         ? FontWeight.normal
@@ -254,7 +267,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                 Text(
                                   notification.createdAt,
                                   style: const TextStyle(
-                                    fontSize: 14,
+                                    fontSize: 12,
                                     color: Colors.grey,
                                   ),
                                 ),

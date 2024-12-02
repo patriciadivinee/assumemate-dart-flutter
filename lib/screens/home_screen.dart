@@ -1,3 +1,6 @@
+import 'package:assumemate/api/firebase_api.dart';
+import 'package:assumemate/service/service.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:google_nav_bar/google_nav_bar.dart';
 import 'package:assumemate/logo/loading_animation.dart';
@@ -7,6 +10,7 @@ import 'package:assumemate/screens/highlighted_item_screen.dart';
 import 'package:assumemate/screens/notification_screen.dart';
 import 'package:assumemate/screens/profile_screen.dart';
 import 'package:assumemate/storage/secure_storage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -16,6 +20,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  ApiService apiService = ApiService();
   int _selectedIndex = 0;
   String? user;
   String? token;
@@ -24,43 +29,71 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void initState() {
-    _getUserType();
+    getNotifPermission();
     _getUserToken();
     super.initState();
   }
 
-  Future<void> _getUserType() async {
-    String? userType = await secureStorage.getUserType();
+  Future<void> getNotifPermission() async {
+    // Save FCM token after login
+    final prefs = await SharedPreferences.getInstance();
+    print('push_notifications');
+    print(prefs.getBool('push_notifications'));
+    final FirebaseApi firebaseApi = FirebaseApi();
+    String? fcmToken = await FirebaseMessaging.instance.getToken();
+    if (fcmToken != null) {
+      // Send FCM token to the backend for saving
+      final notifStatus =
+          await FirebaseMessaging.instance.getNotificationSettings();
 
-    setState(() {
-      user = userType;
-    });
+      if (notifStatus.authorizationStatus != AuthorizationStatus.authorized &&
+          prefs.getBool('push_notifications') == null) {
+        final isEnabled = await firebaseApi.requestNotificationPermission();
+
+        if (isEnabled) {
+          await apiService.saveFcmToken(fcmToken);
+          // prefs.setBool('push_notifications', true);
+        } else {
+          // await apiService.removeFcmToken(fcmToken);
+          await FirebaseMessaging.instance.deleteToken();
+          // prefs.setBool('push_notifications', false);
+        }
+      }
+    }
   }
 
   Future<void> _getUserToken() async {
     String? userToken = await secureStorage.getToken();
+    String? userType = await secureStorage.getUserType();
 
     setState(() {
       token = userToken;
+      user = userType;
     });
   }
 
   List<GButton> _buildTabs(int index) {
     return [
       GButton(
-          icon: (index == 0) ? Icons.home : Icons.home_outlined, iconSize: 30),
-      GButton(
-          icon: (index == 1) ? Icons.star : Icons.star_outline_outlined,
+          icon: (index == 0) ? Icons.home_rounded : Icons.home_outlined,
           iconSize: 30),
       GButton(
-          icon:
-              (index == 2) ? Icons.notifications : Icons.notifications_outlined,
+          icon: (index == 1) ? Icons.star_rounded : Icons.star_outline_rounded,
           iconSize: 30),
       GButton(
-          icon: (index == 3) ? Icons.messenger : Icons.messenger_outline,
+          icon: (index == 2)
+              ? Icons.notifications_rounded
+              : Icons.notifications_outlined,
           iconSize: 30),
       GButton(
-          icon: (index == 4) ? Icons.person : Icons.person_outline,
+          icon: (index == 3)
+              ? Icons.messenger_rounded
+              : Icons.messenger_outline_rounded,
+          iconSize: 30),
+      GButton(
+          icon: (index == 4)
+              ? Icons.person_rounded
+              : Icons.person_outline_rounded,
           iconSize: 30),
     ];
   }

@@ -20,6 +20,7 @@ class _AssumptorListingScreenState extends State<AssumptorListingScreen> {
   late Future<List<dynamic>> _activeListings;
   late Future<List<dynamic>> _reservedListings;
   late Future<List<dynamic>> _archivedListings;
+  late Future<List<dynamic>> _soldListings;
 
   final ApiService apiService = ApiService();
   final SecureStorage secureStorage = SecureStorage();
@@ -76,25 +77,9 @@ class _AssumptorListingScreenState extends State<AssumptorListingScreen> {
             itemCount: snapshot.data!.length,
             itemBuilder: (context, index) {
               var listing = snapshot.data![index];
-              var content = listing['list_content'];
-
-              String title = 'No title';
-
-              if (content['category'] == 'Real Estate') {
-                // title = content['title'];
-                title = 'No title';
-              } else {
-                title =
-                    '${content['make']} ${content['model']} (${content['year']}) - ${content['transmission']}';
-              }
 
               return ListingItem(
-                title: title,
-                imageUrl: content['images'],
-                description: content['description'] ?? 'No Description',
-                listingId: listing['list_id'].toString(),
-                assumptorId: listing['user_id'].toString(),
-                price: content['price'].toString(),
+                listing: listing,
               );
             },
           );
@@ -108,6 +93,7 @@ class _AssumptorListingScreenState extends State<AssumptorListingScreen> {
     _activeListings = fetchUserListings('ACTIVE');
     _reservedListings = fetchUserListings('RESERVED');
     _archivedListings = fetchUserListings('ARCHIVED');
+    _soldListings = fetchUserListings('SOLD');
     super.initState();
   }
 
@@ -117,9 +103,10 @@ class _AssumptorListingScreenState extends State<AssumptorListingScreen> {
         GoogleFonts.poppins(textStyle: const TextStyle(fontSize: 13));
 
     return DefaultTabController(
-      length: 3,
+      length: 4,
       child: Scaffold(
           appBar: AppBar(
+            surfaceTintColor: Colors.transparent,
             leading: IconButton(
               splashColor: Colors.transparent,
               icon: const Icon(
@@ -159,6 +146,11 @@ class _AssumptorListingScreenState extends State<AssumptorListingScreen> {
                 )),
                 Tab(
                     child: Text(
+                  'Sold',
+                  style: tabTextStyle,
+                )),
+                Tab(
+                    child: Text(
                   'Archive',
                   style: tabTextStyle,
                 )),
@@ -171,6 +163,7 @@ class _AssumptorListingScreenState extends State<AssumptorListingScreen> {
                 children: [
                   buildListingGrid(_activeListings),
                   buildListingGrid(_reservedListings),
+                  buildListingGrid(_soldListings),
                   buildListingGrid(_archivedListings),
                 ],
               ))),

@@ -5,7 +5,7 @@ import 'package:assumemate/components/listing_item.dart';
 import 'package:assumemate/format.dart';
 import 'package:assumemate/screens/chat_message_screen.dart';
 import 'package:assumemate/screens/other_profile_screen.dart';
-import 'package:assumemate/screens/profile_screen%20copy.dart';
+import 'package:assumemate/screens/profile_screen.dart';
 import 'package:currency_text_input_formatter/currency_text_input_formatter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:assumemate/logo/pop_up.dart';
@@ -726,7 +726,8 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
             ],
           ),
         ),
-        bottomNavigationBar: (_userType == 'assumee')
+        bottomNavigationBar: (_userType == 'assumee' &&
+                listingDetail?.status == 'ACTIVE')
             ? Row(
                 mainAxisSize: MainAxisSize.min,
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -865,6 +866,7 @@ class FullScreenImageViewer extends StatelessWidget {
 }
 
 class ListingDetail {
+  final String status;
   final String title;
   final List<String> images;
   final String category;
@@ -892,6 +894,7 @@ class ListingDetail {
   final int numberOfMonthsPaid;
 
   ListingDetail({
+    required this.status,
     required this.price,
     required this.title,
     required this.images,
@@ -928,6 +931,7 @@ class ListingDetail {
     double calculatedPrice = parsedMonthlyPayment * parsedNumberOfMonthsPaid;
 
     return ListingDetail(
+      status: json['list_status'],
       price: calculatedPrice > 0
           ? calculatedPrice
           : double.tryParse(content['price']?.toString() ?? '0') ?? 0,
@@ -1129,6 +1133,7 @@ Widget buildSuggestionsList(Future<List<dynamic>> futureListings) {
         return Container(
           height: 1000, // Set a fixed height that fits your layout
           child: GridView.builder(
+            padding: EdgeInsets.zero,
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2, // Number of items per row
               crossAxisSpacing: 5, // Spacing between columns
@@ -1157,12 +1162,7 @@ Widget buildSuggestionsList(Future<List<dynamic>> futureListings) {
               }
 
               return ListingItem(
-                title: title,
-                imageUrl: content['images'],
-                description: content['description'] ?? 'No Description',
-                listingId: listing['list_id'].toString(),
-                assumptorId: listing['user_id'].toString(),
-                price: content['price'].toString(),
+                listing: listing,
               );
             },
           ),

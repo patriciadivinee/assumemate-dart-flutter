@@ -1,11 +1,14 @@
+import 'dart:convert'; // for JSON decoding
 import 'package:assumemate/format.dart';
 import 'package:assumemate/screens/assumptor_list_detail_screen.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:assumemate/provider/favorite_provider.dart';
 import 'package:assumemate/screens/item_detail_screen.dart';
 import 'package:assumemate/storage/secure_storage.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart'; // For accessing environment variables
 
 class ListingItem extends StatefulWidget {
   final dynamic listing;
@@ -23,7 +26,41 @@ class _ListingItemState extends State<ListingItem> {
   final SecureStorage secureStorage = SecureStorage();
   Map<String, dynamic>? userProfile; // Store user profile data
   bool isLoading = true; // For loading state
+  bool isError = false; // For error state
   String? _userId;
+
+  // Method to fetch user profile
+  Future<void> fetchUserProfile() async {
+    String? token = await secureStorage.getToken(); // Retrieve the token
+
+    try {
+      final response = await http.get(
+        Uri.parse(
+            '${dotenv.env['API_URL']}/view/${widget.listing['user_id'].toString()}/profile/'),
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final profile = json.decode(response.body);
+        setState(() {
+          userProfile = profile['user_profile'];
+          isLoading = false;
+        });
+        print(userProfile!['user_prof_pic']);
+      } else {
+        throw Exception(
+            'Failed to load user profile: ${response.reasonPhrase}');
+      }
+    } catch (error) {
+      print('Error fetching user profile: $error');
+      setState(() {
+        isError = true;
+        isLoading = false;
+      });
+    }
+  }
 
   Future<void> _getUserType() async {
     _userId = await secureStorage.getUserId();
@@ -33,6 +70,7 @@ class _ListingItemState extends State<ListingItem> {
   void initState() {
     super.initState();
     _getUserType();
+    fetchUserProfile(); // Fetch the user profile when the widget is initialized
   }
 
   @override
@@ -104,7 +142,7 @@ class _ListingItemState extends State<ListingItem> {
                       fit: BoxFit.cover,
                     ),
                   ),
-                  if (widget.listing['is_promoted'] ?? false)
+                  if (widget.listing['is_promoted'])
                     Positioned(
                         left: 10,
                         top: 10,

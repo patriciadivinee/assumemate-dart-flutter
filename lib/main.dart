@@ -1,11 +1,11 @@
-import 'dart:io';
-
 import 'package:assumemate/api/firebase_api.dart';
 import 'package:assumemate/provider/follow_provider.dart';
+import 'package:assumemate/screens/account_settings_screen.dart';
 import 'package:assumemate/screens/assumptor_list_detail_screen.dart';
 import 'package:assumemate/screens/chat_message_screen.dart';
-import 'package:assumemate/screens/item_detail_screen.dart';
 import 'package:assumemate/screens/other_profile_screen.dart';
+import 'package:assumemate/screens/report_list.dart';
+import 'package:assumemate/service/service.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
@@ -18,13 +18,13 @@ import 'package:assumemate/provider/profile_provider.dart';
 import 'package:assumemate/provider/photos_permission.dart';
 import 'package:assumemate/provider/storage_permission.dart';
 import 'package:assumemate/screens/home_screen.dart';
-import 'package:path_provider/path_provider.dart';
 // import 'package:assumemate/screens/waiting_area/pending_application_screen.dart';
 // import 'package:assumemate/screens/user_auth/login_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:assumemate/logo/welcome.dart';
 import 'package:assumemate/storage/secure_storage.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -41,7 +41,6 @@ void main() async {
   await Firebase.initializeApp();
   FirebaseApi firebaseApi = FirebaseApi();
   await firebaseApi.initNotifications(navigatorKey);
-  FirebaseMessaging messaging = FirebaseMessaging.instance;
   FirebaseMessaging.onMessage.listen((RemoteMessage message) {
     print("Foreground message received: ${message.notification?.title}");
   });
@@ -51,6 +50,7 @@ void main() async {
     await profileProvider.initializeToken();
     await faveProvider.initializeFave();
     await followProvider.initializeFollow();
+    await checkNotificationPermission();
   }
 
   SystemChrome.setSystemUIOverlayStyle(
@@ -80,27 +80,51 @@ void main() async {
   });
 }
 
+Future<void> checkNotificationPermission() async {
+  final prefs = await SharedPreferences.getInstance();
+  FirebaseMessaging messaging = FirebaseMessaging.instance;
+  final ApiService apiService = ApiService();
+
+  final notifStatus = await messaging.getNotificationSettings();
+
+  final isGranted =
+      notifStatus.authorizationStatus == AuthorizationStatus.authorized;
+
+  prefs.setBool('push_notifications', isGranted);
+  String? fcmToken = await FirebaseMessaging.instance.getToken();
+  if (fcmToken != null) {
+    if (!isGranted) {
+      // If permission is denied or not determined, remove the FCM token.
+
+      await apiService.removeFcmToken(fcmToken);
+      await FirebaseMessaging.instance.deleteToken();
+    } else {
+      await apiService.saveFcmToken(fcmToken);
+    }
+  }
+}
+
 Future<void> backgroundHandler(RemoteMessage message) async {
   print("Background message: ${message.notification?.title}");
 }
 
 // Function to download image from a URL and save it locally
-Future<String?> downloadAndSaveImage(String url, String fileName) async {
-  try {
-    var http;
-    final response = await http.get(Uri.parse(url));
-    if (response.statusCode == 200) {
-      final directory = await getTemporaryDirectory();
-      final imagePath = '${directory.path}/$fileName';
-      final file = File(imagePath);
-      await file.writeAsBytes(response.bodyBytes);
-      return imagePath;
-    }
-  } catch (e) {
-    print('Error downloading image: $e');
-  }
-  return null;
-}
+// Future<String?> downloadAndSaveImage(String url, String fileName) async {
+//   try {
+//     var http;
+//     final response = await http.get(Uri.parse(url));
+//     if (response.statusCode == 200) {
+//       final directory = await getTemporaryDirectory();
+//       final imagePath = '${directory.path}/$fileName';
+//       final file = File(imagePath);
+//       await file.writeAsBytes(response.bodyBytes);
+//       return imagePath;
+//     }
+//   } catch (e) {
+//     print('Error downloading image: $e');
+//   }
+//   return null;
+// }
 
 class MyApp extends StatelessWidget {
   final SecureStorage secureStorage = SecureStorage();
@@ -120,6 +144,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
+      locale: Locale('en', 'PH'),
       navigatorKey: navigatorKey,
       title: 'Assumemate',
       theme: ThemeData(
@@ -146,7 +171,6 @@ class MyApp extends StatelessWidget {
                 } else if (snapshot.hasData) {
                   final data = snapshot.data!;
                   final token = data['token'];
-                  // final applicationStatus = data['applicationStatus'];
                   if (token != null) {
                     return const HomeScreen();
                   } else {
@@ -157,6 +181,7 @@ class MyApp extends StatelessWidget {
                 }
               },
             ),
+        '/settings': (context) => AccountSettingsScreen(),
       },
       onGenerateRoute: (settings) {
         print('Route name: ${settings.name}');
@@ -197,6 +222,7 @@ class MyApp extends StatelessWidget {
 
           if (parts != null && parts.length >= 2) {
             final userId = parts[1];
+            print(userId);
             if (settings.name?.endsWith('/profile') == true) {
               if (userId.isNotEmpty) {
                 return MaterialPageRoute(
@@ -214,23 +240,29 @@ class MyApp extends StatelessWidget {
         } else if (settings.name?.startsWith('ws/chat/') ?? false) {
           print('Matched ws/chat/ route. Full route: ${settings.name}');
 
-          // Cast `settings.arguments` to Map and handle the type mismatch.
           final userId = settings.arguments != null
               ? (settings.arguments as Map<String, dynamic>)['userId']
-                  .toString() // Convert to String
+                  .toString()
               : null;
 
-          print('Extracted userId: $userId'); // Confirm extraction
+          print('Extracted userId: $userId');
 
           if (userId != null) {
             print('Navigating to ChatMessageScreen for userId: $userId');
             return MaterialPageRoute(
-              builder: (context) => ChatMessageScreen(
-                  receiverId: userId), // Parse back to int if needed
+              builder: (context) => ChatMessageScreen(receiverId: userId),
             );
           } else {
             print('Failed');
           }
+        } else if (settings.name == 'reports/received/') {
+          return MaterialPageRoute(
+            builder: (context) => ReportListScreen(),
+          );
+        } else if (settings.name == 'reports/sent/') {
+          return MaterialPageRoute(
+            builder: (context) => ReportListScreen(),
+          );
         }
 
         return MaterialPageRoute(builder: (context) => const Scaffold());

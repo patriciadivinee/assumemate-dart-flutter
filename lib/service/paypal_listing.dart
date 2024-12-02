@@ -123,13 +123,25 @@ class _PayPalListingScreenState extends State<PayPalListingScreen> {
         print('Capture Response: $data');
 
         if (mounted) {
+          // Navigator.push(
+          //   context,
+          //   MaterialPageRoute(
+          //     builder: (context) => PayPalListingScreen(
+          //       amount: double.parse(orderDetails['order_price'].toString()),
+          //       orderId: int.parse(widget.orderId),
+          //       transType: 'Payment Purchase',
+          //     ),
+          //   ),
+          // );
+
           Navigator.of(context).pop(true);
+          // Navigator.of(context).pop(true);
           popUp(context, 'Payment successful!');
 
           // ScaffoldMessenger.of(context).showSnackBar(
           //   const SnackBar(content: Text('Payment successful!')),
           // );
-          // Navigator.of(context).pop(true);
+          // Navigator.of(context).pop('success');
         }
       } else {
         throw 'Payment capture failed';

@@ -175,15 +175,23 @@ class _Restate extends State<Restate> {
 
   Future<void> fetchCoordinates(String query) async {
     try {
+      // Append "Cebu" to the query to improve API results
+      final adjustedQuery = '$query, Cebu';
+
       final response = await http.get(Uri.parse(
-          'https://us1.locationiq.com/v1/search?key=$apiKey&q=$query&format=json'));
+          'https://us1.locationiq.com/v1/search?key=$apiKey&q=$adjustedQuery&format=json'));
 
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
+
+        // Filter locations to only include addresses containing 'Cebu'
+        final filteredLocations = data.where((location) {
+          final displayName = location['display_name']?.toLowerCase() ?? '';
+          return displayName.contains('cebu');
+        }).toList();
+
         setState(() {
-          locations = List<Map<String, dynamic>>.from(data);
-          locations
-              .sort((a, b) => (a['display_name'].contains('Cebu') ? -1 : 1));
+          locations = List<Map<String, dynamic>>.from(filteredLocations);
         });
 
         if (locations.isNotEmpty) {
@@ -191,11 +199,15 @@ class _Restate extends State<Restate> {
           final lon = double.parse(locations[0]['lon']);
           latLng = LatLng(lat, lon);
           mapController.move(latLng!, 13.0);
+        } else {
+          // Clear the map if no Cebu results are found
+          setState(() {
+            latLng = null;
+          });
         }
-      } else {}
+      }
     } catch (error) {
-      // Handle any unexpected errors
-      _showRetrySnackbar('Something went wrong, please try again.');
+      // Optionally log or handle the error here
     }
   }
 
@@ -412,7 +424,7 @@ class _Restate extends State<Restate> {
             FilePickerResult? result = await FilePicker.platform.pickFiles(
               allowMultiple: true,
               type: FileType.custom,
-              allowedExtensions: ['pdf', 'docx'],
+              allowedExtensions: ['pdf', 'docx', 'jpg', 'png'],
             );
 
             if (result != null) {
@@ -448,7 +460,6 @@ class _Restate extends State<Restate> {
 
         const SizedBox(height: 10),
 
-        // Document Thumbnails Display
         Wrap(
           spacing: 8,
           runSpacing: 8,
@@ -476,19 +487,18 @@ class _Restate extends State<Restate> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.description,
+                        Icon(Icons.description,
                             size: 40, color: Colors.blueAccent),
-                        const SizedBox(height: 5),
+                        SizedBox(height: 5),
                         Text(
                           fileName,
-                          style: const TextStyle(fontSize: 12),
+                          style: TextStyle(fontSize: 12),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                         Text(
                           fileExtension.toUpperCase(),
-                          style:
-                              const TextStyle(fontSize: 10, color: Colors.grey),
+                          style: TextStyle(fontSize: 10, color: Colors.grey),
                         ),
                       ],
                     ),
@@ -497,7 +507,7 @@ class _Restate extends State<Restate> {
                     top: -5,
                     right: -5,
                     child: IconButton(
-                      icon: const Icon(Icons.remove_circle, color: Colors.red),
+                      icon: Icon(Icons.remove_circle, color: Colors.red),
                       onPressed: () async {
                         final indexToRemove = _DocFiles!.indexOf(file);
                         if (indexToRemove != -1) {
@@ -505,7 +515,7 @@ class _Restate extends State<Restate> {
                           if (cloudinaryDocumentUrls.isEmpty ||
                               cloudinaryDocumentUrls.length <= indexToRemove) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
+                              SnackBar(
                                 content: Text(
                                     'Document processing unable to delete'),
                                 backgroundColor: Colors.orange,
@@ -540,19 +550,70 @@ class _Restate extends State<Restate> {
                 ],
               );
             } else {
-              // Display image files
-              return Container(
-                width: 100,
-                height: 100,
-                decoration: BoxDecoration(
-                  border: Border.all(
-                      color: Colors.blueAccent.withOpacity(0.5), width: 1.5),
-                  borderRadius: BorderRadius.circular(8),
-                  image: DecorationImage(
-                    image: NetworkImage(file.path!),
-                    fit: BoxFit.cover,
+              // Display image files (PNG, JPG, etc.)
+              return Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Container(
+                    width: 100,
+                    height: 100,
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                          color: Colors.blueAccent.withOpacity(0.5),
+                          width: 1.5),
+                      borderRadius: BorderRadius.circular(8),
+                      image: DecorationImage(
+                        image: Image.file(File(file.path!))
+                            .image, // Load image from file
+                        fit: BoxFit.cover,
+                      ),
+                    ),
                   ),
-                ),
+                  Positioned(
+                    top: -5,
+                    right: -5,
+                    child: IconButton(
+                      icon: Icon(Icons.remove_circle, color: Colors.red),
+                      onPressed: () async {
+                        final indexToRemove = _DocFiles!.indexOf(file);
+                        if (indexToRemove != -1) {
+                          // Check if the document has been uploaded
+                          if (cloudinaryDocumentUrls.isEmpty ||
+                              cloudinaryDocumentUrls.length <= indexToRemove) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                    'Document processing unable to delete'),
+                                backgroundColor: Colors.orange,
+                              ),
+                            );
+                            return; // If the document isn't uploaded, just return
+                          }
+
+                          String cloudinaryUrl =
+                              cloudinaryDocumentUrls[indexToRemove];
+                          String publicIdToRemove =
+                              cloudinaryUrl.split('/').last.split('.').first;
+
+                          try {
+                            // Delete the document from Cloudinary
+                            await deleteImageFromCloudinary(publicIdToRemove);
+                            print(
+                                'Document deleted from Cloudinary: $publicIdToRemove');
+                          } catch (e) {
+                            print('Error deleting document: $e');
+                          }
+
+                          // Update the UI to remove the document from local state
+                          setState(() {
+                            _DocFiles!.removeAt(indexToRemove);
+                            cloudinaryDocumentUrls.removeAt(indexToRemove);
+                          });
+                        }
+                      },
+                    ),
+                  ),
+                ],
               );
             }
           }).toList(),
@@ -588,17 +649,14 @@ class _Restate extends State<Restate> {
                 _showAlert('Please enter a title');
                 return 'Please enter a title'; // Prevent form submission
               }
-              // Additional title validation logic can be added here
+              // You can add additional title validation here if needed
               return null; // No validation error
-            },
-            onChanged: (value) {
-              // If you have specific logic for titles, it can be added here
-              titleController.text = value.trim();
             },
           ),
           const SizedBox(
             height: 15.0,
           ),
+
           TextFormField(
             controller: priceController,
             decoration: InputDecoration(
@@ -1068,10 +1126,9 @@ class _Restate extends State<Restate> {
               }
 
               final duration = int.tryParse(value.replaceAll(',', ''));
-              if (duration == null || duration < 12 || duration > 360) {
-                _showAlert(
-                    'Loan duration for real estate is at least 12(1 year) months to 360 months (30 years)');
-                return 'Loan duration for real estate is at least 12(1 year) months to 360 months (30 years)'; // Prevent form submission
+              if (duration == null || duration <= 0) {
+                _showAlert('Loan duration must be greater than zero');
+                return 'Loan duration must be greater than zero'; // Prevent form submission
               }
 
               final monthsPaid = int.tryParse(

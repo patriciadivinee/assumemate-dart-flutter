@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:assumemate/format.dart';
 import 'package:assumemate/screens/Report_user.dart';
+import 'package:assumemate/screens/payment_receipt_screen.dart';
 import 'package:assumemate/screens/rating.dart';
 import 'package:assumemate/screens/waiting_area/payment_confirmation_screen.dart';
 import 'package:currency_text_input_formatter/currency_text_input_formatter.dart';
@@ -84,13 +85,16 @@ class _ChatMessageState extends State<ChatMessageScreen> {
         _isReadChannel!.stream.listen((message) {
           final messageResponse = jsonDecode(message);
           if (messageResponse['type'] == 'chat_status') {
-            setState(() {
-              for (var msg in _messages) {
-                if (msg['sender_id'] != int.parse(messageResponse['user_id'])) {
-                  msg['chatmess_is_read'] = true;
+            if (mounted) {
+              setState(() {
+                for (var msg in _messages) {
+                  if (msg['sender_id'] !=
+                      int.parse(messageResponse['user_id'])) {
+                    msg['chatmess_is_read'] = true;
+                  }
                 }
-              }
-            });
+              });
+            }
           }
         });
 
@@ -307,22 +311,12 @@ class _ChatMessageState extends State<ChatMessageScreen> {
   }
 
   void _updateOffer(String status) async {
-    if (status == 'ACCEPTED') {
-      final response = await apiService.createOrder(offerDetails['offerId']);
-
-      if (response.containsKey('message')) {
-        setState(() {
-          offerDetails['order_id'] = response['order_id'];
-        });
-      } else {
-        popUp(context, 'Error accepting offer');
-        return;
-      }
-    }
+    print('press');
 
     if (status == 'CANCELLED' && offerDetails['offerStatus'] == 'ACCEPTED') {
       if (offerDetails.containsKey('order_id')) {
-        final response = await apiService.cancelOrder(offerDetails['order_id']);
+        final response =
+            await apiService.cancelOrder(offerDetails['order_id'].toString());
 
         if (response.containsKey('message')) {
           popUp(context, response['message']);
@@ -331,6 +325,7 @@ class _ChatMessageState extends State<ChatMessageScreen> {
           return;
         }
       } else {
+        popUp(context, 'pop upppppppp');
         return;
       }
     }
@@ -425,6 +420,7 @@ class _ChatMessageState extends State<ChatMessageScreen> {
         final offer = response['offer'];
         final list = response['listing'];
         final img = list['list_content']['images'];
+        print(offer);
         setState(() {
           _hasOffer = true;
           offerDetails['offerId'] = offer['offer_id'].toString();
@@ -433,7 +429,12 @@ class _ChatMessageState extends State<ChatMessageScreen> {
           offerDetails['offerPrice'] = offer['offer_price'];
           offerDetails['offerStatus'] = offer['offer_status'];
           if (offer.containsKey('order_id')) {
-            offerDetails['order_id'] = offer['order_id'];
+            final order = offer['order_id'];
+            print('order');
+            print(order);
+            offerDetails['order_id'] = order['order_id'];
+            offerDetails['order_price'] = order['order_price'];
+            offerDetails['order_status'] = order['order_status'];
           }
         });
         print(_hasOffer);
@@ -496,18 +497,24 @@ class _ChatMessageState extends State<ChatMessageScreen> {
           Provider.of<StoragePermission>(context, listen: false);
       await storagePermission.checkStoragePermission();
     } catch (e) {
-      popUp(context, 'Initialization failed: $e');
+      if (mounted) {
+        popUp(context, 'Initialization failed: $e');
+      }
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
   @override
   void initState() {
     // print(baseURL);
-    initialization();
+    if (mounted) {
+      initialization();
+    }
     super.initState();
   }
 
@@ -605,7 +612,6 @@ class _ChatMessageState extends State<ChatMessageScreen> {
                           ReportUserScreen(widget.receiverId)),
                 );
               } else if (value == 1) {
-                // Navigate to rating screen (replace with your own logic)
                 Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -644,7 +650,7 @@ class _ChatMessageState extends State<ChatMessageScreen> {
                       ),
                     ),
                     Icon(
-                      Icons.star_border,
+                      Icons.star_border_rounded,
                       color: Color(0xffFFD700),
                     ),
                   ],
@@ -658,7 +664,7 @@ class _ChatMessageState extends State<ChatMessageScreen> {
         children: [
           (_hasOffer)
               ? Container(
-                  height: 100,
+                  height: MediaQuery.of(context).size.width * .27,
                   padding: const EdgeInsets.all(8),
                   color: const Color(0xffD9D9D9),
                   child: Row(
@@ -692,14 +698,27 @@ class _ChatMessageState extends State<ChatMessageScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Expanded(
-                                child: Text(
-                                  "Offer Details: ${formatCurrency(double.parse(offerDetails['offerPrice']))}",
-                                  style: const TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w500),
-                                  softWrap: true,
-                                ),
-                              ),
+                                  child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    "Offered price: ${formatCurrency(double.parse(offerDetails['offerPrice']))}",
+                                    style: const TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500),
+                                    softWrap: true,
+                                  ),
+                                  if (offerDetails.containsKey('order_id'))
+                                    Text(
+                                      "Reservation: ${formatCurrency(double.parse(offerDetails['order_price']))}",
+                                      style: const TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w500),
+                                      softWrap: true,
+                                    ),
+                                ],
+                              )),
                               const SizedBox(height: 10),
                               (_userType == 'assumptor')
                                   ? (offerDetails['offerStatus'] == 'PENDING')
@@ -707,14 +726,22 @@ class _ChatMessageState extends State<ChatMessageScreen> {
                                           'REJECT',
                                           'ACCEPT',
                                           () => _updateOffer('REJECTED'),
-                                          () => _updateOffer('ACCEPTED'))
-                                      : (offerDetails['offerStatus'] ==
-                                              'ACCEPTED')
+                                          () => acceptOfferAndReserve(context)
+                                          // _updateOffer('ACCEPTED')
+                                          )
+                                      : (offerDetails['offerStatus'] == 'ACCEPTED' ||
+                                              offerDetails['offerStatus'] ==
+                                                  'PAID')
                                           ? actionButtons(
                                               'UNRESERVED',
-                                              'SOLD',
+                                              'MARK AS SOLD',
                                               () => _updateOffer('CANCELLED'),
-                                              () {})
+                                              () => Navigator.of(context).push(
+                                                  MaterialPageRoute(
+                                                      builder: (context) =>
+                                                          PaymentReceiptScreen(
+                                                              orderId: offerDetails['order_id']
+                                                                  .toString()))))
                                           : const SizedBox()
                                   : (offerDetails['offerStatus'] == 'PENDING')
                                       ? actionButtons(
@@ -731,8 +758,11 @@ class _ChatMessageState extends State<ChatMessageScreen> {
                                               'CANCEL',
                                               'PAY NOW',
                                               () => _updateOffer('CANCELLED'),
-                                              () => {})
-                                          : const SizedBox()
+                                              () => Navigator.of(context)
+                                                  .push(MaterialPageRoute(builder: (context) => PaymentConfirmationScreen(orderId: offerDetails['order_id'].toString()))))
+                                          : (offerDetails['offerStatus'] == 'PAID')
+                                              ? actionButtons('REFUND', 'MARK AS COMPLETE', () => {}, () => Navigator.of(context).push(MaterialPageRoute(builder: (context) => PaymentReceiptScreen(orderId: offerDetails['order_id'].toString()))))
+                                              : const SizedBox()
                             ]),
                       )
                     ],
@@ -944,20 +974,22 @@ class _ChatMessageState extends State<ChatMessageScreen> {
       children: [
         OutlinedButton(
           onPressed: () {
+            print('press1');
             final status = label1 == 'CANCEL' ? 'CANCELLED' : 'REJECTED';
             !isActive && (label1 == 'CANCEL' || label1 == 'REJECT')
                 ? _cancelOffer(status)
                 : action1();
           },
           style: OutlinedButton.styleFrom(
-            side: const BorderSide(
-              color: Color(0xff683131),
-              width: 1,
-            ),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20.0),
-            ),
-          ),
+              padding: EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+              side: const BorderSide(
+                color: Color(0xff683131),
+                width: 1,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20.0),
+              ),
+              minimumSize: Size(40, 30)),
           child: Text(
             label1,
             style: const TextStyle(
@@ -967,14 +999,15 @@ class _ChatMessageState extends State<ChatMessageScreen> {
             ),
           ),
         ),
-        const SizedBox(width: 10),
+        const SizedBox(width: 7),
         isActive
             ? ElevatedButton(
                 onPressed: () => action2(),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xff4A8AF0),
-                  foregroundColor: Colors.white,
-                ),
+                    padding: EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+                    backgroundColor: const Color(0xff4A8AF0),
+                    foregroundColor: Colors.white,
+                    minimumSize: Size(40, 30)),
                 child: Text(
                   label2,
                   style: const TextStyle(
@@ -1092,6 +1125,141 @@ class _ChatMessageState extends State<ChatMessageScreen> {
               ),
               child: const Text(
                 'Offer',
+                style: TextStyle(color: Color(0xffFFFCF1)),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> acceptOfferAndReserve(BuildContext context) async {
+    final GlobalKey<FormState> formKey = GlobalKey<FormState>();
+    final TextEditingController reserveController = TextEditingController();
+
+    void acceptReserve() async {
+      final amntTxt = reserveController.text;
+      final amount = amntTxt.replaceAll(',', '');
+
+      try {
+        final response =
+            await apiService.createOrder(offerDetails['offerId'], amount);
+
+        if (response.containsKey('message')) {
+          print('response SA ORDER');
+          print(response);
+          print(response['order']);
+          print(response['order']['order_id']);
+          setState(() {
+            offerDetails['order_id'] = response['order']['order_id'];
+            offerDetails['order_price'] = response['order']['order_price'];
+          });
+          popUp(context, response['message']);
+        } else {
+          popUp(context, response['error']);
+          return;
+        }
+      } catch (e) {
+        popUp(context, 'Error accepting offer');
+      }
+
+      if (_channel != null) {
+        _channel!.sink.add(jsonEncode({
+          'type': 'offer_update',
+          'user_id': _userId,
+          'offer_id': offerDetails['offerId'],
+          'offer_status': 'ACCEPTED'
+        }));
+
+        final updatedStatus = 'accepted';
+
+        final message = {
+          'message': 'Offer $updatedStatus',
+          'file': null,
+          'file_name': null,
+          'file_type': null,
+        };
+
+        _sendInboxUpdate(message, false);
+      }
+    }
+
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          titlePadding:
+              const EdgeInsets.symmetric(horizontal: 17, vertical: 10),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 17),
+          actionsPadding:
+              const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
+          title: const Center(
+            child: Text(
+              'Enter reservation amount',
+              style: TextStyle(color: Color(0xff4A8AF0), fontSize: 20),
+            ),
+          ),
+          content: Form(
+            key: formKey, // Assign the form key
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                TextFormField(
+                  cursorColor: const Color(0xff4A8AF0),
+                  controller: reserveController,
+                  decoration: const InputDecoration(
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.all(0),
+                    hintText: '\u20B10.00',
+                    hoverColor: Color(0xff4A8AF0),
+                    focusedBorder: UnderlineInputBorder(
+                      borderSide: BorderSide(
+                        color: Color(0xff4A8AF0),
+                      ),
+                    ),
+                  ),
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [
+                    CurrencyTextInputFormatter.currency(
+                        locale: 'en_PH', decimalDigits: 2, symbol: '')
+                  ],
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter amount';
+                    }
+                    // Optional: Add custom validation logic for the amount (e.g., must be positive number)
+                    return null;
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context)
+                    .pop(); // Close the dialog when 'Cancel' is pressed
+              },
+              child: const Text(
+                'Cancel',
+                style: TextStyle(color: Color(0xff4A8AF0)),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (formKey.currentState!.validate()) {
+                  acceptReserve();
+                  Navigator.of(context).pop();
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xff4A8AF0),
+              ),
+              child: const Text(
+                'Accept and Reserve',
                 style: TextStyle(color: Color(0xffFFFCF1)),
               ),
             ),

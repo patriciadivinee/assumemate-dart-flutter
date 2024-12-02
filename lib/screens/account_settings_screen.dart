@@ -1,4 +1,4 @@
-import 'dart:convert';
+import 'package:app_settings/app_settings.dart';
 import 'package:assumemate/api/firebase_api.dart';
 import 'package:assumemate/logo/pop_up.dart';
 import 'package:assumemate/screens/user_auth/login_screen.dart';
@@ -8,81 +8,123 @@ import 'package:assumemate/screens/user_auth/change_password_screen.dart';
 import 'package:assumemate/service/service.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:http/http.dart' as http;
-import 'package:url_launcher/url_launcher.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 final String? clientID = dotenv.env['PAYPAL_CLIENT_ID'];
 final String? secretKey = dotenv.env['PAYPAL_CLIENT_SECRET'];
 
-class AccontSettingsScreen extends StatefulWidget {
-  const AccontSettingsScreen({super.key});
+class AccountSettingsScreen extends StatefulWidget {
+  const AccountSettingsScreen({super.key});
 
   @override
-  State<AccontSettingsScreen> createState() => _AccontSettingsScreenState();
+  State<AccountSettingsScreen> createState() => _AccountSettingsScreenState();
 }
 
-class _AccontSettingsScreenState extends State<AccontSettingsScreen> {
+class _AccountSettingsScreenState extends State<AccountSettingsScreen>
+    with WidgetsBindingObserver {
   final ApiService apiService = ApiService();
   final FirebaseApi firebaseApi = FirebaseApi();
   final SecureStorage secureStorage = SecureStorage();
   final subtitleStyle = GoogleFonts.poppins();
 
-  Map<String, bool> toggleStates = {'push_notifications': true};
+  bool notifEnabled = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _loadPreferences();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      // App has returned to the foreground
+      setNotificationPreference(); // Reload notification preferences
+    } else if (state == AppLifecycleState.detached) {
+      setNotificationPreference();
+    }
   }
 
   Future<void> _loadPreferences() async {
     final prefs = await SharedPreferences.getInstance();
+    final notifStatus =
+        await FirebaseMessaging.instance.getNotificationSettings();
+
     setState(() {
-      toggleStates['push_notifications'] =
-          prefs.getBool('push_notifications') ?? true;
+      notifEnabled =
+          notifStatus.authorizationStatus == AuthorizationStatus.authorized;
     });
+
+    prefs.setBool('push_notifications', notifEnabled);
   }
 
-  Future<void> setNotificationPreference(String type, bool value) async {
+  Future<void> setNotificationPreference() async {
     final prefs = await SharedPreferences.getInstance();
 
-    if (type == 'push_notifications') {
-      if (value) {
-        // Enable notifications
-        await firebaseApi.requestNotificationPermission();
-        String? token = await FirebaseMessaging.instance.getToken();
-        if (token != null && token.isNotEmpty) {
-          try {
-            await apiService.saveFcmToken(token);
-          } catch (e) {
-            popUp(context, "Failed to enable notifications. Please try again.");
-            return;
-          }
-        } else {
-          popUp(context, "Failed to retrieve notification token.");
-          return;
-        }
-      } else {
-        // Disable notifications
-        try {
-          String? token = await FirebaseMessaging.instance.getToken();
+    // Optimistically update UI
+    try {
+      final notifStatus =
+          await FirebaseMessaging.instance.getNotificationSettings();
+
+      final notifChanged =
+          notifStatus.authorizationStatus == AuthorizationStatus.authorized;
+
+      print('notifEnabled');
+      print(notifEnabled);
+      print(notifChanged);
+
+      if (notifEnabled != notifChanged) {
+        setState(() {
+          notifEnabled = notifChanged;
+        });
+
+        await prefs.setBool('push_notifications', notifEnabled);
+
+        if (!notifEnabled) {
+          // If notifications are disabled, remove the FCM token from the server and locally
+          final token = await FirebaseMessaging.instance.getToken();
           if (token != null && token.isNotEmpty) {
             await apiService.removeFcmToken(token);
             await FirebaseMessaging.instance.deleteToken();
           }
-        } catch (e) {
-          print("Error removing FCM token: $e");
+          print('FCM Token removed due to disabled notifications');
+        } else {
+          // If notifications are enabled, get and save the FCM token
+          final token = await FirebaseMessaging.instance.getToken();
+
+          if (token == null || token.isEmpty) {
+            // If token retrieval fails, revert UI and show error
+            setState(() {
+              notifEnabled = false;
+            });
+            await prefs.setBool('push_notifications', false);
+            popUp(context, "Failed to retrieve notification token.");
+            return;
+          }
+
+          // Save the token to the server
+          await apiService.saveFcmToken(token);
+          print('FCM Token saved successfully');
         }
       }
-    }
+    } catch (e) {
+      print("Error handling notification preference: $e");
+      popUp(context, "An error occurred. Please try again.");
 
-    // Save preferences and update the toggle state
-    await prefs.setBool(type, value);
-    setState(() {
-      toggleStates[type] = value;
-    });
+      // Revert UI on error
+      setState(() {
+        notifEnabled = !notifEnabled;
+      });
+      await prefs.setBool('push_notifications', !notifEnabled);
+    }
   }
 
   Future<void> deact() async {
@@ -90,6 +132,8 @@ class _AccontSettingsScreenState extends State<AccontSettingsScreen> {
       final response = await apiService.deactivate();
 
       if (response.containsKey('success')) {
+        await apiService.sessionExpired();
+        await GoogleSignInApi.logout();
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (context) => const LoginScreen()),
@@ -110,8 +154,6 @@ class _AccontSettingsScreenState extends State<AccontSettingsScreen> {
     required String preferenceKey,
     required IconData icon,
   }) {
-    final isEnabled = toggleStates[preferenceKey] ?? true;
-
     return Container(
       padding: const EdgeInsets.all(10),
       child: Row(
@@ -132,7 +174,8 @@ class _AccontSettingsScreenState extends State<AccontSettingsScreen> {
                     ),
                   ),
                   TextSpan(
-                    text: isEnabled ? descriptionEnabled : descriptionDisabled,
+                    text:
+                        notifEnabled ? descriptionEnabled : descriptionDisabled,
                     style: const TextStyle(
                       fontSize: 11,
                       color: Colors.black87,
@@ -143,24 +186,14 @@ class _AccontSettingsScreenState extends State<AccontSettingsScreen> {
             ),
           ),
           // Make the Switch the only clickable element
-          Switch(
-            value: isEnabled,
-            onChanged: (value) async {
-              await setNotificationPreference(preferenceKey, value);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    value ? "Notification: On" : "Notification: Off",
-                  ),
-                  duration: const Duration(milliseconds: 100),
-                ),
-              );
+          IconButton(
+            onPressed: () async {
+              await AppSettings.openAppSettings(
+                  type: AppSettingsType.notification);
             },
-            activeColor: const Color(0xff4A8AF0),
-            inactiveTrackColor: const Color(0xffFFFCF1),
-            // inactiveThumbColor: const Color(0xff4A8AF0),
-            // inactiveThumbColor: const Color(0xff4A8AF0),
-            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            icon: const Icon(Icons.chevron_right_rounded),
+            iconSize: 28,
+            color: const Color(0xFF4A8AF0),
           ),
         ],
       ),

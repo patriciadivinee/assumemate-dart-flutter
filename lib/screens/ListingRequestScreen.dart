@@ -16,14 +16,15 @@ class _ListingRequestScreenState extends State<ListingRequestScreen>
   late TabController _tabController;
   late Future<List<dynamic>> pendingListings;
   late Future<List<dynamic>> approvedListings;
+  late Future<List<dynamic>> rejectedListings;
   final SecureStorage secureStorage = SecureStorage();
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
 
-    // Fetch the listings for each tab
+    rejectedListings = fetchUserListings('REJECTED');
     pendingListings = fetchUserListings('PENDING');
     approvedListings = fetchUserListings('APPROVED');
   }
@@ -92,12 +93,7 @@ class _ListingRequestScreenState extends State<ListingRequestScreen>
               }
 
               return ListingItem(
-                title: title,
-                imageUrl: content['images'],
-                description: content['description'] ?? 'No Description',
-                listingId: listing['list_id'].toString(),
-                assumptorId: listing['user_id'].toString(),
-                price: content['price'].toString(),
+                listing: listing,
               );
             },
           );
@@ -113,6 +109,7 @@ class _ListingRequestScreenState extends State<ListingRequestScreen>
 
     return Scaffold(
         appBar: AppBar(
+          surfaceTintColor: Colors.transparent,
           leading: IconButton(
             splashColor: Colors.transparent,
             icon: const Icon(
@@ -141,6 +138,7 @@ class _ListingRequestScreenState extends State<ListingRequestScreen>
             ),
             controller: _tabController,
             tabs: [
+              Tab(child: Text('Rejected', style: tabTextStyle)),
               Tab(child: Text('Pending', style: tabTextStyle)),
               Tab(child: Text('To Pay', style: tabTextStyle)),
             ],
@@ -151,6 +149,7 @@ class _ListingRequestScreenState extends State<ListingRequestScreen>
           child: TabBarView(
             controller: _tabController,
             children: [
+              buildListingGrid(rejectedListings),
               buildListingGrid(pendingListings),
               buildListingGrid(approvedListings),
             ],

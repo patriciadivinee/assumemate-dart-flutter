@@ -7,6 +7,7 @@ import 'package:assumemate/storage/secure_storage.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 final String? baseURL = dotenv.env['API_URL'];
 
@@ -235,10 +236,20 @@ class ApiService {
           }
         }
         // Save FCM token after login
+        final prefs = await SharedPreferences.getInstance();
         String? fcmToken = await FirebaseMessaging.instance.getToken();
         if (fcmToken != null) {
           // Send FCM token to the backend for saving
-          await saveFcmToken(fcmToken);
+          final notifStatus =
+              await FirebaseMessaging.instance.getNotificationSettings();
+
+          final isGranted =
+              notifStatus.authorizationStatus == AuthorizationStatus.authorized;
+
+          if (isGranted) {
+            await saveFcmToken(fcmToken);
+            prefs.setBool('push_notifications', true);
+          }
         }
         return {
           'access_token': responseData['access'],
@@ -556,6 +567,24 @@ class ApiService {
     }
   }
 
+  Future<void> updateCarListing(String token, String listingId,
+      Map<String, dynamic> updatedContent) async {
+    final response = await http.put(
+      // Use PUT here
+      Uri.parse(
+          '$baseURL/update_listing/$listingId/'), // Include listing ID in the URL
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: json.encode(updatedContent),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to update listing: ${response.body}');
+    }
+  }
+
   Future<Map<String, dynamic>> cancelOffer(
       String offerId, String status) async {
     final apiUrl = Uri.parse('$baseURL/cancel/offer/');
@@ -819,6 +848,77 @@ class ApiService {
     }
   }
 
+  Future<Map<String, dynamic>> listingSold(String orderId) async {
+    final apiUrl = Uri.parse('$baseURL/mark/sold/$orderId/');
+    final token = await secureStorage.getToken();
+
+    try {
+      final response = await http.get(
+        apiUrl,
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
+      );
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        return {};
+      }
+    } catch (e) {
+      return {'error': 'An error occured: $e'};
+    }
+  }
+
+  Future<Map<String, dynamic>> requestPayout(
+      String orderId, String paypalEmail) async {
+    final apiUrl = Uri.parse('$baseURL/request/payout/');
+    final token = await secureStorage.getToken();
+
+    final Map<String, dynamic> requestPayload = {
+      'order_id': orderId,
+      'payout_paypal_email': paypalEmail
+    };
+
+    try {
+      final response = await http.post(apiUrl,
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer $token",
+          },
+          body: jsonEncode(requestPayload));
+
+      if (response.statusCode == 201) {
+        return jsonDecode(response.body);
+      } else {
+        return jsonDecode(response.body);
+      }
+    } catch (e) {
+      return {'error': 'An error occured: $e'};
+    }
+  }
+
+  Future<Map<String, dynamic>> getRequestPayout(String orderId) async {
+    final apiUrl = Uri.parse('$baseURL/get/request/payout/$orderId');
+    final token = await secureStorage.getToken();
+
+    try {
+      final response = await http.get(apiUrl, headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer $token",
+      });
+
+      if (response.statusCode == 201) {
+        return jsonDecode(response.body);
+      } else {
+        return jsonDecode(response.body);
+      }
+    } catch (e) {
+      return {'error': 'An error occured: $e'};
+    }
+  }
+
   Future<void> addCoinsToWallet(int wallId, int coinsToAdd) async {
     final token = await secureStorage.getToken();
     final response = await http.patch(
@@ -994,11 +1094,12 @@ class ApiService {
     }
   }
 
-  Future<Map<String, dynamic>> createOrder(String offerId) async {
+  Future<Map<String, dynamic>> createOrder(
+      String offerId, String amount) async {
     final apiUrl = Uri.parse('$baseURL/create/order/');
     final token = await secureStorage.getToken();
 
-    final Map<String, dynamic> data = {'offer_id': offerId};
+    final Map<String, dynamic> data = {'offer_id': offerId, 'amount': amount};
 
     try {
       final response = await http.post(apiUrl,
@@ -1049,6 +1150,49 @@ class ApiService {
       return jsonDecode(response.body);
     } catch (e) {
       return ({'error': 'An error occured: $e'});
+    }
+  }
+
+  Future<Map<String, dynamic>> viewPaidOrder(String transId) async {
+    final apiUrl = Uri.parse('$baseURL/view/transaction/$transId/details/');
+    final token = await secureStorage.getToken();
+
+    try {
+      final response = await http.get(
+        apiUrl,
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
+      );
+
+      return jsonDecode(response.body);
+    } catch (e) {
+      return ({'error': 'An error occured: $e'});
+    }
+  }
+
+  Future<Map<String, dynamic>> completeOrder(String orderId) async {
+    final apiUrl = Uri.parse('$baseURL/complete/transaction/$orderId/');
+    final token = await secureStorage.getToken();
+
+    try {
+      final response = await http.get(
+        apiUrl,
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
+      );
+
+      final decoded = jsonDecode(response.body);
+      if (response.statusCode == 200) {
+        return decoded;
+      } else {
+        return decoded;
+      }
+    } catch (e) {
+      return {'error': 'An error occured: $e'};
     }
   }
 

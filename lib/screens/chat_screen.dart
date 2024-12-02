@@ -96,6 +96,7 @@ class _ChatScreenState extends State<ChatScreen> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: const Color(0xffFFFCF1),
+        surfaceTintColor: Colors.transparent,
         title: const Text('Messages',
             style: TextStyle(
               fontWeight: FontWeight.bold,

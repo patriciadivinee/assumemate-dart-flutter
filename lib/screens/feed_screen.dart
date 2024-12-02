@@ -35,6 +35,7 @@ class _FeedScreenState extends State<FeedScreen> {
   String? _userType;
   String? _appStatus;
   final ValueNotifier<bool> _isSpeedDialOpen = ValueNotifier(false);
+  List<dynamic> _promotedListings = [];
 
   Future<void> _getUserType() async {
     String? userType = await secureStorage.getUserType();
@@ -56,7 +57,8 @@ class _FeedScreenState extends State<FeedScreen> {
     pageController = PageController(initialPage: 0, viewportFraction: 0.95);
     _getUserType();
     _getappStatus();
-
+    _fetchPromotedListings();
+    _startAutoScroll();
     // Fetch listings for each category
     houseAndLotListings = fetchListingsByCategory('Real Estate');
     carListings = fetchListingsByCategory('Car');
@@ -78,10 +80,8 @@ class _FeedScreenState extends State<FeedScreen> {
       );
 
       if (response.statusCode == 200) {
-        // Ensure proper UTF-8 decoding
         final data = jsonDecode(utf8.decode(response.bodyBytes));
 
-        // Assuming the response is a list of listings
         if (data is List) {
           return data; // Return the list of listings
         } else {
@@ -140,18 +140,61 @@ class _FeedScreenState extends State<FeedScreen> {
               }
 
               return ListingItem(
-                title: title,
-                imageUrl: content['images'],
-                description: content['description'] ?? 'No Description',
-                listingId: listing['list_id'].toString(),
-                assumptorId: listing['user_id'].toString(),
-                price: content['price'].toString(),
+                listing: listing,
               );
             },
           );
         }
       },
     );
+  }
+
+  Future<void> _fetchPromotedListings() async {
+    final SecureStorage _secureStorage = SecureStorage();
+    String? token = await _secureStorage.getToken();
+
+    try {
+      final response = await http.get(
+        Uri.parse('${dotenv.env['API_URL']}/promote/'),
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        setState(() {
+          _promotedListings =
+              data.take(5).toList(); // Ensure a max of 5 listings
+        });
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Failed to fetch promoted listings')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error fetching listings: $e')),
+        );
+      }
+    }
+  }
+
+  void _startAutoScroll() {
+    Future.delayed(const Duration(seconds: 5), () {
+      if (mounted && _promotedListings.isNotEmpty) {
+        pageNo = (pageNo + 1) % _promotedListings.length;
+        pageController.animateToPage(
+          pageNo,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+        _startAutoScroll();
+      }
+    });
   }
 
   void onClickFAB() {
@@ -175,6 +218,7 @@ class _FeedScreenState extends State<FeedScreen> {
       child: Scaffold(
         backgroundColor: const Color(0xffFFFCF1),
         appBar: AppBar(
+          surfaceTintColor: Colors.transparent,
           backgroundColor: const Color(0xffFFFCF1),
           title: Row(children: [
             Image.asset(
@@ -287,20 +331,27 @@ class _FeedScreenState extends State<FeedScreen> {
                             controller: pageController,
                             onPageChanged: (index) {
                               setState(() {
-                                pageNo = index; // Update pageNo on page change
+                                pageNo = index;
                               });
                             },
                             itemBuilder: (_, index) {
-                              return const HighlightedItemBanner();
+                              final listing = _promotedListings[index];
+
+                              print('listing yawa');
+                              print(listing);
+
+                              return HighlightedItemBanner(
+                                promotedListing: listing,
+                              );
                             },
-                            itemCount: 5,
+                            itemCount: _promotedListings.length,
                           ),
                         ),
                         const SizedBox(height: 6),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: List.generate(
-                            5,
+                            _promotedListings.length,
                             (index) => Container(
                               margin: const EdgeInsets.all(2),
                               child: Icon(

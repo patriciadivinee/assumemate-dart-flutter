@@ -4,6 +4,9 @@ import 'dart:async';
 import 'package:assumemate/components/listing_item.dart';
 import 'package:assumemate/format.dart';
 import 'package:assumemate/provider/profile_provider.dart';
+import 'package:assumemate/screens/listing/update_motor.dart';
+import 'package:assumemate/screens/listing/update_car.dart';
+import 'package:assumemate/screens/listing/update_restate.dart';
 import 'package:assumemate/screens/chat_message_screen.dart';
 import 'package:currency_text_input_formatter/currency_text_input_formatter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -98,6 +101,7 @@ class _AssumptorListDetailScreenState extends State<AssumptorListDetailScreen> {
       print(data['user_id']);
       listingDetail = ListingDetail.fromJson(data);
       print('Listing details: $listingDetail');
+      print(_applicationStatus);
 
       return ListingDetail.fromJson(data);
     } else {
@@ -135,6 +139,45 @@ class _AssumptorListDetailScreenState extends State<AssumptorListDetailScreen> {
     } catch (e) {
       print('Error: $e'); // Debugging output
       throw Exception('Failed to load listings');
+    }
+  }
+
+  Future<List<Map<String, String>>> fetchRejectedListings(
+      String listingId) async {
+    // Simulating network delay
+    await Future.delayed(const Duration(seconds: 2));
+
+    // Retrieve the token from secure storage
+    final token = await secureStorage.getToken();
+
+    // Prepare the API URL
+    final apiUrl = Uri.parse('$baseURL/listings/rejected/$listingId/');
+
+    // Make the API request with the token in the Authorization header
+    final response = await http.get(
+      apiUrl,
+      headers: {
+        'Authorization':
+            'Bearer $token', // Include the token in the request header
+      },
+    );
+
+    // Check if the response is successful
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+
+      // Return the necessary information
+      return [
+        {
+          'title':
+              '${data['list_app_status']}: There are issues with your listing',
+          'message': data['list_reason'] ?? 'No reason provided',
+          'buttonText': 'Edit Listing'
+        },
+      ];
+    } else {
+      // Handle error (optional: you can display the error message in the UI)
+      throw Exception('Failed to load rejected listings');
     }
   }
 
@@ -545,6 +588,12 @@ class _AssumptorListDetailScreenState extends State<AssumptorListDetailScreen> {
                                   TextOverflow.visible, // Prevents truncation
                             ),
                           ),
+                          const SizedBox(height: 20),
+                          _applicationStatus == 'REJECTED'
+                              ? buildRejectListing(
+                                  fetchRejectedListings(widget.listingId))
+                              : const SizedBox.shrink(),
+                          const SizedBox(height: 20),
                         ],
                       ),
                     ),
@@ -595,35 +644,172 @@ class _AssumptorListDetailScreenState extends State<AssumptorListDetailScreen> {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
                     onSelected: (value) async {
-                      if (value == 1) {
-                        // Marking onPressed as async
+                      if (value == 0) {
+                        // Edit listing option
+                        if (listingDetail != null) {
+                          if (listingDetail!.category == 'Car' ||
+                              listingDetail!.category == 'Motorcycle') {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) {
+                                  return listingDetail!.category == 'Car'
+                                      ? CarForm(
+                                          listingData: {
+                                            'id': widget.listingId,
+                                            'make': listingDetail!.make,
+                                            'model': listingDetail!.model,
+                                            'year': listingDetail!.year,
+                                            'loanDuration':
+                                                listingDetail!.loanDuration,
+                                            'transmission':
+                                                listingDetail!.transmission,
+                                            'fuelType': listingDetail!.fuelType,
+                                            'mileage': listingDetail!.mileage,
+                                            'address': listingDetail!.address,
+                                            'description':
+                                                listingDetail!.description,
+                                            'color': listingDetail!.color,
+                                            'price':
+                                                listingDetail!.price.toString(),
+                                            'monthlyPayment': listingDetail!
+                                                .monthlyPayment
+                                                .toString(),
+                                            'downPayment': listingDetail!
+                                                .downPayment
+                                                .toString(),
+                                            'numberOfMonthsPaid': listingDetail!
+                                                .numberOfMonthsPaid1,
+                                            'images': listingDetail!.images,
+                                            'documents':
+                                                listingDetail!.documents,
+                                            'totalpaymentmade':
+                                                listingDetail!.totalPaymentMade,
+                                            'preference':
+                                                listingDetail!.preference,
+                                          },
+                                          isEditing: true,
+                                        )
+                                      : MotorForm(
+                                          listingData: {
+                                            'id': widget.listingId,
+                                            'make': listingDetail!.make,
+                                            'model': listingDetail!.model,
+                                            'year': listingDetail!.year,
+                                            'loanDuration':
+                                                listingDetail!.loanDuration,
+                                            'transmission':
+                                                listingDetail!.transmission,
+                                            'fuelType': listingDetail!.fuelType,
+                                            'mileage': listingDetail!.mileage,
+                                            'address': listingDetail!.address,
+                                            'description':
+                                                listingDetail!.description,
+                                            'color': listingDetail!.color,
+                                            'price':
+                                                listingDetail!.price.toString(),
+                                            'monthlyPayment': listingDetail!
+                                                .monthlyPayment
+                                                .toString(),
+                                            'downPayment': listingDetail!
+                                                .downPayment
+                                                .toString(),
+                                            'numberOfMonthsPaid': listingDetail!
+                                                .numberOfMonthsPaid1,
+                                            'images': listingDetail!.images,
+                                            'documents':
+                                                listingDetail!.documents,
+                                            'totalpaymentmade':
+                                                listingDetail!.totalPaymentMade,
+                                            'preference':
+                                                listingDetail!.preference,
+                                          },
+                                          isEditing: true,
+                                        );
+                                },
+                              ),
+                            );
+                          } else if (listingDetail!.category == 'Real Estate') {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) {
+                                  return Restate(
+                                    listingData: {
+                                      'id': widget.listingId,
+                                      'year': listingDetail!.year,
+                                      'price': listingDetail!.price.toString(),
+                                      'title': listingDetail!.title,
+                                      'images': listingDetail!.images,
+                                      'address': listingDetail!.address,
+                                      'lotArea': listingDetail!.lotArea,
+                                      'bedrooms': listingDetail!.bedrooms,
+                                      'category': listingDetail!.category,
+                                      'bathrooms': listingDetail!.bathrooms,
+                                      'documents': listingDetail!.documents,
+                                      'floorArea': listingDetail!.floorArea,
+                                      'preference': listingDetail!.preference,
+                                      'description': listingDetail!.description,
+                                      'downPayment':
+                                          listingDetail!.downPayment.toString(),
+                                      'loanDuration': listingDetail!
+                                          .loanDuration
+                                          .toString(),
+                                      'parkingSpace':
+                                          listingDetail!.parkingSpace,
+                                      'monthlyPayment': listingDetail!
+                                          .monthlyPayment
+                                          .toString(),
+                                      'totalPaymentMade': listingDetail!
+                                          .totalPaymentMade
+                                          .toString(),
+                                      'numberOfMonthsPaid':
+                                          listingDetail!.numberOfMonthsPaid1,
+                                    },
+                                    isEditing: true,
+                                  );
+                                },
+                              ),
+                            );
+                          }
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                                content:
+                                    Text('Listing details are not available.')),
+                          );
+                        }
+                      } else if (value == 1) {
+                        // Archive listing logic
                         final deleteService = DeleteService();
                         await deleteService.deleteListing(
                             context, widget.listingId);
                       }
                     },
                     itemBuilder: (context) => [
-                      // Example for adding more items
-                      // PopupMenuItem<int>(
-                      //   value: 0,
-                      //   height: 25,
-                      //   child: Row(
-                      //     children: [
-                      //       Expanded(
-                      //         child: Text(
-                      //           'Edit listing',
-                      //           style: TextStyle(fontSize: 14),
-                      //         ),
-                      //       ),
-                      //       Icon(
-                      //         Icons.mode_edit_outline_rounded,
-                      //         color: Color(0xff4A8AF0),
-                      //       ),
-                      //     ],
-                      //   ),
-                      // ),
+                      if (_isUserValid &&
+                          listingStatus == 'PENDING' &&
+                          _applicationStatus == 'REJECTED')
+                        const PopupMenuItem<int>(
+                          value: 0, // Edit listing option
+                          height: 25,
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  'Edit listing',
+                                  style: TextStyle(fontSize: 14),
+                                ),
+                              ),
+                              Icon(
+                                Icons.mode_edit_outline_rounded,
+                                color: Color(0xff4A8AF0),
+                              ),
+                            ],
+                          ),
+                        ),
                       const PopupMenuItem<int>(
-                        value: 1, // Assign a unique value to this item
+                        value: 1, // Archive listing option
                         height: 25,
                         child: Row(
                           children: [
@@ -645,6 +831,7 @@ class _AssumptorListDetailScreenState extends State<AssumptorListDetailScreen> {
                 ],
               ),
             ),
+
             Positioned(
               bottom: 20,
               child: Row(
@@ -786,6 +973,8 @@ class ListingDetail {
   final String mileage;
   final String fuelType;
   final String color;
+  final String preference;
+  final String year;
 
   String? lotArea;
   String? bedrooms;
@@ -798,6 +987,7 @@ class ListingDetail {
   final int downPayment;
   final int totalPaymentMade;
   final int numberOfMonthsPaid;
+  final int numberOfMonthsPaid1;
 
   ListingDetail({
     required this.price,
@@ -811,6 +1001,7 @@ class ListingDetail {
     required this.monthlyPayment,
     required this.totalPaymentMade,
     required this.numberOfMonthsPaid,
+    required this.numberOfMonthsPaid1,
     required this.address,
     required this.make,
     required this.model,
@@ -818,6 +1009,8 @@ class ListingDetail {
     required this.transmission,
     required this.mileage,
     required this.fuelType,
+    required this.preference,
+    required this.year,
     this.lotArea,
     this.bedrooms,
     this.bathrooms,
@@ -838,36 +1031,40 @@ class ListingDetail {
     double calculatedPrice = parsedMonthlyPayment * parsedNumberOfMonthsPaid;
 
     return ListingDetail(
-      price: calculatedPrice > 0
-          ? calculatedPrice
-          : double.tryParse(content['price']?.toString() ?? '0') ?? 0,
-      title: content['title']?.toString() ?? 'Untitled',
-      images: List<String>.from(content['images'] ?? []),
-      category: content['category']?.toString() ?? 'Uncategorized',
-      description:
-          content['description']?.toString() ?? 'No description available',
-      downPayment: (content['downPayment'] is String)
-          ? int.tryParse(content['downPayment']) ?? 0
-          : (content['downPayment'] as num?)?.toInt() ?? 0,
-      loanDuration: content['loanDuration']?.toString() ?? '0 months',
-      parkingSpace: content['parkingSpace']?.toString() ?? '0',
-      monthlyPayment: parsedMonthlyPayment,
-      totalPaymentMade: (content['totalPaymentMade'] as num?)?.toInt() ?? 0,
-      numberOfMonthsPaid: parsedNumberOfMonthsPaid,
-      lotArea: content['lotArea']?.toString(),
-      bedrooms: content['bedrooms']?.toString(),
-      bathrooms: content['bathrooms']?.toString(),
-      floorArea: content['floorArea']?.toString(),
-      address: content['address']?.toString() ?? 'Unknown Location',
-      //make: content['make:']?.toString() ?? 'Unknown make',
-      make: content['make']?.toString() ?? 'Unknown make',
-      model: content['model']?.toString() ?? 'Unknown model',
-      transmission:
-          content['transmission']?.toString() ?? 'Unknown transmission',
-      mileage: content['mileage']?.toString() ?? 'Unknown mileage',
-      fuelType: content['fuelType'].toString(),
-      color: content['color']?.toString() ?? 'Unknown color',
-    );
+        year: content['year']?.toString() ?? '0',
+        price: calculatedPrice > 0
+            ? calculatedPrice
+            : double.tryParse(content['price']?.toString() ?? '0') ?? 0,
+        title: content['title']?.toString() ?? 'Untitled',
+        images: List<String>.from(content['images'] ?? []),
+        documents: List<String>.from(content['documents'] ?? []),
+        category: content['category']?.toString() ?? 'Uncategorized',
+        description:
+            content['description']?.toString() ?? 'No description available',
+        downPayment: (content['downPayment'] is String)
+            ? int.tryParse(content['downPayment']) ?? 0
+            : (content['downPayment'] as num?)?.toInt() ?? 0,
+        loanDuration: content['loanDuration']?.toString() ?? '0 months',
+        parkingSpace: content['parkingSpace']?.toString() ?? '0',
+        monthlyPayment: parsedMonthlyPayment,
+        totalPaymentMade: (content['totalPaymentMade'] as num?)?.toInt() ?? 0,
+        numberOfMonthsPaid: parsedNumberOfMonthsPaid,
+        numberOfMonthsPaid1:
+            (content['numberOfMonthsPaid'] as num?)?.toInt() ?? 0,
+        lotArea: content['lotArea']?.toString(),
+        bedrooms: content['bedrooms']?.toString(),
+        bathrooms: content['bathrooms']?.toString(),
+        floorArea: content['floorArea']?.toString(),
+        address: content['address']?.toString() ?? 'Unknown Location',
+        //make: content['make:']?.toString() ?? 'Unknown make',
+        make: content['make']?.toString() ?? 'Unknown make',
+        model: content['model']?.toString() ?? 'Unknown model',
+        transmission:
+            content['transmission']?.toString() ?? 'Unknown transmission',
+        mileage: content['mileage']?.toString() ?? 'Unknown mileage',
+        fuelType: content['fuelType'].toString(),
+        color: content['color']?.toString() ?? 'Unknown color',
+        preference: content['preference'].toString());
   }
 
   static String convertMonthsToYears(int months) {
@@ -954,17 +1151,87 @@ Widget buildSuggestionsList(Future<List<dynamic>> futureListings) {
               }
 
               return ListingItem(
-                title: title,
-                imageUrl: content['images'],
-                description: content['description'] ?? 'No Description',
-                listingId: listing['list_id'].toString(),
-                assumptorId: listing['user_id'].toString(),
-                price: content['price'].toString(),
+                listing: listing,
               );
             },
           ),
         );
       }
+    },
+  );
+}
+
+Widget buildRejectListing(
+    Future<List<Map<String, String>>> futureRejectListing) {
+  return FutureBuilder<List<Map<String, String>>>(
+    future: futureRejectListing,
+    builder: (context, snapshot) {
+      if (snapshot.connectionState == ConnectionState.waiting) {
+        return const Center(child: CircularProgressIndicator());
+      }
+
+      if (snapshot.hasError) {
+        return Center(child: Text('Error: ${snapshot.error}'));
+      }
+
+      if (snapshot.hasData && snapshot.data!.isEmpty) {
+        return const Center(child: Text('No rejected listings found.'));
+      }
+
+      var rejectionData =
+          snapshot.data![0]; // Getting the first item from the list
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.red[50],
+                borderRadius: BorderRadius.circular(10),
+              ),
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                children: [
+                  const Icon(
+                    Icons.error_outline,
+                    size: 40,
+                    color: Colors.red,
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    rejectionData['title']!,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.red,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    rejectionData['message']!,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Colors.black,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  ElevatedButton(
+                    onPressed: () {
+                      // Handle form submission or redirection
+                    },
+                    style: ButtonStyle(
+                      backgroundColor: MaterialStateProperty.all(Colors.blue),
+                    ),
+                    child: Text(rejectionData['buttonText']!),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      );
     },
   );
 }

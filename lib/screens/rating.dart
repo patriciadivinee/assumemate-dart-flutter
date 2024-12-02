@@ -91,7 +91,9 @@ class _RateUserPageState extends State<RateUserPage> {
                 children: List.generate(5, (index) {
                   return IconButton(
                     icon: Icon(
-                      _rating > index ? Icons.star : Icons.star_outline_rounded,
+                      _rating > index
+                          ? Icons.star_rounded
+                          : Icons.star_outline_rounded,
                       color: Colors.amber,
                       size: 55,
                     ),

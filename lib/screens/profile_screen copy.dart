@@ -3,7 +3,6 @@ import 'package:assumemate/provider/follow_provider.dart';
 import 'package:assumemate/screens/following_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:assumemate/components/highlighted_item.dart';
 import 'package:assumemate/components/offer_list.dart';
 import 'package:assumemate/logo/loading_animation.dart';
 import 'package:assumemate/provider/profile_provider.dart';
@@ -187,7 +186,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             context,
                             MaterialPageRoute(
                                 builder: (context) =>
-                                    const AccontSettingsScreen()),
+                                    const AccountSettingsScreen()),
                           );
                         },
                         icon: const Icon(Icons.settings),
@@ -468,23 +467,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
             },
             body: TabBarView(
               children: [
-                Container(
-                    padding: const EdgeInsets.all(10),
-                    child: GridView.builder(
-                      padding: EdgeInsets.zero,
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        crossAxisSpacing: 5,
-                        mainAxisSpacing: 5,
-                        mainAxisExtent: 190,
-                      ),
-                      physics: const BouncingScrollPhysics(),
-                      itemBuilder: (context, index) {
-                        return const HighlightedItem();
-                      },
-                      itemCount: 55,
-                    )),
+                // Container(
+                //     padding: const EdgeInsets.all(10),
+                //     child: GridView.builder(
+                //       padding: EdgeInsets.zero,
+                //       gridDelegate:
+                //           const SliverGridDelegateWithFixedCrossAxisCount(
+                //         crossAxisCount: 2,
+                //         crossAxisSpacing: 5,
+                //         mainAxisSpacing: 5,
+                //         mainAxisExtent: 190,
+                //       ),
+                //       physics: const BouncingScrollPhysics(),
+                //       itemBuilder: (context, index) {
+                //         return const HighlightedItem();
+                //       },
+                //       itemCount: 55,
+                //     )),
                 Container(
                   padding: const EdgeInsets.symmetric(vertical: 10),
                   child: RefreshIndicator(

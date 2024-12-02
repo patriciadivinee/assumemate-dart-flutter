@@ -15,6 +15,7 @@ class _FollowScreenState extends State<FollowScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        surfaceTintColor: Colors.transparent,
         leading: IconButton(
           splashColor: Colors.transparent,
           icon: const Icon(

@@ -56,26 +56,26 @@ class _OfferListState extends State<OfferList> {
   }
 
   void _updateOffer(String status) async {
-    if (status == 'ACCEPTED') {
-      final response = await apiService.createOrder(widget.offerId.toString());
+    // if (status == 'ACCEPTED') {
+    //   final response = await apiService.createOrder(widget.offerId.toString());
 
-      if (response.containsKey('message')) {
-        if (mounted) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-                builder: (context) => ChatMessageScreen(
-                      receiverId: widget.userId.toString(),
-                    )),
-          );
-        }
-      } else {
-        if (mounted) {
-          popUp(context, 'Error accepting offer');
-        }
-        return;
-      }
-    }
+    //   if (response.containsKey('message')) {
+    //     if (mounted) {
+    //       Navigator.push(
+    //         context,
+    //         MaterialPageRoute(
+    //             builder: (context) => ChatMessageScreen(
+    //                   receiverId: widget.userId.toString(),
+    //                 )),
+    //       );
+    //     }
+    //   } else {
+    //     if (mounted) {
+    //       popUp(context, 'Error accepting offer');
+    //     }
+    //     return;
+    //   }
+    // }
 
     if (_channel != null) {
       _channel!.sink.add(jsonEncode({

@@ -4,9 +4,11 @@ import 'package:assumemate/components/listing_item.dart';
 import 'package:assumemate/logo/pop_up.dart';
 import 'package:assumemate/provider/follow_provider.dart';
 import 'package:assumemate/screens/ListingRequestScreen.dart';
+import 'package:assumemate/screens/assume_management_screen.dart';
 import 'package:assumemate/screens/assumptor_listing_screen.dart';
 import 'package:assumemate/screens/following_screen.dart';
 import 'package:assumemate/screens/offer_list_screen.dart';
+import 'package:assumemate/screens/report_list.dart';
 import 'package:assumemate/screens/transaction.dart';
 import 'package:assumemate/screens/user_auth/edit_application_screen.dart';
 import 'package:flutter/material.dart';
@@ -50,9 +52,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final wallId = await secureStorage.getUserId();
     try {
       double totalCoins = await apiService.getTotalCoins(int.parse(wallId!));
-      setState(() {
-        _coins = totalCoins;
-      });
+      if (mounted) {
+        setState(() {
+          _coins = totalCoins;
+        });
+      }
     } catch (e) {
       print('Error fetching coins: $e');
     }
@@ -184,12 +188,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               }
 
               return ListingItem(
-                title: title,
-                imageUrl: content['images'],
-                description: content['description'] ?? 'No Description',
-                listingId: listing['list_id'].toString(),
-                assumptorId: listing['user_id'].toString(),
-                price: content['price'].toString(),
+                listing: listing,
               );
             },
           );
@@ -287,7 +286,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
         print(_followers);
       }
     } catch (e) {
-      popUp(context, 'An error occureed: $e');
+      if (mounted) {
+        popUp(context, 'An error occureed: $e');
+      }
     }
   }
 
@@ -350,7 +351,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           context,
                           MaterialPageRoute(
                               builder: (context) =>
-                                  const AccontSettingsScreen()),
+                                  const AccountSettingsScreen()),
                         );
                       },
                       icon: const Icon(Icons.settings),
@@ -523,98 +524,109 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   collapseMode: CollapseMode.pin,
                 ),
               ),
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.all(10),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'My Wallet',
-                        style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.black,
-                            fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 8),
-                      Container(
-                        padding: const EdgeInsets.only(
-                            top: 10, bottom: 10, right: 8, left: 15),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.4),
-                              blurRadius: 2,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Row(
-                              children: [
-                                const Icon(
-                                  FontAwesomeIcons.coins,
-                                  color: Color(0xffF2D120),
-                                  size: 32,
-                                ),
-                                const SizedBox(width: 8),
-                                Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Text(
-                                      _coins.toString(),
-                                      style: const TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.bold),
-                                    ),
-                                    const Text(
-                                      'Coins',
-                                      style: TextStyle(fontSize: 13),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                            IconButton(
-                              onPressed: () {
-                                if (_applicationStatus == 'APPROVED') {
-                                  popUp(context,
-                                      'You need to be verified to top-up');
-                                } else {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => PaymentScreen(
-                                        addCoins: _addCoins,
-                                      ),
-                                    ),
-                                  );
-                                }
-                              },
-                              icon: const Icon(Icons.add),
-                              iconSize: 28,
-                              color: const Color(0xFF4A8AF0),
-                            ),
-                          ],
-                        ),
-                      ),
-                      if (_userType == 'assumptor')
-                        Column(
+              if (_userType == 'assumptor')
+                SliverToBoxAdapter(
+                  child: Padding(
+                      padding: const EdgeInsets.all(10),
+                      child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const SizedBox(height: 10),
                             const Text(
-                              'Manage',
+                              'My Wallet',
                               style: TextStyle(
                                   fontSize: 14,
                                   color: Colors.black,
                                   fontWeight: FontWeight.bold),
                             ),
                             const SizedBox(height: 8),
+                            Container(
+                              padding: const EdgeInsets.only(
+                                  top: 10, bottom: 10, right: 8, left: 15),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(16),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.4),
+                                    blurRadius: 2,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Row(
+                                    children: [
+                                      const Icon(
+                                        FontAwesomeIcons.coins,
+                                        color: Color(0xffF2D120),
+                                        size: 32,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Text(
+                                            _coins.toString(),
+                                            style: const TextStyle(
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.bold),
+                                          ),
+                                          const Text(
+                                            'Coins',
+                                            style: TextStyle(fontSize: 13),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                  IconButton(
+                                    onPressed: () {
+                                      if (_applicationStatus != 'APPROVED') {
+                                        popUp(context,
+                                            'You need to be verified to top-up');
+                                      } else {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) => PaymentScreen(
+                                              addCoins: _addCoins,
+                                            ),
+                                          ),
+                                        );
+                                      }
+                                    },
+                                    icon: const Icon(Icons.add),
+                                    iconSize: 28,
+                                    color: const Color(0xFF4A8AF0),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ])),
+                ),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.all(10),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // const SizedBox(height: 10),
+                      const Text(
+                        'Manage',
+                        style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.black,
+                            fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      if (_userType == 'assumptor')
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
                             _buildCard(
                               'Listings',
                               Icons.content_paste,
@@ -665,7 +677,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ),
                             ),
                           ],
-                        )
+                        ),
+                      const SizedBox(height: 8),
+                      _buildCard(
+                        'Assume Management',
+                        Icons.handshake_outlined,
+                        const Color(0xff626362),
+                        () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                const AssumeManagementScreen(),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      _buildCard(
+                        'Reports',
+                        Icons.report_outlined,
+                        const Color(0xff626362),
+                        () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const ReportListScreen(),
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -688,7 +725,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                     tabs: [
                       Tab(child: Text('Listings', style: tabTextStyle)),
-                      Tab(child: Text('Ratings', style: tabTextStyle)),
+                      Tab(child: Text('Reviews', style: tabTextStyle)),
                     ],
                   ),
                 ),
@@ -717,7 +754,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return GestureDetector(
       onTap: callback,
       child: Container(
-        padding: const EdgeInsets.only(top: 10, bottom: 10, right: 8, left: 15),
+        padding: const EdgeInsets.only(top: 8, bottom: 8, right: 8, left: 15),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),

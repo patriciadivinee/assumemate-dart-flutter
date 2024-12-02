@@ -1,17 +1,34 @@
+import 'dart:convert'; // for JSON decoding
 import 'package:assumemate/format.dart';
 import 'package:assumemate/screens/assumptor_list_detail_screen.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:assumemate/provider/favorite_provider.dart';
 import 'package:assumemate/screens/item_detail_screen.dart';
 import 'package:assumemate/storage/secure_storage.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart'; // For accessing environment variables
 
 class ListingItem extends StatefulWidget {
-  final dynamic listing;
+  final String title;
+  final List<dynamic> imageUrl;
+  final String address;
+  final String listingId;
+  final String assumptorId;
+  final String price;
+  final String status;
+  final bool isPromoted;
 
   const ListingItem({
-    required this.listing,
+    required this.title,
+    required this.imageUrl,
+    required this.address,
+    required this.listingId,
+    required this.assumptorId,
+    required this.price,
+    required this.status,
+    this.isPromoted = false,
     super.key,
   });
 
@@ -23,7 +40,41 @@ class _ListingItemState extends State<ListingItem> {
   final SecureStorage secureStorage = SecureStorage();
   Map<String, dynamic>? userProfile; // Store user profile data
   bool isLoading = true; // For loading state
+  bool isError = false; // For error state
   String? _userId;
+
+  // Method to fetch user profile
+  Future<void> fetchUserProfile() async {
+    String? token = await secureStorage.getToken(); // Retrieve the token
+
+    try {
+      final response = await http.get(
+        Uri.parse(
+            '${dotenv.env['API_URL']}/view/${widget.assumptorId}/profile/'),
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final profile = json.decode(response.body);
+        setState(() {
+          userProfile = profile['user_profile'];
+          isLoading = false;
+        });
+        print(userProfile!['user_prof_pic']);
+      } else {
+        throw Exception(
+            'Failed to load user profile: ${response.reasonPhrase}');
+      }
+    } catch (error) {
+      print('Error fetching user profile: $error');
+      setState(() {
+        isError = true;
+        isLoading = false;
+      });
+    }
+  }
 
   Future<void> _getUserType() async {
     _userId = await secureStorage.getUserId();
@@ -33,39 +84,21 @@ class _ListingItemState extends State<ListingItem> {
   void initState() {
     super.initState();
     _getUserType();
+    fetchUserProfile(); // Fetch the user profile when the widget is initialized
   }
 
   @override
   Widget build(BuildContext context) {
-    var content = widget.listing['list_content'];
-    var listId = widget.listing['list_id'];
-    var userId = widget.listing['user_id'].toString();
-    var price = content['price'].toString();
-    final images = content['images'];
-
-    print('widget.listing');
-    print(widget.listing);
-
-    String title;
-
-    if (content['category'] == 'Real Estate') {
-      title = content['title'] ?? 'No title';
-      // title = 'No title';
-    } else {
-      title =
-          '${content['make']} ${content['model']} (${content['year']}) - ${content['transmission']}';
-    }
-
     return InkWell(
         onTap: () {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => (_userId == userId)
-                  ? AssumptorListDetailScreen(listingId: listId)
+              builder: (context) => (_userId == widget.assumptorId)
+                  ? AssumptorListDetailScreen(listingId: widget.listingId)
                   : ItemDetailScreen(
-                      listingId: listId,
-                      assumptorId: userId,
+                      listingId: widget.listingId,
+                      assumptorId: widget.assumptorId,
                     ),
             ),
           );
@@ -87,8 +120,8 @@ class _ListingItemState extends State<ListingItem> {
                       topRight: Radius.circular(15),
                     ),
                     child: CachedNetworkImage(
-                      imageUrl: images != null
-                          ? images[0]
+                      imageUrl: widget.imageUrl.isNotEmpty
+                          ? widget.imageUrl[0]
                           : 'https://example.com/placeholder.png',
                       placeholder: (context, url) => Container(
                         color: Colors.grey.shade300,
@@ -104,7 +137,7 @@ class _ListingItemState extends State<ListingItem> {
                       fit: BoxFit.cover,
                     ),
                   ),
-                  if (widget.listing['is_promoted'] ?? false)
+                  if (widget.isPromoted)
                     Positioned(
                         left: 10,
                         top: 10,
@@ -122,17 +155,16 @@ class _ListingItemState extends State<ListingItem> {
                             ),
                           ],
                         )),
-                  if (widget.listing['list_status'] == 'SOLD' ||
-                      widget.listing['list_status'] == 'RESERVED')
+                  if (widget.status == 'SOLD' || widget.status == 'RESERVED')
                     Positioned.fill(
                       child: Container(
-                        color: Colors.black.withOpacity(0.6),
+                        color: Colors.black
+                            .withOpacity(0.6), // Semi-transparent overlay
                         child: Center(
                           child: Text(
-                            widget.listing['list_status'],
+                            widget.status, // Show "SOLD" or "RESERVED"
                             style: const TextStyle(
                               color: Colors.white,
-                              letterSpacing: 1.5,
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
                               shadows: [
@@ -158,7 +190,7 @@ class _ListingItemState extends State<ListingItem> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        title,
+                        widget.title,
                         style: const TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
@@ -176,7 +208,7 @@ class _ListingItemState extends State<ListingItem> {
                           SizedBox(width: 4),
                           Expanded(
                             child: Text(
-                              content['address'],
+                              widget.address,
                               style: const TextStyle(
                                 fontSize: 10,
                                 fontWeight: FontWeight.w500,
@@ -194,7 +226,7 @@ class _ListingItemState extends State<ListingItem> {
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           Text(
-                            formatCurrency(double.parse(price)),
+                            formatCurrency(double.parse(widget.price)),
                             style: const TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.bold,
@@ -203,10 +235,8 @@ class _ListingItemState extends State<ListingItem> {
                           const Spacer(),
                           Consumer<FavoriteProvider>(
                             builder: (context, favoriteProvider, child) {
-                              final isFavorited =
-                                  favoriteProvider.isFavorited(listId);
-
-                              print(isFavorited);
+                              final isFavorited = favoriteProvider
+                                  .isFavorited(widget.listingId);
 
                               return GestureDetector(
                                 onTap: () async {
@@ -215,7 +245,7 @@ class _ListingItemState extends State<ListingItem> {
                                   if (token != null) {
                                     try {
                                       String message = await favoriteProvider
-                                          .toggleFavorite(listId);
+                                          .toggleFavorite(widget.listingId);
                                       ScaffoldMessenger.of(context)
                                           .showSnackBar(
                                         SnackBar(content: Text(message)),
