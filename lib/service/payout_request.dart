@@ -61,7 +61,8 @@ class _PayoutRequestState extends State<PayoutRequest> {
       final response = await apiService.requestPayout(widget.orderId, email);
 
       if (response.containsKey('payout')) {
-        Navigator.pop(context);
+        // Navigator.pop(context);
+        getPayoutDetails();
         popUp(context, 'Payout request sent!');
       } else {
         popUp(context, response['error']);

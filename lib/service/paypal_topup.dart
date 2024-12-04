@@ -113,6 +113,7 @@ class _PayPalPaymentScreenState extends State<PayPalPaymentScreen> {
             const SnackBar(content: Text('Payment successful!')),
           );
           Navigator.of(context).pop(true);
+          Navigator.of(context).pop(true);
         }
       } else {
         throw 'Payment capture failed';

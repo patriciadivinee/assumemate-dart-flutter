@@ -280,8 +280,9 @@ class _OtherProfileScreenState extends State<OtherProfileScreen> {
                     child: Row(
                       children: [
                         CircleAvatar(
-                          backgroundImage:
-                              NetworkImage(_userProfile['user_prof_pic']),
+                          backgroundImage: _userProfile['user_prof_pic'] != null
+                              ? NetworkImage(_userProfile['user_prof_pic'])
+                              : AssetImage('assets/images/no-profile.jpg'),
                           radius: 40,
                         ),
                         const SizedBox(width: 10),

@@ -59,6 +59,7 @@ class _FeedScreenState extends State<FeedScreen> {
     _getappStatus();
     _fetchPromotedListings();
     _startAutoScroll();
+    checkAndFetchListings();
     // Fetch listings for each category
     houseAndLotListings = fetchListingsByCategory('Real Estate');
     carListings = fetchListingsByCategory('Car');
@@ -66,6 +67,52 @@ class _FeedScreenState extends State<FeedScreen> {
   }
 
   final String? baseURL = dotenv.env['API_URL'];
+
+  Future<void> checkAndFetchListings() async {
+    final token = await secureStorage.getToken();
+    final now = DateTime.now();
+
+    try {
+      // Fetch all active listings
+      final apiUrl = Uri.parse('$baseURL/listings/');
+      final response = await http.get(
+        apiUrl,
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final listings = jsonDecode(utf8.decode(response.bodyBytes));
+
+        if (listings is List) {
+          for (var listing in listings) {
+            final listId = listing['list_id'];
+            final listStatus = listing['list_status'];
+            final listDuration = DateTime.parse(
+                listing['list_duration'] ?? now.toIso8601String());
+            final promotion = listing['promotion'];
+
+            bool isPromoted = promotion != null &&
+                DateTime.parse(promotion['prom_end']).isAfter(now);
+
+            // You only need to check and display the data here
+            // Archiving will happen on the server side during periodic checks
+            print(
+                'Listing ID: $listId, Status: $listStatus, Duration: $listDuration, Is Promoted: $isPromoted');
+          }
+        } else {
+          print('Unexpected response format: $listings');
+        }
+      } else {
+        print(
+            'Error fetching listings: ${response.statusCode} - ${response.body}');
+      }
+    } catch (e) {
+      print('Error checking listings: $e');
+    }
+  }
 
   Future<List<dynamic>> fetchListingsByCategory(String category) async {
     final token = await secureStorage.getToken();

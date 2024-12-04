@@ -494,15 +494,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       itemCount: _offers.length,
                       itemBuilder: (context, index) {
                         final offer = _offers[index];
-                        return OfferList(
-                          offerId: offer['offer_id'],
-                          offerAmnt: offer['offer_price'],
-                          listId: offer['list_id'],
-                          listImage: offer['list_image'],
-                          userId: offer['user_id'],
-                          userFullname: offer['user_fullname'],
-                          roomId: offer['chatroom_id'],
-                        );
+                        // return OfferList(
+                        //   offerId: offer['offer_id'],
+                        //   offerAmnt: offer['offer_price'],
+                        //   reservation: offer['reservation'],
+                        //   listId: offer['list_id'],
+                        //   listImage: offer['list_image'],
+                        //   userId: offer['user_id'],
+                        //   userFullname: offer['user_fullname'],
+                        //   roomId: offer['chatroom_id'],
+                        // );
                       },
                     ),
                   ),

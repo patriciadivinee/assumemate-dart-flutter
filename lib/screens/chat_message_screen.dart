@@ -426,17 +426,21 @@ class _ChatMessageState extends State<ChatMessageScreen> {
           offerDetails['offerId'] = offer['offer_id'].toString();
           offerDetails['itemImg'] = img[0];
           offerDetails['listingId'] = list['list_id'];
+          offerDetails['reservation'] = list['list_content']['reservation'];
           offerDetails['offerPrice'] = offer['offer_price'];
           offerDetails['offerStatus'] = offer['offer_status'];
           if (offer.containsKey('order_id')) {
             final order = offer['order_id'];
             print('order');
             print(order);
+
             offerDetails['order_id'] = order['order_id'];
             offerDetails['order_price'] = order['order_price'];
             offerDetails['order_status'] = order['order_status'];
           }
         });
+        print('offerDetailssss');
+        print(offerDetails['reservation']);
         print(_hasOffer);
       }
     } catch (e) {
@@ -726,7 +730,7 @@ class _ChatMessageState extends State<ChatMessageScreen> {
                                           'REJECT',
                                           'ACCEPT',
                                           () => _updateOffer('REJECTED'),
-                                          () => acceptOfferAndReserve(context)
+                                          () => showConfirmation(context)
                                           // _updateOffer('ACCEPTED')
                                           )
                                       : (offerDetails['offerStatus'] == 'ACCEPTED' ||
@@ -1135,137 +1139,110 @@ class _ChatMessageState extends State<ChatMessageScreen> {
   }
 
   Future<void> acceptOfferAndReserve(BuildContext context) async {
-    final GlobalKey<FormState> formKey = GlobalKey<FormState>();
-    final TextEditingController reserveController = TextEditingController();
+    try {
+      final response = await apiService.createOrder(
+          offerDetails['offerId'], offerDetails['reservation'].toString());
 
-    void acceptReserve() async {
-      final amntTxt = reserveController.text;
-      final amount = amntTxt.replaceAll(',', '');
+      print(response);
 
-      try {
-        final response =
-            await apiService.createOrder(offerDetails['offerId'], amount);
-
-        if (response.containsKey('message')) {
-          print('response SA ORDER');
-          print(response);
-          print(response['order']);
-          print(response['order']['order_id']);
-          setState(() {
-            offerDetails['order_id'] = response['order']['order_id'];
-            offerDetails['order_price'] = response['order']['order_price'];
-          });
-          popUp(context, response['message']);
-        } else {
-          popUp(context, response['error']);
-          return;
-        }
-      } catch (e) {
-        popUp(context, 'Error accepting offer');
+      if (response.containsKey('message')) {
+        print('response SA ORDER');
+        print(response);
+        print(response['order']);
+        print(response['order']['order_id']);
+        setState(() {
+          offerDetails['order_id'] = response['order']['order_id'];
+          offerDetails['order_price'] = response['order']['order_price'];
+        });
+        Navigator.of(context).pop();
+        popUp(context, response['message']);
+      } else {
+        popUp(context, response['error']);
+        return;
       }
-
-      if (_channel != null) {
-        _channel!.sink.add(jsonEncode({
-          'type': 'offer_update',
-          'user_id': _userId,
-          'offer_id': offerDetails['offerId'],
-          'offer_status': 'ACCEPTED'
-        }));
-
-        final updatedStatus = 'accepted';
-
-        final message = {
-          'message': 'Offer $updatedStatus',
-          'file': null,
-          'file_name': null,
-          'file_type': null,
-        };
-
-        _sendInboxUpdate(message, false);
-      }
+    } catch (e) {
+      popUp(context, 'Error accepting offer');
     }
 
-    return showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          titlePadding:
-              const EdgeInsets.symmetric(horizontal: 17, vertical: 10),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 17),
-          actionsPadding:
-              const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
-          title: const Center(
-            child: Text(
-              'Enter reservation amount',
-              style: TextStyle(color: Color(0xff4A8AF0), fontSize: 20),
+    if (_channel != null) {
+      _channel!.sink.add(jsonEncode({
+        'type': 'offer_update',
+        'user_id': _userId,
+        'offer_id': offerDetails['offerId'],
+        'offer_status': 'ACCEPTED'
+      }));
+
+      final updatedStatus = 'accepted';
+
+      final message = {
+        'message': 'Offer $updatedStatus',
+        'file': null,
+        'file_name': null,
+        'file_type': null,
+      };
+
+      _sendInboxUpdate(message, false);
+    }
+  }
+
+  void showConfirmation(BuildContext context) {
+    showDialog(
+        context: context,
+        barrierDismissible: true,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12.0),
             ),
-          ),
-          content: Form(
-            key: formKey, // Assign the form key
-            child: Column(
+            actionsPadding:
+                const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
+            contentPadding: const EdgeInsets.only(left: 18, right: 18, top: 12),
+            content: Column(
               mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                TextFormField(
-                  cursorColor: const Color(0xff4A8AF0),
-                  controller: reserveController,
-                  decoration: const InputDecoration(
-                    border: InputBorder.none,
-                    contentPadding: EdgeInsets.all(0),
-                    hintText: '\u20B10.00',
-                    hoverColor: Color(0xff4A8AF0),
-                    focusedBorder: UnderlineInputBorder(
-                      borderSide: BorderSide(
-                        color: Color(0xff4A8AF0),
-                      ),
-                    ),
-                  ),
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [
-                    CurrencyTextInputFormatter.currency(
-                        locale: 'en_PH', decimalDigits: 2, symbol: '')
-                  ],
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter amount';
-                    }
-                    // Optional: Add custom validation logic for the amount (e.g., must be positive number)
-                    return null;
-                  },
+                Text(
+                  'Accept and reserve offer?',
+                  style: const TextStyle(
+                      fontSize: 14, fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.start,
                 ),
+                const SizedBox(height: 8),
+                Text(
+                  'Do you wish to accept offer with reservation amount of ${formatCurrency(offerDetails['reservation'])}?',
+                  style: const TextStyle(
+                      fontSize: 12, fontWeight: FontWeight.w500),
+                  textAlign: TextAlign.start,
+                )
               ],
             ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context)
-                    .pop(); // Close the dialog when 'Cancel' is pressed
-              },
-              child: const Text(
-                'Cancel',
-                style: TextStyle(color: Color(0xff4A8AF0)),
-              ),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                if (formKey.currentState!.validate()) {
-                  acceptReserve();
-                  Navigator.of(context).pop();
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xff4A8AF0),
-              ),
-              child: const Text(
-                'Accept and Reserve',
-                style: TextStyle(color: Color(0xffFFFCF1)),
-              ),
-            ),
-          ],
-        );
-      },
-    );
+            actions: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                    },
+                    child: const Text(
+                      'Cancel',
+                      style: TextStyle(
+                          color: Color(0xff4A8AF0),
+                          fontWeight: FontWeight.w400),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () => acceptOfferAndReserve(context),
+                    child: const Text(
+                      'Confirm',
+                      style: TextStyle(
+                          color: Color(0xff4A8AF0),
+                          fontWeight: FontWeight.w400),
+                    ),
+                  ),
+                ],
+              )
+            ],
+          );
+        });
   }
 }

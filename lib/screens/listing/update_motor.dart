@@ -1,5 +1,6 @@
 // motor_form.dart
 import 'dart:io';
+import 'package:assumemate/logo/pop_up.dart';
 import 'package:assumemate/screens/listing/motor_data.dart';
 import 'package:assumemate/service/service.dart';
 import 'package:flutter/material.dart';
@@ -32,7 +33,7 @@ class MotorForm extends StatefulWidget {
 class _MotorForm extends State<MotorForm> {
   final SecureStorage secureStorage = SecureStorage();
   String query = '';
-  String? selectedPreference; // No default value
+  bool selectedPreference = false; // No default value
   final numberFormat = NumberFormat.decimalPattern();
   final GlobalKey<FormState> _localFormKey = GlobalKey<FormState>();
   final MapController mapController = MapController();
@@ -84,6 +85,7 @@ class _MotorForm extends State<MotorForm> {
       TextEditingController();
   final TextEditingController loanDurationController = TextEditingController();
   final TextEditingController downPaymentController = TextEditingController();
+  final TextEditingController reservationController = TextEditingController();
   final TextEditingController numberOfMonthsPaidController =
       TextEditingController();
   final TextEditingController customMakeController = TextEditingController();
@@ -129,7 +131,7 @@ class _MotorForm extends State<MotorForm> {
 
     // Initialize empty lists
     cloudinaryImageUrls = [];
-    cloudinaryDocumentUrls = [];
+    // cloudinaryDocumentUrls = [];
     _imageFiles = [];
     _DocFiles = [];
 
@@ -141,7 +143,7 @@ class _MotorForm extends State<MotorForm> {
     selectedFuelType = null;
     selectedMileageRange = null;
     selectedColor = null;
-    selectedPreference = null;
+    selectedPreference = false;
   }
 
   void _initializeEditingListing() {
@@ -163,10 +165,19 @@ class _MotorForm extends State<MotorForm> {
     selectedYear = data['year'];
     selectedTransmission = data['transmission'];
     selectedFuelType = data['fuelType'];
-    selectedPreference = data['preference'];
+    reservationController.text = data['reservation'] != null
+        ? numberFormat
+            .format(double.tryParse(data['reservation'].toString()) ?? 0)
+        : '';
     selectedMileageRange = data['mileage'];
     selectedColor = _colorFromString(data['color']);
-    selectedPreference = data['preference'];
+    if (data['offer_allowed'] is bool) {
+      selectedPreference = data['offer_allowed'];
+    } else if (data['offer_allowed'] is String) {
+      selectedPreference = data['offer_allowed'] == 'true';
+    } else {
+      selectedPreference = false; // Default fallback
+    }
     addressController.text = data['address'] ?? '';
     titleController.text = data['title'] ?? '';
     priceController.text = data['price'] != null
@@ -185,7 +196,7 @@ class _MotorForm extends State<MotorForm> {
         data['numberOfMonthsPaid']?.toString() ?? '';
     descriptionController.text = data['description'] ?? '';
     cloudinaryImageUrls = List<String>.from(data['images'] ?? []);
-    cloudinaryDocumentUrls = List<String>.from(data['documents'] ?? []);
+    // cloudinaryDocumentUrls = List<String>.from(data['documents'] ?? []);
     _computeTotalPayment();
     print('Mao ni ang values');
     print(cloudinaryImageUrls);
@@ -460,11 +471,24 @@ class _MotorForm extends State<MotorForm> {
   }
 
   Future<void> _pickAndUploadImages() async {
+    if (_imageFiles != null && _imageFiles!.length >= 15) {
+      // Show an alert or message indicating the limit has been reached
+      popUp(context, 'You can only upload up to 15 images.');
+      return;
+    }
+
     PermissionStatus permissionStatus = await Permission.photos.request();
 
     if (permissionStatus.isGranted) {
       final List<XFile>? selectedImages = await _picker.pickMultiImage();
       if (selectedImages != null && selectedImages.isNotEmpty) {
+        // Ensure total images do not exceed 15
+        final totalImages = _imageFiles!.length + selectedImages.length;
+        if (totalImages > 15) {
+          popUp(context, 'You can only upload up to 15 images.');
+          return;
+        }
+
         setState(() {
           _imageFiles ??= [];
           _imageFiles!.addAll(selectedImages);
@@ -500,9 +524,7 @@ class _MotorForm extends State<MotorForm> {
         }
       }
     } else if (permissionStatus.isDenied) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Permission to access storage is required.')),
-      );
+      popUp(context, 'Permission to access storage is required.');
     } else if (permissionStatus.isPermanentlyDenied) {
       bool? openSettings = await showDialog(
         context: context,
@@ -570,12 +592,27 @@ class _MotorForm extends State<MotorForm> {
             side: BorderSide(color: Colors.blueAccent, width: 1.5),
           ),
           onPressed: () async {
+            // Check if the document limit is reached
+            if (_DocFiles != null && _DocFiles!.length >= 10) {
+              popUp(context, 'You can only upload up to 10 documents.');
+              return; // Exit if the limit is reached
+            }
+
             FilePickerResult? result = await FilePicker.platform.pickFiles(
               allowMultiple: true,
               type: FileType.custom,
               allowedExtensions: ['pdf', 'docx', 'jpg', 'png'],
             );
 
+            if (result != null) {
+              for (PlatformFile file in result.files) {
+                if (_DocFiles!.length >= 10) {
+                  popUp(context,
+                      'You can only upload up to 10 documents. Remaining files ignored.');
+                  break; // Prevent adding more than 5 files
+                }
+              }
+            }
             if (result != null) {
               for (PlatformFile file in result.files) {
                 if (file.path != null) {
@@ -793,6 +830,15 @@ class _MotorForm extends State<MotorForm> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                const SizedBox(height: 15),
+                const Text(
+                  "Listing Details:",
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                SizedBox(height: 10),
                 // Make DropdownButtonFormField
                 DropdownButtonFormField2<String>(
                   decoration: InputDecoration(
@@ -855,7 +901,15 @@ class _MotorForm extends State<MotorForm> {
                               (value == null || value.isEmpty)) {
                             return 'Please enter a custom motor brand';
                           }
-                          return null;
+
+                          // Regular expression to allow only letters, numbers, and spaces
+                          final regex = RegExp(r'^[a-zA-Z0-9\s]+$');
+                          if (selectedMake == 'Other' &&
+                              !regex.hasMatch(value!)) {
+                            return 'Invalid characters. Only letters, numbers, and spaces are allowed.';
+                          }
+
+                          return null; // No validation error
                         },
                       ),
                     ],
@@ -875,6 +929,20 @@ class _MotorForm extends State<MotorForm> {
                     focusedBorder: borderStyle,
                     border: borderStyle,
                   ),
+                  validator: (value) {
+                    if (value != null && value.trim().isNotEmpty) {
+                      // Ensure the string is not just empty spaces
+                      // Regular expression to allow only letters, numbers, and spaces
+                      final regex = RegExp(r'^[a-zA-Z0-9\s]+$');
+                      if (!regex.hasMatch(value)) {
+                        return 'Invalid characters. Only letters, numbers, and spaces are allowed.';
+                      }
+                    } else if (value != null && value.trim().isEmpty) {
+                      return 'Model cannot be empty or just spaces.';
+                    }
+
+                    return null; // No validation error
+                  },
                 ),
 
                 const SizedBox(height: 20.0),
@@ -1081,54 +1149,6 @@ class _MotorForm extends State<MotorForm> {
                     )),
                 SizedBox(height: 10),
 
-                Row(
-                  mainAxisAlignment:
-                      MainAxisAlignment.spaceEvenly, // Centers the ChoiceChips
-                  children: [
-                    const Text(
-                      "Sale Preference:",
-                      style: TextStyle(fontSize: 16),
-                    ),
-                    ChoiceChip(
-                      backgroundColor: const Color(0xffFFFCF1),
-                      label: Text('Buy Only'),
-                      selected: selectedPreference == 'Buy Only',
-                      showCheckmark: false,
-                      onSelected: (bool selected) {
-                        setState(() {
-                          selectedPreference = selected ? 'Buy Only' : null;
-                        });
-                      },
-                      selectedColor: const Color(0xff4A8AF0),
-                      labelStyle: TextStyle(
-                        color: selectedPreference == 'Buy Only'
-                            ? Colors.white
-                            : Colors.black,
-                      ),
-                    ),
-                    SizedBox(width: 10),
-                    ChoiceChip(
-                      backgroundColor: const Color(0xffFFFCF1),
-                      label: Text('Allow Offers'),
-                      showCheckmark: false,
-                      selected: selectedPreference == 'Allow Offers',
-                      onSelected: (bool selected) {
-                        setState(() {
-                          selectedPreference = selected ? 'Allow Offers' : null;
-                        });
-                      },
-                      selectedColor: const Color(0xff4A8AF0),
-                      labelStyle: TextStyle(
-                        color: selectedPreference == 'Allow Offers'
-                            ? Colors.white
-                            : Colors.black,
-                      ),
-                    ),
-                  ],
-                ),
-
-                SizedBox(height: 10),
-
                 /// Address Field
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8),
@@ -1214,6 +1234,14 @@ class _MotorForm extends State<MotorForm> {
                 ),
 
                 const SizedBox(height: 15),
+                const Text(
+                  "Payment Details:",
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                SizedBox(height: 10),
                 TextFormField(
                   controller: monthlyPaymentController,
                   decoration: InputDecoration(
@@ -1265,10 +1293,9 @@ class _MotorForm extends State<MotorForm> {
                     final duration = int.tryParse(value.replaceAll(',', ''));
                     if (duration == null || duration < 3 || duration > 48) {
                       _showAlert(
-                          'Loan duration is at least 3 months to 48 months (4 years)');
-                      return 'Loan duration is at least 3 months to 48 months (4 years)'; // Prevent form submission
+                          'Loan duration must be between 3 and 48 months');
+                      return 'Loan duration must be between 3 and 48 months'; // Prevent form submission
                     }
-
                     final monthsPaid = int.tryParse(
                         numberOfMonthsPaidController.text.replaceAll(',', ''));
                     if (monthsPaid != null && monthsPaid > duration) {
@@ -1358,6 +1385,86 @@ class _MotorForm extends State<MotorForm> {
                     _computeTotalPayment();
                   },
                 ),
+                SizedBox(height: 10),
+
+                Row(
+                  mainAxisAlignment:
+                      MainAxisAlignment.start, // Centers the ChoiceChip
+                  children: [
+                    const Text(
+                      "Sale Preference:",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    SizedBox(width: 10),
+                    ChoiceChip(
+                      backgroundColor: const Color(0xffFFFCF1),
+                      label: Text('Allow Offers'),
+                      showCheckmark: true, // Shows a checkmark when selected
+                      selected:
+                          selectedPreference, // Directly uses the boolean value
+                      onSelected: (bool selected) {
+                        setState(() {
+                          selectedPreference = selected; // Updates the boolean
+                        });
+                      },
+                      selectedColor: const Color(0xff4A8AF0),
+                      labelStyle: TextStyle(
+                        color: selectedPreference ? Colors.white : Colors.black,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                TextFormField(
+                  controller: reservationController,
+                  decoration: InputDecoration(
+                    labelText: 'Reservation Fee',
+                    floatingLabelStyle:
+                        const TextStyle(color: Color(0xff4A8AF0)),
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 18, vertical: 10),
+                    enabledBorder: borderStyle,
+                    focusedBorder: borderStyle,
+                    border: borderStyle,
+                  ),
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter a reservation fee';
+                    }
+
+                    final reservation = int.tryParse(value.replaceAll(',', ''));
+                    final price =
+                        int.tryParse(priceController.text.replaceAll(',', ''));
+
+                    if (reservation == null) {
+                      return 'Please enter a valid number';
+                    } else if (reservation < 0) {
+                      return 'Reservation fee cannot be less than zero';
+                    } else if (price == null || price <= 0) {
+                      return 'Please enter a valid price first';
+                    } else {
+                      final minReservation = price * 0.2; // 20% of the price
+                      final maxReservation = price * 0.5; // 50% of the price
+
+                      if (reservation < minReservation) {
+                        return 'Reservation fee must be at least 20% of the price';
+                      } else if (reservation > maxReservation) {
+                        return 'Reservation fee cannot exceed 50% of the price';
+                      }
+                    }
+
+                    return null; // No validation error
+                  },
+                  onChanged: (value) {
+                    _formatAndSetText(value, reservationController);
+                  },
+                ),
+
                 const SizedBox(height: 15),
                 TextField(
                   controller: descriptionController,
@@ -1375,7 +1482,7 @@ class _MotorForm extends State<MotorForm> {
                   ),
                 ),
                 SizedBox(height: 15),
-                _buildDocumentUploader(), // Space between sections
+                // _buildDocumentUploader(), // Space between sections
                 buildImageUploader(),
                 ElevatedButton(
                   onPressed: () async {
@@ -1383,26 +1490,12 @@ class _MotorForm extends State<MotorForm> {
                       // Validation checks
                       if (cloudinaryImageUrls == null ||
                           cloudinaryImageUrls!.isEmpty) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                              content:
-                                  Text('Please select at least one image')),
-                        );
+                        popUp(context, 'Please select at least one image');
                         return;
                       }
-                      if (cloudinaryDocumentUrls == null ||
-                          cloudinaryDocumentUrls!.isEmpty) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                              content:
-                                  Text('Please select at least one document')),
-                        );
-                        return;
-                      }
+
                       if (selectedYear == null || selectedYear!.isEmpty) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Please select a year')),
-                        );
+                        popUp(context, 'Please select a year');
                         return;
                       }
                       if (selectedPreference == null) {
@@ -1446,7 +1539,7 @@ class _MotorForm extends State<MotorForm> {
                         'fuelType': selectedFuelType ?? '',
                         'mileage': selectedMileageRange ?? '',
                         'color': selectedColor?.toString() ?? '',
-                        'preference': selectedPreference ?? '',
+                        'offer_allowed': selectedPreference,
                         'address': addressController.text.isNotEmpty
                             ? addressController.text
                             : '',
@@ -1457,10 +1550,14 @@ class _MotorForm extends State<MotorForm> {
                                 monthlyPaymentController.text
                                     .replaceAll(',', '')) ??
                             0.0,
+                        'reservation': double.tryParse(reservationController
+                                .text
+                                .replaceAll(',', '')) ??
+                            0.0,
                         'loanDuration': loanDurationController.text.isNotEmpty
                             ? loanDurationController.text
                             : '',
-                        'totalPaymentMade': totalPaymentMade ?? 0.0,
+                        'totalPaymentMade': totalPaymentMade,
                         'downPayment': double.tryParse(downPaymentController
                                 .text
                                 .replaceAll(',', '')) ??
@@ -1473,11 +1570,8 @@ class _MotorForm extends State<MotorForm> {
                             ? descriptionController.text
                             : '',
                         'images': cloudinaryImageUrls ?? [],
-                        'documents': cloudinaryDocumentUrls ?? [],
+                        // 'documents': cloudinaryDocumentUrls ?? [],
                       };
-                      print('Wow');
-                      print(listingContent);
-                      print(widget.listingData);
 
                       try {
                         final token = await secureStorage.getToken();
@@ -1489,23 +1583,16 @@ class _MotorForm extends State<MotorForm> {
                               token!,
                               widget.listingData!['id'],
                               {'list_content': listingContent});
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                                content: Text('Listing updated successfully!')),
-                          );
+                          popUp(context, 'Listing updated successfully!');
                         } else {
                           // Add new listing
                           await dbService.addCarListing(token!, listingContent);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Submitted Successfully')),
-                          );
+                          popUp(context, 'Submitted Successfully');
                         }
 
                         Navigator.pop(context);
                       } catch (e) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Error: $e')),
-                        );
+                        popUp(context, 'Error: $e');
                       }
                     }
                   },

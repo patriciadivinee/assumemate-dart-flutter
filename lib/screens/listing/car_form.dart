@@ -24,7 +24,7 @@ class CarForm extends StatefulWidget {
 class _CarFormState extends State<CarForm> {
   final SecureStorage secureStorage = SecureStorage();
   String query = '';
-  String? selectedPreference; // No default value
+  bool selectedPreference = false; // No default value
   final numberFormat = NumberFormat.decimalPattern();
   final GlobalKey<FormState> _localFormKey = GlobalKey<FormState>();
   final MapController mapController = MapController();
@@ -47,7 +47,7 @@ class _CarFormState extends State<CarForm> {
   );
 
   final List<String> years =
-      List.generate(7, (index) => (DateTime.now().year - index).toString())
+      List.generate(30, (index) => (DateTime.now().year - index).toString())
           .toList();
   String? selectedYear,
       selectedTransmission,
@@ -76,6 +76,7 @@ class _CarFormState extends State<CarForm> {
       TextEditingController();
   final TextEditingController loanDurationController = TextEditingController();
   final TextEditingController downPaymentController = TextEditingController();
+  final TextEditingController reservationController = TextEditingController();
   final TextEditingController numberOfMonthsPaidController =
       TextEditingController();
 
@@ -345,19 +346,35 @@ class _CarFormState extends State<CarForm> {
 
 // Pick and Upload Images to Cloudinary
   Future<void> _pickAndUploadImages() async {
+    if (_imageFiles != null && _imageFiles!.length >= 15) {
+      // Show an alert or message indicating the limit has been reached
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('You can only upload up to 15 images.')),
+      );
+      return;
+    }
+
     PermissionStatus permissionStatus = await Permission.photos.request();
 
     if (permissionStatus.isGranted) {
       final List<XFile>? selectedImages = await _picker.pickMultiImage();
       if (selectedImages != null && selectedImages.isNotEmpty) {
+        // Ensure total images do not exceed 15
+        final totalImages = _imageFiles!.length + selectedImages.length;
+        if (totalImages > 15) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('You can only upload up to 15 images.')),
+          );
+          return;
+        }
+
         setState(() {
           _imageFiles!.addAll(selectedImages);
         });
 
-        // Make sure all images are uploaded and URLs are captured
+        // Upload the images to Cloudinary
         for (var file in selectedImages) {
           if (file.path != null) {
-            // Start the image upload process
             final response = await cloudinary.upload(
               file: file.path!,
               folder: 'car_listings',
@@ -366,21 +383,13 @@ class _CarFormState extends State<CarForm> {
 
             if (response.isSuccessful && response.secureUrl != null) {
               setState(() {
-                cloudinaryImageUrls
-                    .add(response.secureUrl!); // Update the URLs after upload
+                cloudinaryImageUrls.add(response.secureUrl!);
               });
               print('Image uploaded to Cloudinary: ${response.secureUrl}');
             } else {
               print('Error uploading to Cloudinary: ${response.error}');
             }
           }
-        }
-
-        // After upload completes, check if the image URLs are available
-        if (cloudinaryImageUrls.isEmpty) {
-          print('Your images are still uploading');
-        } else {
-          print('All images uploaded successfully: $cloudinaryImageUrls');
         }
       }
     } else if (permissionStatus.isDenied) {
@@ -454,11 +463,34 @@ class _CarFormState extends State<CarForm> {
             side: BorderSide(color: Colors.blueAccent, width: 1.5),
           ),
           onPressed: () async {
+            // Check if the document limit is reached
+            if (_DocFiles != null && _DocFiles!.length >= 10) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                    content: Text('You can only upload up to 10 documents.')),
+              );
+              return; // Exit if the limit is reached
+            }
+
             FilePickerResult? result = await FilePicker.platform.pickFiles(
               allowMultiple: true,
               type: FileType.custom,
               allowedExtensions: ['pdf', 'docx', 'jpg', 'png'],
             );
+
+            if (result != null) {
+              for (PlatformFile file in result.files) {
+                if (_DocFiles!.length >= 10) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                          'You can only upload up to 5 documents. Remaining files ignored.'),
+                    ),
+                  );
+                  break; // Prevent adding more than 5 files
+                }
+              }
+            }
 
             if (result != null) {
               for (PlatformFile file in result.files) {
@@ -667,6 +699,15 @@ class _CarFormState extends State<CarForm> {
       key: _localFormKey,
       child: Column(
         children: [
+          const SizedBox(height: 15),
+          const Text(
+            "Listing Details:",
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          SizedBox(height: 10),
           // Make DropdownButtonFormField
           DropdownButtonFormField2<String>(
             decoration: InputDecoration(
@@ -728,9 +769,19 @@ class _CarFormState extends State<CarForm> {
                       customMake = value;
                     });
                   },
-                  validator: (value) => value == null || value.isEmpty
-                      ? 'Please enter a make'
-                      : null,
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Please enter a model'; // Prevent form submission if empty
+                    }
+
+                    // Regular expression to allow only letters, numbers, and spaces
+                    final regex = RegExp(r'^[a-zA-Z0-9\s]+$');
+                    if (!regex.hasMatch(value)) {
+                      return 'Invalid characters in model. Only letters, numbers, and spaces are allowed.'; // Prevent form submission if invalid
+                    }
+
+                    return null; // No validation error
+                  },
                 ),
               ],
             ),
@@ -801,9 +852,20 @@ class _CarFormState extends State<CarForm> {
                       customModel = value;
                     });
                   },
-                  validator: (value) => value == null || value.isEmpty
-                      ? 'Please enter a model'
-                      : null,
+                  validator: (value) {
+                    // Check if value is null or empty after trimming spaces
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Please enter a model'; // Prevent form submission if empty or only spaces
+                    }
+
+                    // Regular expression to allow only letters, numbers, and spaces
+                    final regex = RegExp(r'^[a-zA-Z0-9\s]+$');
+                    if (!regex.hasMatch(value)) {
+                      return 'Invalid characters in model. Only letters, numbers, and spaces are allowed.'; // Prevent form submission if invalid
+                    }
+
+                    return null; // No validation error
+                  },
                 ),
               ],
             ),
@@ -1005,55 +1067,6 @@ class _CarFormState extends State<CarForm> {
                   },
                 ),
               )),
-          SizedBox(height: 10),
-
-          Row(
-            mainAxisAlignment:
-                MainAxisAlignment.spaceEvenly, // Centers the ChoiceChips
-            children: [
-              const Text(
-                "Sale Preference:",
-                style: TextStyle(fontSize: 16),
-              ),
-              ChoiceChip(
-                backgroundColor: const Color(0xffFFFCF1),
-                label: Text('Buy Only'),
-                selected: selectedPreference == 'Buy Only',
-                showCheckmark: false,
-                onSelected: (bool selected) {
-                  setState(() {
-                    selectedPreference = selected ? 'Buy Only' : null;
-                  });
-                },
-                selectedColor: const Color(0xff4A8AF0),
-                labelStyle: TextStyle(
-                  color: selectedPreference == 'Buy Only'
-                      ? Colors.white
-                      : Colors.black,
-                ),
-              ),
-              SizedBox(width: 10),
-              ChoiceChip(
-                backgroundColor: const Color(0xffFFFCF1),
-                label: Text('Allow Offers'),
-                showCheckmark: false,
-                selected: selectedPreference == 'Allow Offers',
-                onSelected: (bool selected) {
-                  setState(() {
-                    selectedPreference = selected ? 'Allow Offers' : null;
-                  });
-                },
-                selectedColor: const Color(0xff4A8AF0),
-                labelStyle: TextStyle(
-                  color: selectedPreference == 'Allow Offers'
-                      ? Colors.white
-                      : Colors.black,
-                ),
-              ),
-            ],
-          ),
-
-          SizedBox(height: 10),
 
           /// Address Field
           Padding(
@@ -1137,6 +1150,14 @@ class _CarFormState extends State<CarForm> {
           ),
 
           const SizedBox(height: 15),
+          const Text(
+            "Payment Details:",
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          SizedBox(height: 10),
           TextFormField(
             controller: monthlyPaymentController,
             decoration: InputDecoration(
@@ -1184,11 +1205,10 @@ class _CarFormState extends State<CarForm> {
               }
 
               final duration = int.tryParse(value.replaceAll(',', ''));
-              if (duration == null || duration <= 0) {
-                _showAlert('Loan duration must be greater than zero');
-                return 'Loan duration must be greater than zero'; // Prevent form submission
+              if (duration == null || duration < 6 || duration > 84) {
+                _showAlert('Loan duration must be between 6 and 84 months');
+                return 'Loan duration must be between 6 and 84 months'; // Prevent form submission
               }
-
               final monthsPaid = int.tryParse(
                   numberOfMonthsPaidController.text.replaceAll(',', ''));
               if (monthsPaid != null && monthsPaid > duration) {
@@ -1275,6 +1295,84 @@ class _CarFormState extends State<CarForm> {
               _computeTotalPayment();
             },
           ),
+          SizedBox(height: 10),
+
+          Row(
+            mainAxisAlignment:
+                MainAxisAlignment.start, // Centers the ChoiceChip
+            children: [
+              const Text(
+                "Sale Preference:",
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              SizedBox(width: 10),
+              ChoiceChip(
+                backgroundColor: const Color(0xffFFFCF1),
+                label: Text('Allow Offers'),
+                showCheckmark: true, // Shows a checkmark when selected
+                selected: selectedPreference, // Directly uses the boolean value
+                onSelected: (bool selected) {
+                  setState(() {
+                    selectedPreference = selected; // Updates the boolean
+                  });
+                },
+                selectedColor: const Color(0xff4A8AF0),
+                labelStyle: TextStyle(
+                  color: selectedPreference ? Colors.white : Colors.black,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 10),
+          TextFormField(
+            controller: reservationController,
+            decoration: InputDecoration(
+              labelText: 'Reservation Fee',
+              floatingLabelStyle: const TextStyle(color: Color(0xff4A8AF0)),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+              enabledBorder: borderStyle,
+              focusedBorder: borderStyle,
+              border: borderStyle,
+            ),
+            keyboardType: TextInputType.number,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Please enter a reservation fee';
+              }
+
+              final reservation = int.tryParse(value.replaceAll(',', ''));
+              final price =
+                  int.tryParse(priceController.text.replaceAll(',', ''));
+
+              if (reservation == null) {
+                return 'Please enter a valid number';
+              } else if (reservation < 0) {
+                return 'Reservation fee cannot be less than zero';
+              } else if (price == null || price <= 0) {
+                return 'Please enter a valid price first';
+              } else {
+                final minReservation = price * 0.2; // 20% of the price
+                final maxReservation = price * 0.5; // 50% of the price
+
+                if (reservation < minReservation) {
+                  return 'Reservation fee must be at least 20% of the price';
+                } else if (reservation > maxReservation) {
+                  return 'Reservation fee cannot exceed 50% of the price';
+                }
+              }
+
+              return null; // No validation error
+            },
+            onChanged: (value) {
+              _formatAndSetText(value, reservationController);
+            },
+          ),
+          const SizedBox(height: 10),
           const SizedBox(height: 15),
           TextField(
             controller: descriptionController,
@@ -1292,7 +1390,7 @@ class _CarFormState extends State<CarForm> {
             ),
           ),
           SizedBox(height: 15),
-          _buildDocumentUploader(), // Space between sections
+          // _buildDocumentUploader(), // Space between sections
           buildImageUploader(),
           ElevatedButton(
             onPressed: () async {
@@ -1341,7 +1439,7 @@ class _CarFormState extends State<CarForm> {
                   'make': selectedMake == 'Other' ? customMake : selectedMake,
                   'model':
                       selectedModel == 'Other' ? customModel : selectedModel,
-                  'preference': selectedPreference,
+                  'offer_allowed': selectedPreference,
                   'address': addressController.text,
                   'price': double.tryParse(
                           priceController.text.replaceAll(',', '')) ??
@@ -1355,6 +1453,9 @@ class _CarFormState extends State<CarForm> {
                   'monthlyPayment': double.tryParse(
                           monthlyPaymentController.text.replaceAll(',', '')) ??
                       0.0,
+                  'reservation': double.tryParse(
+                          reservationController.text.replaceAll(',', '')) ??
+                      0.0,
                   'loanDuration': loanDurationController.text,
                   'totalPaymentMade': totalPaymentMade,
                   'downPayment': double.tryParse(
@@ -1365,7 +1466,7 @@ class _CarFormState extends State<CarForm> {
                               .replaceAll(',', '')) ??
                       0.0,
                   'images': cloudinaryImageUrls, // Store Cloudinary URLs
-                  'documents': cloudinaryDocumentUrls,
+                  // 'documents': cloudinaryDocumentUrls,
                 };
 
                 // Debug print to check content before submitting

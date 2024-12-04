@@ -1,3 +1,4 @@
+import 'package:assumemate/logo/pop_up.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:assumemate/storage/secure_storage.dart';
@@ -26,10 +27,7 @@ class _RateUserPageState extends State<RateUserPage> {
 
     // Check if baseURL and token are available
     if (baseURL == null || token == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Failed to submit feedback: missing configuration')),
-      );
+      popUp(context, 'Failed to submit feedback: missing configuration');
       return;
     }
 
@@ -48,20 +46,15 @@ class _RateUserPageState extends State<RateUserPage> {
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Feedback submitted successfully!')),
-        );
+        popUp(context, 'Feedback submitted successfully!');
+        Navigator.of(context).pop();
       } else {
         print('Error: ${response.body}');
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to submit feedback')),
-        );
+        popUp(context, 'Failed to submit feedback');
       }
     } catch (e) {
       print('Exception caught: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('An error occurred')),
-      );
+      popUp(context, 'An error occured: $e');
     }
   }
 
@@ -70,6 +63,16 @@ class _RateUserPageState extends State<RateUserPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Give Feedback'),
+        leading: IconButton(
+          splashColor: Colors.transparent,
+          icon: const Icon(
+            Icons.arrow_back_ios,
+          ),
+          color: const Color(0xffFFFEF7),
+          onPressed: () {
+            Navigator.pop(context);
+          },
+        ),
         backgroundColor: const Color.fromARGB(255, 38, 142, 226),
         foregroundColor: Colors.white,
         elevation: 0,

@@ -84,6 +84,9 @@ class ApiService {
     String validIDBase64 = await imageToBase64(validID);
     String picBase64 = await imageToBase64(picture);
 
+    print(validIDBase64);
+    print(picBase64);
+
     bool isAssumee = false;
     bool isAssumptor = false;
 
@@ -97,7 +100,19 @@ class ApiService {
       'email': email,
       'is_assumee': isAssumee,
       'is_assumptor': isAssumptor,
+      'profile': {
+        'user_prof_fname': fname,
+        'user_prof_lname': lname,
+        'user_prof_gender': gender,
+        'user_prof_dob': formatDate(dob),
+        'user_prof_mobile': mobnum,
+        'user_prof_address': address,
+        'user_prof_valid_id': validIDBase64,
+        'user_prof_valid_pic': picBase64,
+      }
     };
+
+    // print()
 
     if (password != null && password.isNotEmpty) {
       userReg['password'] = password;
@@ -118,8 +133,9 @@ class ApiService {
 
       if (response.statusCode == 201) {
         final responseData = jsonDecode(response.body);
-        final user = responseData['user'];
+        print(responseData);
 
+        final user = responseData['user'];
         String userId = user['id'].toString();
         await secureStorage.storeUserId(userId);
 
@@ -129,49 +145,24 @@ class ApiService {
           await secureStorage.storeUserType('assumee');
         }
 
-        final Map<String, dynamic> userProfile = {
-          'user_id': user['id'],
-          'user_prof_fname': fname,
-          'user_prof_lname': lname,
-          'user_prof_gender': gender,
-          'user_prof_dob': formatDate(dob),
-          'user_prof_mobile': mobnum,
-          'user_prof_address': address,
-          'user_prof_valid_id': validIDBase64,
-          'user_prof_pic': picBase64,
-        };
-        print(user['id']);
-        try {
-          final profile = await http.post(
-            profAPI,
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: jsonEncode(userProfile),
-          );
-          if (profile.statusCode == 201) {
-            final profileDetail = jsonDecode(profile.body);
+        String token = responseData['access'] ?? '';
+        String refreshToken = responseData['refresh'] ?? '';
+        await secureStorage.storeToken(token);
+        await secureStorage.storeRefreshToken(refreshToken);
+        await secureStorage.storeApplicationStatus('PENDING');
 
-            String token = profileDetail['access'] ?? '';
-            String refreshToken = profileDetail['refresh'] ?? '';
-            await secureStorage.storeToken(token);
-            await secureStorage.storeRefreshToken(refreshToken);
-            await secureStorage.storeApplicationStatus('PENDING');
-            return {'profile': profileDetail, 'credential': responseData};
-          } else {
-            var responseBody = jsonDecode(profile.body);
-            return {
-              'error': 'Profile creation failed.  ${responseBody['error']}'
-            };
-          }
-        } catch (e) {
-          return {'error': 'Profile creation exception: ${e.toString()}'};
-        }
+        return {'profile': responseData['user'], 'credential': responseData};
       } else {
         var responseBody = jsonDecode(response.body);
-        return {
-          'error': 'User registration failed. ${responseBody['email'][0]}'
-        };
+        print(responseBody);
+        if (responseBody.containsKey('profile')) {
+          return {
+            'error':
+                'User registration failed. ${responseBody['profile']['error'][0]}'
+          };
+        }
+
+        return {'error': 'User registration failed. ${responseBody['error']}'};
       }
     } catch (e) {
       if (e.toString().contains('Connection refused')) {
@@ -213,6 +204,8 @@ class ApiService {
       );
 
       final responseData = jsonDecode(response.body);
+
+      print(responseData);
 
       if (response.statusCode == 200) {
         String token = responseData['access'] ?? '';
@@ -259,6 +252,8 @@ class ApiService {
         if (responseData.containsKey('error')) {
           return (responseData);
         }
+        print('responseData');
+        print(responseData);
         return {'error': 'Incorrect email or password'};
       }
     } catch (e) {
@@ -588,6 +583,30 @@ class ApiService {
   Future<Map<String, dynamic>> cancelOffer(
       String offerId, String status) async {
     final apiUrl = Uri.parse('$baseURL/cancel/offer/');
+    final token = await secureStorage.getToken();
+
+    final Map<String, dynamic> offer = {'offer_id': offerId, 'status': status};
+
+    try {
+      final response = await http.put(
+        apiUrl,
+        headers: {
+          "Content-Type": "application/json; charset=UTF-8",
+          "Authorization": "Bearer $token",
+        },
+        body: jsonEncode(offer),
+      );
+
+      final decodedRes = jsonDecode(response.body);
+      return decodedRes;
+    } catch (e) {
+      return {'error': 'An error occured: $e'};
+    }
+  }
+
+  Future<Map<String, dynamic>> offerAcceptReject(
+      String offerId, String status) async {
+    final apiUrl = Uri.parse('$baseURL/offer/update/accept-reject/');
     final token = await secureStorage.getToken();
 
     final Map<String, dynamic> offer = {'offer_id': offerId, 'status': status};
@@ -1274,14 +1293,15 @@ class ApiService {
   }
 
   Future<void> promoteListing(
-      String listingId, String token, double amount) async {
+      String listingId, String token, double amount, int duration) async {
     final response = await http.post(
       Uri.parse('$baseURL/promote_listing/'),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',
       },
-      body: json.encode({'list_id': listingId, 'amount': amount}),
+      body: json.encode(
+          {'list_id': listingId, 'amount': amount, 'duration': duration}),
     );
 
     if (response.statusCode != 201) {

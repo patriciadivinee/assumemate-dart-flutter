@@ -84,7 +84,9 @@ class _ChatListState extends State<ChatList> {
                 // Stack(
                 //   children: [
                 CircleAvatar(
-              backgroundImage: NetworkImage(widget.profilePic),
+              backgroundImage: widget.profilePic.isEmpty
+                  ? NetworkImage(widget.profilePic)
+                  : AssetImage('assets/images/no-profile.jpg'),
             ),
             //   const Positioned(
             //       right: 0,

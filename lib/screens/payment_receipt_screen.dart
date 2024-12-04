@@ -32,6 +32,17 @@ class _PaymentReceiptScreenState extends State<PaymentReceiptScreen> {
     _userType = await secureStorage.getUserType();
   }
 
+  void cancelOrder() async {
+    final response = await apiService.cancelOrder(widget.orderId);
+
+    if (response.containsKey('message')) {
+      popUp(context, response['message']);
+    } else {
+      popUp(context, response['error']);
+      return;
+    }
+  }
+
   void _markSold() async {
     setState(() {
       _isLoading = true;
@@ -113,6 +124,7 @@ class _PaymentReceiptScreenState extends State<PaymentReceiptScreen> {
       final response = await apiService.viewPaidOrder(widget.orderId);
 
       print('response');
+      print(response);
       print(response['transaction']);
       print(response['listing']);
       print(response['order']);
@@ -443,21 +455,17 @@ class _PaymentReceiptScreenState extends State<PaymentReceiptScreen> {
                               color: Colors.white, fontWeight: FontWeight.bold),
                         ),
                       ))
-                  : orderDetails['order_status'] == 'COMPLETED'
+                  : orderDetails['order_status'] == 'PENDING'
                       ? ElevatedButton(
-                          onPressed: () => {
-                            print('yawaa na'),
-                            showConfirmation(
-                                context,
-                                'Mark as sold?',
-                                'You cannot make changes after confirmation',
-                                () => _markSold())
+                          onPressed: () {
+                            cancelOrder();
+                            Navigator.of(context).pop(context);
+
+                            print('cancel order');
                           },
                           style: ButtonStyle(
                             backgroundColor: WidgetStateProperty.all(
-                                orderDetails['order_status'] != 'COMPLETED'
-                                    ? Colors.grey.shade400
-                                    : const Color(0xff4A8AF0)),
+                                const Color(0xff4A8AF0)),
                             minimumSize: WidgetStateProperty.all(
                                 const Size(double.infinity, 45)),
                             shape: WidgetStateProperty.all(
@@ -467,13 +475,43 @@ class _PaymentReceiptScreenState extends State<PaymentReceiptScreen> {
                             ),
                           ),
                           child: const Text(
-                            'Mark as Sold',
+                            'Cancel',
                             style: TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold),
                           ),
                         )
-                      : const SizedBox.shrink()
+                      : orderDetails['order_status'] == 'COMPLETED'
+                          ? ElevatedButton(
+                              onPressed: () => {
+                                print('yawaa na'),
+                                showConfirmation(
+                                    context,
+                                    'Mark as sold?',
+                                    'You cannot make changes after confirmation',
+                                    () => _markSold())
+                              },
+                              style: ButtonStyle(
+                                backgroundColor: WidgetStateProperty.all(
+                                    orderDetails['order_status'] != 'COMPLETED'
+                                        ? Colors.grey.shade400
+                                        : const Color(0xff4A8AF0)),
+                                minimumSize: WidgetStateProperty.all(
+                                    const Size(double.infinity, 45)),
+                                shape: WidgetStateProperty.all(
+                                  RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(30.0),
+                                  ),
+                                ),
+                              ),
+                              child: const Text(
+                                'Mark as Sold',
+                                style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold),
+                              ),
+                            )
+                          : const SizedBox.shrink()
             ],
             if (_userType == 'assumee') ...[
               (transDetails.isNotEmpty) &&

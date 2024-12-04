@@ -8,8 +8,8 @@ class PaymentScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final amounts = [20, 50, 100, 150, 200, 300, 500, 1000, 2000, 3000, 4000];
-    final coins = [20, 50, 100, 150, 200, 300, 500, 1000, 2000, 3000, 4000];
+    final amounts = [50, 100, 150, 200, 250, 500];
+    final coins = [50, 110, 170, 230, 280, 600];
 
     return Scaffold(
       backgroundColor: Colors.black.withOpacity(0.5),

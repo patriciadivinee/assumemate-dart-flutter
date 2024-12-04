@@ -23,6 +23,7 @@ class _AssumeManagementScreenState extends State<AssumeManagementScreen> {
 
   late Future<List<dynamic>> _onGoingTransactions;
   late Future<List<dynamic>> _completedTransaction;
+  late Future<List<dynamic>> _cancelledTransaction;
 
   Future<List<dynamic>> fetchCurrentTransactions() async {
     final userType = await SecureStorage().getUserType();
@@ -46,12 +47,35 @@ class _AssumeManagementScreenState extends State<AssumeManagementScreen> {
     }
   }
 
-  Future<List<dynamic>> fetchCompletedTransactions() async {
+  Future<List<dynamic>> fetchCancelledTransactions() async {
     final userType = await SecureStorage().getUserType();
     final token = await secureStorage.getToken();
     final apiUrl = userType == 'assumptor'
-        ? Uri.parse('$baseURL/assumptor/completed/transactions/')
-        : Uri.parse('$baseURL/assumee/completed/transactions/');
+        ? Uri.parse('$baseURL/assumptor/cancelled/transactions/')
+        : Uri.parse('$baseURL/assumee/cancelled/transactions/');
+    final response = await http.get(
+      apiUrl,
+      headers: {
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      print(data);
+      return data['invoices'];
+    } else {
+      throw Exception('Failed to load transactions');
+    }
+  }
+
+  Future<List<dynamic>> fetchCompletedCancelledTransactions(
+      String status) async {
+    final userType = await SecureStorage().getUserType();
+    final token = await secureStorage.getToken();
+    final apiUrl = userType == 'assumptor'
+        ? Uri.parse('$baseURL/assumptor/$status/transactions/')
+        : Uri.parse('$baseURL/assumee/$status/transactions/');
     final response = await http.get(
       apiUrl,
       headers: {
@@ -95,7 +119,8 @@ class _AssumeManagementScreenState extends State<AssumeManagementScreen> {
   @override
   void initState() {
     _onGoingTransactions = fetchCurrentTransactions();
-    _completedTransaction = fetchCompletedTransactions();
+    _completedTransaction = fetchCompletedCancelledTransactions('COMPLETED');
+    _cancelledTransaction = fetchCompletedCancelledTransactions('CANCELLED');
     super.initState();
   }
 
@@ -105,7 +130,7 @@ class _AssumeManagementScreenState extends State<AssumeManagementScreen> {
         GoogleFonts.poppins(textStyle: const TextStyle(fontSize: 13));
 
     return DefaultTabController(
-      length: 2,
+      length: 3,
       child: Scaffold(
         appBar: AppBar(
           backgroundColor: const Color(0xffFFFCF1),
@@ -148,6 +173,11 @@ class _AssumeManagementScreenState extends State<AssumeManagementScreen> {
                 'Completed',
                 style: tabTextStyle,
               )),
+              Tab(
+                  child: Text(
+                'Cancelled',
+                style: tabTextStyle,
+              )),
             ],
           ),
         ),
@@ -157,6 +187,7 @@ class _AssumeManagementScreenState extends State<AssumeManagementScreen> {
             children: [
               transList(_onGoingTransactions),
               transList(_completedTransaction),
+              transList(_cancelledTransaction),
             ],
           ),
         ),

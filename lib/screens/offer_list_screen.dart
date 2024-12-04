@@ -39,6 +39,12 @@ class _OfferListScreenState extends State<OfferListScreen> {
     }
   }
 
+  void _removeOffer(int offerId) {
+    setState(() {
+      _offers.removeWhere((offer) => offer['offer_id'] == offerId);
+    });
+  }
+
   @override
   void initState() {
     super.initState();
@@ -67,14 +73,16 @@ class _OfferListScreenState extends State<OfferListScreen> {
         ),
         body: Container(
           padding: const EdgeInsets.symmetric(vertical: 10),
-          child: _offers.isEmpty
-              ? const Center(
-                  child: Text('No active offers'),
-                )
-              : RefreshIndicator(
-                  onRefresh: _getOffers,
-                  color: const Color(0xff4A8AF0),
-                  child: ListView.builder(
+          child: RefreshIndicator(
+            onRefresh: _getOffers,
+            color: const Color(0xff4A8AF0),
+            child: _offers.isEmpty
+                ? const Center(
+                    child: Text('No active offers'),
+                  )
+                : ListView.separated(
+                    separatorBuilder: (context, index) =>
+                        const Divider(height: 1),
                     padding: EdgeInsets.zero,
                     itemCount: _offers.length,
                     itemBuilder: (context, index) {
@@ -82,15 +90,17 @@ class _OfferListScreenState extends State<OfferListScreen> {
                       return OfferList(
                         offerId: offer['offer_id'],
                         offerAmnt: offer['offer_price'],
+                        reservation: offer['reservation'].toString(),
                         listId: offer['list_id'],
                         listImage: offer['list_image'],
                         userId: offer['user_id'],
                         userFullname: offer['user_fullname'],
                         roomId: offer['chatroom_id'],
+                        onOfferRejected: _removeOffer,
                       );
                     },
                   ),
-                ),
+          ),
         ));
   }
 }

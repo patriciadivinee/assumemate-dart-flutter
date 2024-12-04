@@ -219,6 +219,14 @@ class _NotificationScreenState extends State<NotificationScreen> {
                           'ws/chat/${notification.triggeredById}/',
                           arguments: {'userId': notification.triggeredById},
                         );
+                      } else if (notification.notificationType ==
+                              'offer_status' &&
+                          notification.triggeredById != null) {
+                        Navigator.pushNamed(
+                          context,
+                          'ws/chat/${notification.triggeredById}/',
+                          arguments: {'userId': notification.triggeredById},
+                        );
                       } else if (notification.notificationType == 'Report' &&
                           notification.triggeredById != null) {
                         Navigator.pushNamed(

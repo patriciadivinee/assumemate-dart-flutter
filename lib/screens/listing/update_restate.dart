@@ -28,7 +28,7 @@ class Restate extends StatefulWidget {
 class _Restate extends State<Restate> {
   final SecureStorage secureStorage = SecureStorage();
   String query = '';
-  String? selectedPreference;
+  bool selectedPreference = false;
   final numberFormat = NumberFormat.decimalPattern();
   final GlobalKey<FormState> _localFormKey = GlobalKey<FormState>();
   final MapController mapController = MapController();
@@ -80,6 +80,7 @@ class _Restate extends State<Restate> {
       TextEditingController();
   final TextEditingController loanDurationController = TextEditingController();
   final TextEditingController downPaymentController = TextEditingController();
+  final TextEditingController reservationController = TextEditingController();
   final TextEditingController numberOfMonthsPaidController =
       TextEditingController();
 
@@ -124,11 +125,11 @@ class _Restate extends State<Restate> {
     selectedBedrooms = null; // Default no selection for Bedrooms
     selectedBathrooms = null; // Default no selection for Bathrooms
     selectedParkingSpace = null; // Default no selection for Parking Space
-    selectedPreference = null; // Default no selection for Preference
+    selectedPreference = false; // Default no selection for Preference
 
     // Initialize empty lists for images and documents
     cloudinaryImageUrls = [];
-    cloudinaryDocumentUrls = [];
+    // cloudinaryDocumentUrls = [];
     _imageFiles = [];
     _DocFiles = [];
   }
@@ -146,9 +147,21 @@ class _Restate extends State<Restate> {
     floorareaController.text = data['floorArea'] ?? '';
     selectedBedrooms = data['bedrooms'];
     selectedBathrooms = data['bathrooms'];
+
     selectedYear = data['year'];
     selectedParkingSpace = data['parkingSpace'];
-    selectedPreference = data['preference'];
+    if (data['offer_allowed'] is bool) {
+      selectedPreference = data['offer_allowed'];
+    } else if (data['offer_allowed'] is String) {
+      selectedPreference = data['offer_allowed'] == 'true';
+    } else {
+      selectedPreference = false; // Default fallback
+    }
+
+    reservationController.text = data['reservation'] != null
+        ? numberFormat
+            .format(double.tryParse(data['reservation'].toString()) ?? 0)
+        : '';
     downPaymentController.text = data['downPayment'] != null
         ? numberFormat
             .format(double.tryParse(data['downPayment'].toString()) ?? 0)
@@ -161,7 +174,8 @@ class _Restate extends State<Restate> {
     numberOfMonthsPaidController.text =
         data['numberOfMonthsPaid']?.toString() ?? '';
     cloudinaryImageUrls = List.from(data['images'] ?? []);
-    cloudinaryDocumentUrls = List.from(data['documents'] ?? []);
+    // cloudinaryDocumentUrls = List.from(data['documents'] ?? []);
+    _computeTotalPayment();
   }
 
   void _showAlert(String message) {
@@ -404,15 +418,41 @@ class _Restate extends State<Restate> {
   }
 
   Future<void> _pickAndUploadImages() async {
+    if (_imageFiles != null && _imageFiles!.length >= 15) {
+      // Show an alert or message indicating the limit has been reached
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('You can only upload up to 15 images.')),
+      );
+      return;
+    }
+
     PermissionStatus permissionStatus = await Permission.photos.request();
 
     if (permissionStatus.isGranted) {
       final List<XFile>? selectedImages = await _picker.pickMultiImage();
       if (selectedImages != null && selectedImages.isNotEmpty) {
+        // Ensure total images do not exceed 15
+        final totalImages = _imageFiles!.length + selectedImages.length;
+        if (totalImages > 15) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('You can only upload up to 15 images.')),
+          );
+          return;
+        }
+
         setState(() {
           _imageFiles ??= [];
           _imageFiles!.addAll(selectedImages);
         });
+        // PermissionStatus permissionStatus = await Permission.photos.request();
+
+        // if (permissionStatus.isGranted) {
+        //   final List<XFile>? selectedImages = await _picker.pickMultiImage();
+        //   if (selectedImages != null && selectedImages.isNotEmpty) {
+        //     setState(() {
+        //       _imageFiles ??= [];
+        //       _imageFiles!.addAll(selectedImages);
+        //     });
 
         for (var file in selectedImages) {
           if (file.path != null) {
@@ -498,12 +538,34 @@ class _Restate extends State<Restate> {
             side: BorderSide(color: Colors.blueAccent, width: 1.5),
           ),
           onPressed: () async {
+            // Check if the document limit is reached
+            if (_DocFiles != null && _DocFiles!.length >= 10) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                    content: Text('You can only upload up to 10 documents.')),
+              );
+              return; // Exit if the limit is reached
+            }
+
             FilePickerResult? result = await FilePicker.platform.pickFiles(
               allowMultiple: true,
               type: FileType.custom,
               allowedExtensions: ['pdf', 'docx', 'jpg', 'png'],
             );
 
+            if (result != null) {
+              for (PlatformFile file in result.files) {
+                if (_DocFiles!.length >= 10) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                          'You can only upload up to 10 documents. Remaining files ignored.'),
+                    ),
+                  );
+                  break; // Prevent adding more than 5 files
+                }
+              }
+            }
             if (result != null) {
               for (PlatformFile file in result.files) {
                 if (file.path != null) {
@@ -721,6 +783,15 @@ class _Restate extends State<Restate> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                const SizedBox(height: 15),
+                const Text(
+                  "Listing Details:",
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                SizedBox(height: 10),
                 TextFormField(
                   controller: titleController,
                   decoration: InputDecoration(
@@ -734,11 +805,19 @@ class _Restate extends State<Restate> {
                     border: borderStyle,
                   ),
                   validator: (value) {
-                    if (value == null || value.isEmpty) {
+                    if (value == null || value.trim().isEmpty) {
                       _showAlert('Please enter a title');
                       return 'Please enter a title'; // Prevent form submission
                     }
-                    // You can add additional title validation here if needed
+
+                    // Regular expression to allow only letters, numbers, and spaces
+                    final regex = RegExp(r'^[a-zA-Z0-9\s]+$');
+                    if (!regex.hasMatch(value)) {
+                      _showAlert(
+                          'Title contains invalid characters. Only letters, numbers, and spaces are allowed.');
+                      return 'Invalid characters in title'; // Prevent form submission
+                    }
+
                     return null; // No validation error
                   },
                 ),
@@ -1037,64 +1116,6 @@ class _Restate extends State<Restate> {
                   height: 10.0,
                 ),
 
-                Column(
-                  crossAxisAlignment:
-                      CrossAxisAlignment.start, // Aligns the label to the left
-                  children: [
-                    const Text(
-                      "Sale Preference:",
-                      style: TextStyle(fontSize: 16),
-                    ),
-                    const SizedBox(
-                        height: 8), // Add spacing between label and chips
-                    Center(
-                      child: Row(
-                        mainAxisAlignment:
-                            MainAxisAlignment.center, // Centers the ChoiceChips
-                        children: [
-                          ChoiceChip(
-                            label: const Text('Buy Only'),
-                            backgroundColor: const Color(0xffFFFCF1),
-                            selectedColor: const Color(0xff4A8AF0),
-                            showCheckmark: false,
-                            selected: selectedPreference == 'Buy Only',
-                            onSelected: (bool selected) {
-                              setState(() {
-                                selectedPreference =
-                                    selected ? 'Buy Only' : null;
-                              });
-                            },
-                            labelStyle: TextStyle(
-                              color: selectedPreference == 'Buy Only'
-                                  ? Colors.white
-                                  : Colors.black,
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          ChoiceChip(
-                            label: const Text('Allow Offers'),
-                            selected: selectedPreference == 'Allow Offers',
-                            onSelected: (bool selected) {
-                              setState(() {
-                                selectedPreference =
-                                    selected ? 'Allow Offers' : null;
-                              });
-                            },
-                            backgroundColor: const Color(0xffFFFCF1),
-                            selectedColor: const Color(0xff4A8AF0),
-                            showCheckmark: false,
-                            labelStyle: TextStyle(
-                              color: selectedPreference == 'Allow Offers'
-                                  ? Colors.white
-                                  : Colors.black,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-
                 /// Address Field
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -1180,6 +1201,14 @@ class _Restate extends State<Restate> {
                 ),
 
                 const SizedBox(height: 15),
+                const Text(
+                  "Payment Details:",
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                SizedBox(height: 10),
                 TextFormField(
                   controller: monthlyPaymentController,
                   decoration: InputDecoration(
@@ -1232,8 +1261,8 @@ class _Restate extends State<Restate> {
                     final duration = int.tryParse(value.replaceAll(',', ''));
                     if (duration == null || duration < 12 || duration > 360) {
                       _showAlert(
-                          'Loan duration for real estate is at least 12(1 year) months to 360 months (30 years)');
-                      return 'Loan duration for real estate is at least 12(1 year) months to 360 months (30 years)'; // Prevent form submission
+                          'Loan duration must be between 12 and 360 months');
+                      return 'Loan duration must be between 12 and 360 months'; // Prevent form submission
                     }
 
                     final monthsPaid = int.tryParse(
@@ -1326,7 +1355,88 @@ class _Restate extends State<Restate> {
                     _computeTotalPayment();
                   },
                 ),
+                SizedBox(height: 10),
+
+                Row(
+                  mainAxisAlignment:
+                      MainAxisAlignment.start, // Centers the ChoiceChip
+                  children: [
+                    const Text(
+                      "Sale Preference:",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    SizedBox(width: 10),
+                    ChoiceChip(
+                      backgroundColor: const Color(0xffFFFCF1),
+                      label: Text('Allow Offers'),
+                      showCheckmark: true, // Shows a checkmark when selected
+                      selected:
+                          selectedPreference, // Directly uses the boolean value
+                      onSelected: (bool selected) {
+                        setState(() {
+                          selectedPreference = selected; // Updates the boolean
+                        });
+                      },
+                      selectedColor: const Color(0xff4A8AF0),
+                      labelStyle: TextStyle(
+                        color: selectedPreference ? Colors.white : Colors.black,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                TextFormField(
+                  controller: reservationController,
+                  decoration: InputDecoration(
+                    labelText: 'Reservation Fee',
+                    floatingLabelStyle:
+                        const TextStyle(color: Color(0xff4A8AF0)),
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 18, vertical: 10),
+                    enabledBorder: borderStyle,
+                    focusedBorder: borderStyle,
+                    border: borderStyle,
+                  ),
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter a reservation fee';
+                    }
+
+                    final reservation = int.tryParse(value.replaceAll(',', ''));
+                    final price =
+                        int.tryParse(priceController.text.replaceAll(',', ''));
+
+                    if (reservation == null) {
+                      return 'Please enter a valid number';
+                    } else if (reservation < 0) {
+                      return 'Reservation fee cannot be less than zero';
+                    } else if (price == null || price <= 0) {
+                      return 'Please enter a valid price first';
+                    } else {
+                      final minReservation = price * 0.2; // 20% of the price
+                      final maxReservation = price * 0.5; // 50% of the price
+
+                      if (reservation < minReservation) {
+                        return 'Reservation fee must be at least 20% of the price';
+                      } else if (reservation > maxReservation) {
+                        return 'Reservation fee cannot exceed 50% of the price';
+                      }
+                    }
+
+                    return null; // No validation error
+                  },
+                  onChanged: (value) {
+                    _formatAndSetText(value, reservationController);
+                  },
+                ),
+
                 const SizedBox(height: 15),
+
                 TextField(
                   controller: descriptionController,
                   maxLines: 3,
@@ -1345,13 +1455,14 @@ class _Restate extends State<Restate> {
                 const SizedBox(
                   height: 10.0,
                 ),
-                _buildDocumentUploader(), // Space between sections
+                // _buildDocumentUploader(), // Space between sections
                 buildImageUploader(),
                 ElevatedButton(
                   onPressed: () async {
                     if (_localFormKey.currentState!.validate()) {
                       // Check if images are uploaded
-                      if (_imageFiles == null || _imageFiles!.isEmpty) {
+                      if (cloudinaryImageUrls == null ||
+                          cloudinaryImageUrls!.isEmpty) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                               content:
@@ -1397,9 +1508,13 @@ class _Restate extends State<Restate> {
                         'title': titleController.text,
                         'year': selectedYear,
                         'address': addressController.text,
-                        'preference': selectedPreference,
+                        'offer_allowed': selectedPreference,
                         'price': double.tryParse(
                                 priceController.text.replaceAll(',', '')) ??
+                            0.0,
+                        'reservation': double.tryParse(reservationController
+                                .text
+                                .replaceAll(',', '')) ??
                             0.0,
                         'bedrooms': selectedBedrooms ??
                             '', // This will be added with empty string if null
@@ -1427,10 +1542,9 @@ class _Restate extends State<Restate> {
                                     .replaceAll(',', '')) ??
                             0.0,
                         'images': cloudinaryImageUrls, // Store Cloudinary URLs
-                        'documents': cloudinaryDocumentUrls,
+                        // 'documents': cloudinaryDocumentUrls,
                       };
                       // Debug print to check content before submitting
-                      print('Listing Content: $listingContent');
                       // Connect to the database and add the listing
                       DatabaseService dbService = DatabaseService();
                       try {

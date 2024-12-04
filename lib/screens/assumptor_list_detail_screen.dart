@@ -172,7 +172,6 @@ class _AssumptorListDetailScreenState extends State<AssumptorListDetailScreen> {
           'title':
               '${data['list_app_status']}: There are issues with your listing',
           'message': data['list_reason'] ?? 'No reason provided',
-          'buttonText': 'Edit Listing'
         },
       ];
     } else {
@@ -249,14 +248,58 @@ class _AssumptorListDetailScreenState extends State<AssumptorListDetailScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            '${profileProvider.userProfile['user_prof_fname'] ?? ''} ${profileProvider.userProfile['user_prof_lname'] ?? ''}',
-                            style: const TextStyle(
-                              color: Colors.black,
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
+                          if (listingDetail?.category == "Motorcycle" ||
+                              listingDetail?.category == "Car") ...[
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    '${listingDetail?.make ?? "Loading..."} (${listingDetail?.model ?? "Unknown model"}) - ${listingDetail?.transmission ?? "Unknown transmission"}',
+                                    style: const TextStyle(
+                                      color: Colors.black,
+                                      fontWeight: FontWeight.w900,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                ),
+                                Icon(
+                                  listingDetail?.category == "Car"
+                                      ? Icons.directions_car
+                                      : Icons.motorcycle,
+                                  size: 24,
+                                  color: listingDetail?.color != null
+                                      ? listingDetail!.extractColor() ??
+                                          Colors.black
+                                      : Colors.black,
+                                ),
+                              ],
                             ),
-                          ),
+                          ],
+                          if (listingDetail?.category == "Real Estate") ...[
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    '${listingDetail?.title ?? "N/A"}',
+                                    style: const TextStyle(
+                                      color: Colors.black,
+                                      fontWeight: FontWeight.w900,
+                                      fontSize: 17,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                const Icon(
+                                  Icons.house,
+                                  size: 24,
+                                  color: Colors.black,
+                                ),
+                              ],
+                            ),
+                          ],
+                          const SizedBox(height: 10),
 
                           Row(
                             crossAxisAlignment: CrossAxisAlignment
@@ -287,59 +330,6 @@ class _AssumptorListDetailScreenState extends State<AssumptorListDetailScreen> {
                           ),
 
                           const SizedBox(height: 10),
-
-                          if (listingDetail?.category == "Motorcycle" ||
-                              listingDetail?.category == "Car") ...[
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    'Title: ${listingDetail?.make ?? "Loading..."} (${listingDetail?.model ?? "Unknown model"}) - ${listingDetail?.transmission ?? "Unknow transmission"}',
-                                    style: const TextStyle(
-                                      color: Colors.black,
-                                      fontWeight: FontWeight.w900,
-                                      fontSize: 16,
-                                    ),
-                                  ),
-                                ),
-                                Icon(
-                                  listingDetail?.category == "Car"
-                                      ? Icons.directions_car
-                                      : Icons.motorcycle,
-                                  size: 24,
-                                  color: listingDetail?.color != null
-                                      ? listingDetail!.extractColor() ??
-                                          Colors.black
-                                      : Colors.black,
-                                ),
-                              ],
-                            ),
-                          ],
-                          if (listingDetail?.category == "Real Estate") ...[
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    'Title: ${listingDetail?.title ?? "N/A"}',
-                                    style: const TextStyle(
-                                      color: Colors.black,
-                                      fontWeight: FontWeight.w900,
-                                      fontSize: 17,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                const Icon(
-                                  Icons.house,
-                                  size: 24,
-                                  color: Colors.black,
-                                ),
-                              ],
-                            ),
-                          ],
-                          const SizedBox(height: 10),
                           Text(
                             'Details (${listingDetail?.category ?? "Loading..."}):',
                             style: const TextStyle(
@@ -368,6 +358,24 @@ class _AssumptorListDetailScreenState extends State<AssumptorListDetailScreen> {
                                   Text(
                                     listingDetail?.price != null
                                         ? '${listingDetail!.formattedPrice}'
+                                        : "Loading...",
+                                    style: const TextStyle(color: Colors.black),
+                                  ),
+                                  const SizedBox(),
+                                ],
+                              ),
+
+                              TableRow(
+                                children: [
+                                  const Text(
+                                    'Reservation Amount:',
+                                    style: TextStyle(color: Colors.black),
+                                  ),
+                                  const SizedBox(),
+                                  Text(
+                                    listingDetail?.formattedDownPayment != null
+                                        ? formatCurrency(
+                                            listingDetail!.reservation)
                                         : "Loading...",
                                     style: const TextStyle(color: Colors.black),
                                   ),
@@ -589,6 +597,31 @@ class _AssumptorListDetailScreenState extends State<AssumptorListDetailScreen> {
                             ),
                           ),
                           const SizedBox(height: 20),
+
+                          Row(
+                            children: [
+                              CircleAvatar(
+                                backgroundImage: profileProvider
+                                            .userProfile['user_prof_pic'] !=
+                                        null
+                                    ? NetworkImage(profileProvider
+                                        .userProfile['user_prof_pic'])
+                                    : AssetImage(
+                                        'assets/images/no-profile.jpg'),
+                                radius: 25,
+                              ),
+                              const SizedBox(width: 10),
+                              Text(
+                                '${profileProvider.userProfile['user_prof_fname'] ?? ''} ${profileProvider.userProfile['user_prof_lname'] ?? ''}',
+                                style: const TextStyle(
+                                  color: Colors.black,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 20),
                           _applicationStatus == 'REJECTED'
                               ? buildRejectListing(
                                   fetchRejectedListings(widget.listingId))
@@ -672,6 +705,11 @@ class _AssumptorListDetailScreenState extends State<AssumptorListDetailScreen> {
                                             'color': listingDetail!.color,
                                             'price':
                                                 listingDetail!.price.toString(),
+                                            'reservation': listingDetail!
+                                                .reservation
+                                                .toString(),
+                                            'offer_allowed':
+                                                listingDetail!.offer_allowed,
                                             'monthlyPayment': listingDetail!
                                                 .monthlyPayment
                                                 .toString(),
@@ -700,6 +738,11 @@ class _AssumptorListDetailScreenState extends State<AssumptorListDetailScreen> {
                                                 listingDetail!.loanDuration,
                                             'transmission':
                                                 listingDetail!.transmission,
+                                            'reservation': listingDetail!
+                                                .reservation
+                                                .toString(),
+                                            'offer_allowed':
+                                                listingDetail!.offer_allowed,
                                             'fuelType': listingDetail!.fuelType,
                                             'mileage': listingDetail!.mileage,
                                             'address': listingDetail!.address,
@@ -746,6 +789,10 @@ class _AssumptorListDetailScreenState extends State<AssumptorListDetailScreen> {
                                       'bedrooms': listingDetail!.bedrooms,
                                       'category': listingDetail!.category,
                                       'bathrooms': listingDetail!.bathrooms,
+                                      'reservation':
+                                          listingDetail!.reservation.toString(),
+                                      'offer_allowed':
+                                          listingDetail!.offer_allowed,
                                       'documents': listingDetail!.documents,
                                       'floorArea': listingDetail!.floorArea,
                                       'preference': listingDetail!.preference,
@@ -848,7 +895,7 @@ class _AssumptorListDetailScreenState extends State<AssumptorListDetailScreen> {
                           await PaymentService().processPayment(
                             context,
                             widget.listingId,
-                            30.0,
+                            50.0,
                           );
                         } catch (e) {
                           // Display error message
@@ -885,7 +932,7 @@ class _AssumptorListDetailScreenState extends State<AssumptorListDetailScreen> {
                     OutlinedButton.icon(
                       onPressed: () {
                         final promotionService = PromotionService();
-                        promotionService.promoteListing(
+                        promotionService.showPromotionOptions(
                             context, widget.listingId);
                       },
                       icon: const Icon(
@@ -979,44 +1026,47 @@ class ListingDetail {
   String? lotArea;
   String? bedrooms;
   String? bathrooms;
+  bool offer_allowed;
   String? floorArea;
   List<String>? documents;
 
   final double price;
   final double monthlyPayment;
+  final double reservation;
   final int downPayment;
   final int totalPaymentMade;
   final int numberOfMonthsPaid;
   final int numberOfMonthsPaid1;
 
-  ListingDetail({
-    required this.price,
-    required this.title,
-    required this.images,
-    required this.category,
-    required this.description,
-    required this.downPayment,
-    required this.loanDuration,
-    required this.parkingSpace,
-    required this.monthlyPayment,
-    required this.totalPaymentMade,
-    required this.numberOfMonthsPaid,
-    required this.numberOfMonthsPaid1,
-    required this.address,
-    required this.make,
-    required this.model,
-    required this.color,
-    required this.transmission,
-    required this.mileage,
-    required this.fuelType,
-    required this.preference,
-    required this.year,
-    this.lotArea,
-    this.bedrooms,
-    this.bathrooms,
-    this.floorArea,
-    this.documents,
-  });
+  ListingDetail(
+      {required this.price,
+      required this.reservation,
+      required this.title,
+      required this.images,
+      required this.category,
+      required this.description,
+      required this.downPayment,
+      required this.loanDuration,
+      required this.parkingSpace,
+      required this.monthlyPayment,
+      required this.totalPaymentMade,
+      required this.numberOfMonthsPaid,
+      required this.numberOfMonthsPaid1,
+      required this.address,
+      required this.make,
+      required this.model,
+      required this.color,
+      required this.transmission,
+      required this.mileage,
+      required this.fuelType,
+      required this.preference,
+      required this.year,
+      this.lotArea,
+      this.bedrooms,
+      this.bathrooms,
+      this.floorArea,
+      this.documents,
+      required this.offer_allowed});
 
   factory ListingDetail.fromJson(Map<String, dynamic> json) {
     var content = json['list_content'] ?? {};
@@ -1032,9 +1082,18 @@ class ListingDetail {
 
     return ListingDetail(
         year: content['year']?.toString() ?? '0',
-        price: calculatedPrice > 0
-            ? calculatedPrice
-            : double.tryParse(content['price']?.toString() ?? '0') ?? 0,
+
+        // price: calculatedPrice > 0
+        //     ? calculatedPrice
+        //     : double.tryParse(content['price']?.toString() ?? '0') ?? 0,
+
+        price: (content['price'] is String)
+            ? double.tryParse(content['price']) ?? 0
+            : (content['price'] is int)
+                ? (content['price'] as int).toDouble()
+                : (content['price'] as double?) ?? 0,
+        reservation:
+            double.tryParse(content['reservation']?.toString() ?? '0') ?? 0,
         title: content['title']?.toString() ?? 'Untitled',
         images: List<String>.from(content['images'] ?? []),
         documents: List<String>.from(content['documents'] ?? []),
@@ -1055,6 +1114,7 @@ class ListingDetail {
         bedrooms: content['bedrooms']?.toString(),
         bathrooms: content['bathrooms']?.toString(),
         floorArea: content['floorArea']?.toString(),
+        offer_allowed: content['offer_allowed'] ?? false,
         address: content['address']?.toString() ?? 'Unknown Location',
         //make: content['make:']?.toString() ?? 'Unknown make',
         make: content['make']?.toString() ?? 'Unknown make',
@@ -1217,15 +1277,6 @@ Widget buildRejectListing(
                     ),
                   ),
                   const SizedBox(height: 20),
-                  ElevatedButton(
-                    onPressed: () {
-                      // Handle form submission or redirection
-                    },
-                    style: ButtonStyle(
-                      backgroundColor: MaterialStateProperty.all(Colors.blue),
-                    ),
-                    child: Text(rejectionData['buttonText']!),
-                  ),
                 ],
               ),
             ),

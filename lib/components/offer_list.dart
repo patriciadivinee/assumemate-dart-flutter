@@ -17,85 +17,108 @@ class OfferList extends StatefulWidget {
   final String offerAmnt;
   final String listId;
   final String listImage;
+  final String reservation;
   final int userId;
   final String userFullname;
   final int roomId;
+  final Function(int) onOfferRejected;
 
   // const OfferList({required this.userId, required this.offerAmnt, super.key});
-  const OfferList(
-      {super.key,
-      required this.offerId,
-      required this.offerAmnt,
-      required this.listId,
-      required this.listImage,
-      required this.userId,
-      required this.userFullname,
-      required this.roomId});
+  const OfferList({
+    super.key,
+    required this.offerId,
+    required this.offerAmnt,
+    required this.reservation,
+    required this.listId,
+    required this.listImage,
+    required this.userId,
+    required this.userFullname,
+    required this.roomId,
+    required this.onOfferRejected,
+  });
 
   @override
   State<OfferList> createState() => _OfferListState();
 }
 
 class _OfferListState extends State<OfferList> {
-  final String? baseURL = dotenv.env['WEB_SOCKET_URL'];
   final SecureStorage secureStorage = SecureStorage();
   final ApiService apiService = ApiService();
+  bool _isLoading = false;
 
-  WebSocketChannel? _channel;
-  WebSocketChannel? _inboxChannel;
+  void _acceptOffer() async {
+    setState(() {
+      _isLoading = true;
+    });
 
-  void _sendInboxUpdate(Map<String, dynamic> message, bool isRead) {
-    _inboxChannel!.sink.add(jsonEncode({
-      'type': 'inbox_update',
-      'sender_id': secureStorage.getUserId(),
-      'message': message,
-      'room_id': widget.roomId,
-      'receiver_id': widget.userId,
-      'is_read': isRead,
-    }));
+    try {
+      final response = await apiService.offerAcceptReject(
+          widget.offerId.toString(), 'accepted');
+
+      print('response1212');
+      print(response['error']);
+
+      if (response.containsKey('message')) {
+        final oresponse = await apiService.createOrder(
+            widget.offerId.toString(), widget.reservation);
+
+        if (oresponse.containsKey('message')) {
+          widget.onOfferRejected(widget.offerId);
+          if (mounted) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (context) => ChatMessageScreen(
+                        receiverId: widget.userId.toString(),
+                      )),
+            );
+          }
+        } else {
+          if (mounted) {
+            popUp(context, response['error'] ?? 'Error accepting offer');
+          }
+          return;
+        }
+      } else {
+        if (mounted) {
+          popUp(context, response['error']);
+        }
+        return;
+      }
+    } catch (e) {
+      popUp(context, 'An error occured: $e');
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
-  void _updateOffer(String status) async {
-    // if (status == 'ACCEPTED') {
-    //   final response = await apiService.createOrder(widget.offerId.toString());
+  void _rejectOffer() async {
+    setState(() {
+      _isLoading = true;
+    });
+    try {
+      final response = await apiService.offerAcceptReject(
+          widget.offerId.toString(), 'rejected');
 
-    //   if (response.containsKey('message')) {
-    //     if (mounted) {
-    //       Navigator.push(
-    //         context,
-    //         MaterialPageRoute(
-    //             builder: (context) => ChatMessageScreen(
-    //                   receiverId: widget.userId.toString(),
-    //                 )),
-    //       );
-    //     }
-    //   } else {
-    //     if (mounted) {
-    //       popUp(context, 'Error accepting offer');
-    //     }
-    //     return;
-    //   }
-    // }
-
-    if (_channel != null) {
-      _channel!.sink.add(jsonEncode({
-        'type': 'offer_update',
-        'user_id': widget.userId,
-        'offer_id': widget.offerId,
-        'offer_status': status
-      }));
-
-      final updatedStatus = status.toLowerCase();
-      print('sent');
-
-      final message = {
-        'message': 'Offer $updatedStatus',
-        'file': null,
-        'file_name': null,
-        'file_type': null,
-      };
-
-      _sendInboxUpdate(message, false);
+      if (response.containsKey('message')) {
+        widget.onOfferRejected(widget.offerId);
+        if (mounted) {
+          popUp(context, response['message']);
+        }
+      } else {
+        if (mounted) {
+          popUp(context, response['error']);
+        }
+        return;
+      }
+    } catch (e) {
+      popUp(context, 'An error occured: $e');
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
@@ -117,7 +140,7 @@ class _OfferListState extends State<OfferList> {
         );
       },
       child: ListTile(
-        tileColor: const Color(0xffFFFCA1),
+        tileColor: Colors.blue.withOpacity(0.05),
         contentPadding: const EdgeInsets.symmetric(horizontal: 5, vertical: 7),
         minTileHeight: 60,
         leading: Padding(
@@ -140,66 +163,120 @@ class _OfferListState extends State<OfferList> {
         ),
         subtitle: Text('Offered by: ${widget.userFullname}',
             style: const TextStyle(fontSize: 12)),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            InkWell(
-              borderRadius: BorderRadius.circular(16),
-              onTap: () {
-                Navigator.of(context).push(MaterialPageRoute(
-                    builder: (context) => ChatMessageScreen(
-                          receiverId: (widget.userId).toString(),
-                        )));
-              },
-              child: const Padding(
-                  padding: EdgeInsets.all(4),
-                  child: Icon(FontAwesomeIcons.message)),
-            ),
-            const SizedBox(width: 2),
-            InkWell(
-              borderRadius: BorderRadius.circular(16),
-              onTap: () {
-                _updateOffer('REJECTED');
-              },
-              child: const Padding(
-                  padding: EdgeInsets.all(4),
-                  child: Icon(
-                    FontAwesomeIcons.circleXmark,
-                    color: Color(0xff683131),
-                  )),
-            ),
-            const SizedBox(width: 2),
-            InkWell(
-              borderRadius: BorderRadius.circular(16),
-              onTap: () {
-                _updateOffer('ACCEPTED');
-              },
-              child: const Padding(
-                  padding: EdgeInsets.all(4),
-                  child: Icon(
-                    FontAwesomeIcons.circleCheck,
-                    color: Color(0xff316832),
-                  )),
-            ),
-            // IconButton(
-            //     onPressed: () {},
-            //     icon: const Icon(FontAwesomeIcons.commentDots)),
-            // IconButton(
-            //     onPressed: () {},
-            //     icon: const Icon(
-            //       FontAwesomeIcons.circleXmark,
-            //       color: Color(0xff683131),
-            //     )),
-            // IconButton(
-            //     onPressed: () {},
-            //     icon: const Icon(
-            //       FontAwesomeIcons.circleCheck,
-            //       color: Color(0xff316832),
-            //     ))
-          ],
-        ),
+        trailing: _isLoading
+            ? CircularProgressIndicator(
+                // backgroundColor: const Color(0xff4A8AF0),
+                color: const Color(0xff4A8AF0),
+              )
+            : Row(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  InkWell(
+                    borderRadius: BorderRadius.circular(16),
+                    onTap: () {
+                      Navigator.of(context).push(MaterialPageRoute(
+                          builder: (context) => ChatMessageScreen(
+                                receiverId: (widget.userId).toString(),
+                              )));
+                    },
+                    child: const Padding(
+                        padding: EdgeInsets.all(4),
+                        child: Icon(FontAwesomeIcons.message)),
+                  ),
+                  const SizedBox(width: 2),
+                  InkWell(
+                    borderRadius: BorderRadius.circular(16),
+                    onTap: () {
+                      _rejectOffer();
+                    },
+                    child: const Padding(
+                        padding: EdgeInsets.all(4),
+                        child: Icon(
+                          FontAwesomeIcons.circleXmark,
+                          color: Color(0xff683131),
+                        )),
+                  ),
+                  const SizedBox(width: 2),
+                  InkWell(
+                    borderRadius: BorderRadius.circular(16),
+                    onTap: () {
+                      showConfirmation(context);
+                    },
+                    child: const Padding(
+                        padding: EdgeInsets.all(4),
+                        child: Icon(
+                          FontAwesomeIcons.circleCheck,
+                          color: Color(0xff316832),
+                        )),
+                  ),
+                ],
+              ),
       ),
     );
+  }
+
+  void showConfirmation(BuildContext context) {
+    showDialog(
+        context: context,
+        barrierDismissible: true,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12.0),
+            ),
+            actionsPadding:
+                const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
+            contentPadding: const EdgeInsets.only(left: 18, right: 18, top: 12),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Accept and reserve offer?',
+                  style: const TextStyle(
+                      fontSize: 14, fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.start,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Do you wish to accept offer with reservation amount of ${formatCurrency(double.parse(widget.reservation))}?',
+                  style: const TextStyle(
+                      fontSize: 12, fontWeight: FontWeight.w500),
+                  textAlign: TextAlign.start,
+                )
+              ],
+            ),
+            actions: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                    },
+                    child: const Text(
+                      'Cancel',
+                      style: TextStyle(
+                          color: Color(0xff4A8AF0),
+                          fontWeight: FontWeight.w400),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      _acceptOffer();
+                      Navigator.of(context).pop(context);
+                    },
+                    child: const Text(
+                      'Confirm',
+                      style: TextStyle(
+                          color: Color(0xff4A8AF0),
+                          fontWeight: FontWeight.w400),
+                    ),
+                  ),
+                ],
+              )
+            ],
+          );
+        });
   }
 }

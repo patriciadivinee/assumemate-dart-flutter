@@ -1,4 +1,5 @@
 import 'package:assumemate/provider/favorite_provider.dart';
+import 'package:assumemate/provider/follow_provider.dart';
 import 'package:assumemate/provider/profile_provider.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
@@ -92,6 +93,13 @@ class PendingApplicationScreen extends StatelessWidget {
                       .initializeToken();
                   await Provider.of<FavoriteProvider>(context, listen: false)
                       .initializeFave();
+
+                  await Provider.of<FollowProvider>(context, listen: false)
+                      .initializeFollow();
+
+                  final count =
+                      await Provider.of<FollowProvider>(context, listen: false)
+                          .followingCount;
 
                   await firebaseApi.requestNotificationPermission();
 

@@ -169,7 +169,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
     // Initialize controllers with current profile data
     _profilePic = profileProvider.userProfile['user_prof_pic'] ??
-        'https://openseauserdata.com/files/a1439c13b366dd156de18328ca708f9f.png';
+        'https://res.cloudinary.com/dbroe2hjh/image/upload/v1733245571/no-profile_xnyyoi.jpg';
 
     _firstNameController.text =
         profileProvider.userProfile['user_prof_fname'] ?? '';

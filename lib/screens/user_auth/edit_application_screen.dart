@@ -79,7 +79,7 @@ class _EditApplicationScreenState extends State<EditApplicationScreen> {
           addressController.text = profile['user_prof_address'];
           _dateController.text = profile['user_prof_dob'];
           _selectedGender = profile['user_prof_gender'];
-          _picUrl = profile['user_prof_pic'];
+          _picUrl = profile['user_prof_valid_pic'];
           _validIDUrl = profile['user_prof_valid_id'];
           _selectedDate = DateTime.parse(profile['user_prof_dob']);
         });
@@ -109,7 +109,7 @@ class _EditApplicationScreenState extends State<EditApplicationScreen> {
       'user_prof_valid_id': _validIDImage != null
           ? await imageToBase64(_validIDImage!)
           : _validIDUrl,
-      'user_prof_pic':
+      'user_prof_valid_pic':
           _pictureImage != null ? await imageToBase64(_pictureImage!) : _picUrl,
     };
 

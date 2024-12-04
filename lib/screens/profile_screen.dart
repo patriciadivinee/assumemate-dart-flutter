@@ -38,7 +38,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String? errorMsg;
   double _coins = 0;
   // List<Map<String, dynamic>> _offers = [];
-  List<Map<String, dynamic>> _listings = [];
+  // List<Map<String, dynamic>> _listings = [];
   List<Map<String, dynamic>> _followers = [];
   late Future<List<dynamic>> _activeListings;
   String? token;
@@ -292,13 +292,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  void assumptorView() {
+    setState(() {
+      _fetchCoins();
+      _activeListings = fetchUserListings('ACTIVE');
+    });
+  }
+
   @override
   void initState() {
     super.initState();
     _getToken();
     _getFollower();
-    _fetchCoins();
-    _activeListings = fetchUserListings('ACTIVE');
+    _activeListings = _userType == 'assumptor'
+        ? fetchUserListings('ACTIVE')
+        : Future.value([]);
+    if (_userType == 'assumptor') _fetchCoins();
+    // _fetchCoins();
+    // _activeListings = fetchUserListings('ACTIVE');
   }
 
   @override
@@ -323,7 +334,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (profileProvider.userProfile.isNotEmpty) {
       return Scaffold(
           body: DefaultTabController(
-        length: 2,
+        length: (_userType == 'assumptor') ? 2 : 1,
         child: NestedScrollView(
           headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
             return [
@@ -389,8 +400,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           CircleAvatar(
-                            backgroundImage: NetworkImage(
-                                profileProvider.userProfile['user_prof_pic']),
+                            backgroundImage: profileProvider
+                                        .userProfile['user_prof_pic'] !=
+                                    null
+                                ? NetworkImage(profileProvider
+                                    .userProfile['user_prof_pic'])
+                                : AssetImage('assets/images/no-profile.jpg'),
                             radius: 40,
                           ),
                           const SizedBox(width: 10),
@@ -596,7 +611,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                               addCoins: _addCoins,
                                             ),
                                           ),
-                                        );
+                                        ).then((_) {
+                                          // After returning from the PaymentScreen, fetch the updated coins
+                                          _fetchCoins();
+                                        });
                                       }
                                     },
                                     icon: const Icon(Icons.add),
@@ -724,7 +742,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     tabs: [
-                      Tab(child: Text('Listings', style: tabTextStyle)),
+                      if (_userType == 'assumptor')
+                        Tab(child: Text('Listings', style: tabTextStyle)),
                       Tab(child: Text('Reviews', style: tabTextStyle)),
                     ],
                   ),
@@ -737,7 +756,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             padding: const EdgeInsets.all(10),
             child: TabBarView(
               children: [
-                buildListingGrid(_activeListings),
+                if (_userType == 'assumptor') buildListingGrid(_activeListings),
                 buildRatingList(fetchRatings()),
               ],
             ),

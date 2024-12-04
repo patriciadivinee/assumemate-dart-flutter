@@ -222,31 +222,85 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            GestureDetector(
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        _userId == widget.assumptorId
-                                            ? ProfileScreen()
-                                            : OtherProfileScreen(
-                                                userId: widget.assumptorId,
-                                              ),
+                            // GestureDetector(
+                            //   onTap: () {
+                            //     Navigator.push(
+                            //       context,
+                            //       MaterialPageRoute(
+                            //         builder: (context) =>
+                            //             _userId == widget.assumptorId
+                            //                 ? ProfileScreen()
+                            //                 : OtherProfileScreen(
+                            //                     userId: widget.assumptorId,
+                            //                   ),
+                            //       ),
+                            //     );
+                            //   },
+                            //   child: Text(
+                            //     userProfile != null
+                            //         ? '${userProfile?['user_prof_fname'] ?? ''} ${userProfile?['user_prof_lname'] ?? ''}'
+                            //         : "Loading...",
+                            //     style: const TextStyle(
+                            //       color: Colors.black,
+                            //       fontSize: 20,
+                            //       fontWeight: FontWeight.bold,
+                            //     ),
+                            //   ),
+                            // ),
+                            if (listingDetail?.category == "Motorcycle" ||
+                                listingDetail?.category == "Car") ...[
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      '${listingDetail?.make ?? "Loading..."} (${listingDetail?.model ?? "Unknown model"}) - ${listingDetail?.transmission ?? "Unknown transmission"}',
+                                      style: const TextStyle(
+                                        color: Colors.black,
+                                        fontWeight: FontWeight.w900,
+                                        fontSize: 16,
+                                      ),
+                                    ),
                                   ),
-                                );
-                              },
-                              child: Text(
-                                userProfile != null
-                                    ? '${userProfile?['user_prof_fname'] ?? ''} ${userProfile?['user_prof_lname'] ?? ''}'
-                                    : "Loading...",
-                                style: const TextStyle(
-                                  color: Colors.black,
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                                  Icon(
+                                    listingDetail?.category == "Car"
+                                        ? Icons.directions_car
+                                        : Icons.motorcycle,
+                                    size: 24,
+                                    color: listingDetail?.color != null
+                                        ? listingDetail!.extractColor() ??
+                                            Colors.black
+                                        : Colors.black,
+                                  ),
+                                ],
                               ),
-                            ),
+                            ],
+                            if (listingDetail?.category == "Real Estate") ...[
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      '${listingDetail?.title ?? "N/A"}',
+                                      style: const TextStyle(
+                                        color: Colors.black,
+                                        fontWeight: FontWeight.w900,
+                                        fontSize: 17,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  const Icon(
+                                    Icons.house,
+                                    size: 24,
+                                    color: Colors.black,
+                                  ),
+                                ],
+                              ),
+                            ],
+                            const SizedBox(height: 10),
                             Row(
                               crossAxisAlignment: CrossAxisAlignment
                                   .start, // Aligns the icon and text at the top
@@ -277,60 +331,6 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
 
                             const SizedBox(height: 10),
 
-                            if (listingDetail?.category == "Motorcycle" ||
-                                listingDetail?.category == "Car") ...[
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      'Title: ${listingDetail?.make ?? "Loading..."} (${listingDetail?.model ?? "Unknown model"}) - ${listingDetail?.transmission ?? "Unknown transmission"}',
-                                      style: const TextStyle(
-                                        color: Colors.black,
-                                        fontWeight: FontWeight.w900,
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                  ),
-                                  Icon(
-                                    listingDetail?.category == "Car"
-                                        ? Icons.directions_car
-                                        : Icons.motorcycle,
-                                    size: 24,
-                                    color: listingDetail?.color != null
-                                        ? listingDetail!.extractColor() ??
-                                            Colors.black
-                                        : Colors.black,
-                                  ),
-                                ],
-                              ),
-                            ],
-                            if (listingDetail?.category == "Real Estate") ...[
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      'Title: ${listingDetail?.title ?? "N/A"}',
-                                      style: const TextStyle(
-                                        color: Colors.black,
-                                        fontWeight: FontWeight.w900,
-                                        fontSize: 17,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  const Icon(
-                                    Icons.house,
-                                    size: 24,
-                                    color: Colors.black,
-                                  ),
-                                ],
-                              ),
-                            ],
-                            const SizedBox(height: 10),
                             Text(
                               'Details (${listingDetail?.category ?? "Loading..."}):',
                               style: const TextStyle(
@@ -359,6 +359,26 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                                     Text(
                                       listingDetail?.price != null
                                           ? '${listingDetail!.formattedPrice}'
+                                          : "Loading...",
+                                      style:
+                                          const TextStyle(color: Colors.black),
+                                    ),
+                                    const SizedBox(),
+                                  ],
+                                ),
+
+                                TableRow(
+                                  children: [
+                                    const Text(
+                                      'Reservation Amount:',
+                                      style: TextStyle(color: Colors.black),
+                                    ),
+                                    const SizedBox(),
+                                    Text(
+                                      listingDetail?.formattedDownPayment !=
+                                              null
+                                          ? formatCurrency(
+                                              listingDetail!.reservation)
                                           : "Loading...",
                                       style:
                                           const TextStyle(color: Colors.black),
@@ -592,6 +612,56 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
 
                             const SizedBox(height: 20),
 
+                            Row(
+                              children: [
+                                CircleAvatar(
+                                  backgroundImage:
+                                      userProfile?['user_prof_pic'] != null
+                                          ? NetworkImage(
+                                              userProfile?['user_prof_pic'])
+                                          : AssetImage(
+                                              'assets/images/no-profile.jpg'),
+                                  radius: 25,
+                                  backgroundColor:
+                                      Colors.grey[300], // Fallback color
+                                  child: userProfile?['user_prof_pic'] == null
+                                      ? Icon(Icons.person,
+                                          size: 25, color: Colors.white)
+                                      : null, // Fallback icon if no image is provided
+                                ),
+                                const SizedBox(
+                                    width:
+                                        10), // Adds spacing between the avatar and the text
+                                GestureDetector(
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            _userId == widget.assumptorId
+                                                ? ProfileScreen()
+                                                : OtherProfileScreen(
+                                                    userId: widget.assumptorId,
+                                                  ),
+                                      ),
+                                    );
+                                  },
+                                  child: Text(
+                                    userProfile != null
+                                        ? '${userProfile?['user_prof_fname'] ?? ''} ${userProfile?['user_prof_lname'] ?? ''}'
+                                        : "Loading...",
+                                    style: const TextStyle(
+                                      color: Colors.black,
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+
+                            const SizedBox(height: 15),
+
                             // Styling the section title text
                             const Text(
                               'More Listings',
@@ -658,30 +728,30 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                         size: 24,
                       ),
                     ),
-                    PopupMenuButton<int>(
-                      color: const Color(0xffFCFCFC),
-                      icon:
-                          const Icon(Icons.more_vert, color: Color(0xff4A8AF0)),
-                      iconSize: 26,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 0),
-                      itemBuilder: (context) => [
-                        const PopupMenuItem(
-                            height: 25,
-                            child: Row(children: [
-                              Expanded(
-                                child: Text(
-                                  'Report',
-                                  style: TextStyle(fontSize: 14),
-                                ),
-                              ),
-                              Icon(
-                                Icons.flag_outlined,
-                                color: Color(0xffFF0000),
-                              ),
-                            ]))
-                      ],
-                    ),
+                    // PopupMenuButton<int>(
+                    //   color: const Color(0xffFCFCFC),
+                    //   icon:
+                    //       const Icon(Icons.more_vert, color: Color(0xff4A8AF0)),
+                    //   iconSize: 26,
+                    //   padding: const EdgeInsets.symmetric(
+                    //       horizontal: 10, vertical: 0),
+                    //   itemBuilder: (context) => [
+                    //     const PopupMenuItem(
+                    //         height: 25,
+                    //         child: Row(children: [
+                    //           Expanded(
+                    //             child: Text(
+                    //               'Report',
+                    //               style: TextStyle(fontSize: 14),
+                    //             ),
+                    //           ),
+                    //           Icon(
+                    //             Icons.flag_outlined,
+                    //             color: Color(0xffFF0000),
+                    //           ),
+                    //         ]))
+                    //   ],
+                    // ),
                   ],
                 ),
               ),
@@ -761,35 +831,36 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                       ),
                     ),
                   ),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(vertical: 5, horizontal: 20),
-                    decoration: const BoxDecoration(
-                      color: Color(0xffFFFCF1),
-                      border: Border(
-                          top: BorderSide(color: Colors.black45),
-                          left: BorderSide(color: Colors.black45)),
-                    ),
-                    child: InkWell(
-                      splashColor: Colors.black45,
-                      onTap: () {
-                        if (_applicationStatus == 'PENDING') {
-                          popUp(context,
-                              'You need to be verified to make an offer');
-                        } else {
-                          offerDialog(context, widget.listingId);
-                        }
-                      },
-                      child: const Column(
-                        mainAxisSize: MainAxisSize.min,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.local_offer_outlined),
-                          Text('Make offer', style: TextStyle(fontSize: 12))
-                        ],
+                  if (listingDetail?.offerAllowed == true)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 5, horizontal: 20),
+                      decoration: const BoxDecoration(
+                        color: Color(0xffFFFCF1),
+                        border: Border(
+                            top: BorderSide(color: Colors.black45),
+                            left: BorderSide(color: Colors.black45)),
+                      ),
+                      child: InkWell(
+                        splashColor: Colors.black45,
+                        onTap: () {
+                          if (_applicationStatus == 'PENDING') {
+                            popUp(context,
+                                'You need to be verified to make an offer');
+                          } else {
+                            offerDialog(context, widget.listingId);
+                          }
+                        },
+                        child: const Column(
+                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.local_offer_outlined),
+                            Text('Make offer', style: TextStyle(fontSize: 12))
+                          ],
+                        ),
                       ),
                     ),
-                  ),
                   Expanded(
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 5),
@@ -806,13 +877,13 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                                 'You need to be verified to buy this list');
                           } else {}
                         },
-                        child: const Column(
+                        child: Column(
                           mainAxisSize: MainAxisSize.min,
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(Icons.account_balance_wallet_rounded,
                                 color: Color(0xffFFFCF1)),
-                            Text('₱ 1,000,000 Buy',
+                            Text('${formatCurrency(listingDetail!.price)} Buy',
                                 style: TextStyle(
                                     color: Color(0xffFFFCF1), fontSize: 12))
                           ],
@@ -868,6 +939,7 @@ class FullScreenImageViewer extends StatelessWidget {
 class ListingDetail {
   final String status;
   final String title;
+  final bool offerAllowed;
   final List<String> images;
   final String category;
   final String description;
@@ -889,6 +961,7 @@ class ListingDetail {
 
   final double price;
   final double monthlyPayment;
+  final double reservation;
   final int downPayment;
   final int totalPaymentMade;
   final int numberOfMonthsPaid;
@@ -896,7 +969,9 @@ class ListingDetail {
   ListingDetail({
     required this.status,
     required this.price,
+    required this.reservation,
     required this.title,
+    required this.offerAllowed,
     required this.images,
     required this.category,
     required this.description,
@@ -932,10 +1007,18 @@ class ListingDetail {
 
     return ListingDetail(
       status: json['list_status'],
-      price: calculatedPrice > 0
-          ? calculatedPrice
-          : double.tryParse(content['price']?.toString() ?? '0') ?? 0,
+      // price: calculatedPrice > 0
+      //     ? calculatedPrice
+      //     : double.tryParse(content['price']?.toString() ?? '0') ?? 0,
+      price: (content['price'] is String)
+          ? double.tryParse(content['price']) ?? 0
+          : (content['price'] is int)
+              ? (content['price'] as int).toDouble()
+              : (content['price'] as double?) ?? 0,
+      reservation:
+          double.tryParse(content['reservation']?.toString() ?? '0') ?? 0,
       title: content['title']?.toString() ?? 'Untitled',
+      offerAllowed: content['offer_allowed'] ?? false,
       images: List<String>.from(content['images'] ?? []),
       category: content['category']?.toString() ?? 'Uncategorized',
       description:

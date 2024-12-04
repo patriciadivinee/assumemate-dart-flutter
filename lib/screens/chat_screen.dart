@@ -7,7 +7,6 @@ import 'package:assumemate/logo/pop_up.dart';
 import 'package:assumemate/service/service.dart';
 import 'package:assumemate/storage/secure_storage.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
-import 'package:assumemate/format.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
@@ -118,22 +117,24 @@ class _ChatScreenState extends State<ChatScreen> {
         child: RefreshIndicator(
           onRefresh: _getInbox,
           color: const Color(0xff4A8AF0),
-          child: ListView.builder(
-            itemCount: _convos.length,
-            itemBuilder: (context, index) {
-              final convo = _convos[index];
-              return ChatList(
-                id: convo['chatmate_id'].toString(),
-                name: convo['chatmate_name'],
-                msg: convo['last_message'],
-                senderId: convo['sender_id'].toString(),
-                time: convo['last_message_date'],
-                profilePic: convo['chatmate_pic'],
-                chatroomId: convo['chatroom_id'].toString(),
-                isRead: convo['mess_isread'],
-              );
-            },
-          ),
+          child: _convos.isEmpty
+              ? Center(child: Text('No messages yet!'))
+              : ListView.builder(
+                  itemCount: _convos.length,
+                  itemBuilder: (context, index) {
+                    final convo = _convos[index];
+                    return ChatList(
+                      id: convo['chatmate_id'].toString(),
+                      name: convo['chatmate_name'],
+                      msg: convo['last_message'],
+                      senderId: convo['sender_id'].toString(),
+                      time: convo['last_message_date'],
+                      profilePic: convo['chatmate_pic'],
+                      chatroomId: convo['chatroom_id'].toString(),
+                      isRead: convo['mess_isread'],
+                    );
+                  },
+                ),
         ),
       ),
     );

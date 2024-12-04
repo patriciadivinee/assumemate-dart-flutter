@@ -43,7 +43,16 @@ class PaymentService {
         _showMessage(context, 'Payment successful! Coins deducted.');
       } catch (e) {
         print('Error during payment: $e');
-        _showMessage(context, 'Error during payment: $e');
+
+        // Default error message
+        String errorMessage = 'Error during payment. Please try again.';
+
+        // Check for insufficient coins error from backend
+        if (e.toString().contains('Insufficient coins')) {
+          errorMessage = 'Insufficient coins, please top up';
+        }
+
+        _showMessage(context, errorMessage); // Show the error message
       }
     }
   }

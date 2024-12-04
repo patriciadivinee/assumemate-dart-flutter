@@ -134,8 +134,8 @@ class _PayPalListingScreenState extends State<PayPalListingScreen> {
           //   ),
           // );
 
-          Navigator.of(context).pop(true);
           // Navigator.of(context).pop(true);
+          Navigator.of(context).pop(true);
           popUp(context, 'Payment successful!');
 
           // ScaffoldMessenger.of(context).showSnackBar(

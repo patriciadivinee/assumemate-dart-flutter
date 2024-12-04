@@ -215,7 +215,7 @@ class _SearchScreenState extends State<SearchScreen> {
         return false;
       }
 
-      String listingMake = content['make:']?.toString().toLowerCase() ?? '';
+      String listingMake = content['make']?.toString().toLowerCase() ?? '';
       String listingYear = content['year']?.toString() ?? '';
       String listingTransmission =
           content['transmission']?.toString().toLowerCase() ?? '';
@@ -285,14 +285,31 @@ class _SearchScreenState extends State<SearchScreen> {
   bool matchMileageRange(String listingMileage, String filterRange) {
     if (filterRange.isEmpty) return true;
 
-    List<String> rangeParts = filterRange.replaceAll(' km', '').split('-');
+    // Remove 'km' and any whitespace from both the listing mileage and filter range
+    listingMileage = listingMileage.replaceAll(RegExp(r'[^\d-]'), '');
+    filterRange = filterRange.replaceAll(RegExp(r'[^\d-]'), '');
+
+    List<String> rangeParts = filterRange.split('-');
     if (rangeParts.length != 2) return false;
 
     int rangeStart = int.tryParse(rangeParts[0].replaceAll(',', '')) ?? 0;
     int rangeEnd = int.tryParse(rangeParts[1].replaceAll(',', '')) ?? 0;
 
+    // If the listing mileage is already a range
+    if (listingMileage.contains('-')) {
+      List<String> listingRangeParts = listingMileage.split('-');
+      int listingStart =
+          int.tryParse(listingRangeParts[0].replaceAll(',', '')) ?? 0;
+      int listingEnd =
+          int.tryParse(listingRangeParts[1].replaceAll(',', '')) ?? 0;
+
+      // Check if the ranges overlap
+      return (listingStart <= rangeEnd && listingEnd >= rangeStart);
+    }
+
+    // If listing mileage is a single number
     int listingMileageNum =
-        int.tryParse(listingMileage.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
+        int.tryParse(listingMileage.replaceAll(',', '')) ?? 0;
 
     return listingMileageNum >= rangeStart && listingMileageNum <= rangeEnd;
   }

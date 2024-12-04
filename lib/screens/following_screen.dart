@@ -71,7 +71,8 @@ class _FollowScreenState extends State<FollowScreen> {
                             horizontal: 5, vertical: 7),
                         minTileHeight: 60,
                         leading: CircleAvatar(
-                          backgroundImage: NetworkImage(follow['profile']),
+                          backgroundImage: NetworkImage(follow['profile'] ??
+                              'https://res.cloudinary.com/dbroe2hjh/image/upload/v1733245571/no-profile_xnyyoi.jpg'),
                         ),
                         title: Text(
                           follow['fullname'],
