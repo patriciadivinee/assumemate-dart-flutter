@@ -1,5 +1,4 @@
 import 'package:assumemate/format.dart';
-import 'package:assumemate/logo/pop_up.dart';
 import 'package:assumemate/screens/payment_receipt_screen.dart';
 import 'package:assumemate/screens/waiting_area/payment_confirmation_screen.dart';
 import 'package:assumemate/storage/secure_storage.dart';
@@ -137,10 +136,17 @@ class _TransactionListState extends State<TransactionList> {
                                     : trans!['order_status'] == 'PENDING'
                                         ? statusDesign('WAITING FOR PAYMENT',
                                             Color(0xff34a36e), Colors.white)
-                                        : trans!['order_status'] == 'CANCELLED'
-                                            ? statusDesign('CANCELLED',
-                                                Color(0xffD42020), Colors.white)
-                                            : const SizedBox.shrink()
+                                        : trans!['order_status'] ==
+                                                'FOR CONFIRMATION'
+                                            ? statusDesign('FOR CONFIRMATION',
+                                                Color(0xff959696), Colors.white)
+                                            : trans!['order_status'] ==
+                                                    'CANCELLED'
+                                                ? statusDesign(
+                                                    'CANCELLED',
+                                                    Color(0xffD42020),
+                                                    Colors.white)
+                                                : const SizedBox.shrink()
                           ],
                         ),
                         const SizedBox(height: 2),

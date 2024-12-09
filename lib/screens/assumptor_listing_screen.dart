@@ -44,12 +44,7 @@ class _AssumptorListingScreenState extends State<AssumptorListingScreen> {
       return data['listings'];
     } else {
       // Return an empty list and show a message instead of throwing an error
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to load $status listings'),
-          duration: Duration(seconds: 3),
-        ),
-      );
+      popUp(context, 'Failed to load $status listings');
       return []; // Return an empty list in case of failure
     }
   }

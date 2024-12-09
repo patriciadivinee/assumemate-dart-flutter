@@ -1,4 +1,3 @@
-import 'package:assumemate/components/highlighted_item_banner.dart';
 import 'package:flutter/material.dart';
 
 class BannerScreen extends StatefulWidget {

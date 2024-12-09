@@ -80,17 +80,6 @@ class _ListingRequestScreenState extends State<ListingRequestScreen>
             itemCount: snapshot.data!.length,
             itemBuilder: (context, index) {
               var listing = snapshot.data![index];
-              var content = listing['list_content'];
-
-              String title = 'No title';
-
-              if (content['category'] == 'Real Estate') {
-                // title = content['title'];
-                title = 'No title';
-              } else {
-                title =
-                    '${content['make']} ${content['model']} (${content['year']}) - ${content['transmission']}';
-              }
 
               return ListingItem(
                 listing: listing,

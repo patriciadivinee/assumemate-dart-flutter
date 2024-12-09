@@ -1,20 +1,16 @@
 import 'package:assumemate/components/listing_item.dart';
-import 'package:assumemate/logo/pop_up.dart';
 import 'package:assumemate/provider/follow_provider.dart';
-import 'package:assumemate/screens/item_detail_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:assumemate/logo/loading_animation.dart';
-import 'package:assumemate/screens/account_settings_screen.dart';
 import 'package:assumemate/service/service.dart';
 import 'package:assumemate/storage/secure_storage.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 
 class OtherProfileScreen extends StatefulWidget {
-  String userId;
+  final String userId;
 
-  OtherProfileScreen({super.key, required this.userId});
+  const OtherProfileScreen({super.key, required this.userId});
 
   @override
   State<OtherProfileScreen> createState() => _OtherProfileScreenState();
@@ -22,7 +18,6 @@ class OtherProfileScreen extends StatefulWidget {
 
 class _OtherProfileScreenState extends State<OtherProfileScreen> {
   String? errorMsg;
-  bool? _isCollapsed = false;
   List<Map<String, dynamic>>? _listings;
   late Future<List<dynamic>> _reviews;
   Map<String, dynamic> _userProfile = {};

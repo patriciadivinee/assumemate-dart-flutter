@@ -1,17 +1,12 @@
-import 'dart:convert';
 import 'dart:io';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:device_info_plus/device_info_plus.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:assumemate/logo/pop_up.dart';
 import 'package:assumemate/provider/storage_permission.dart';
 import 'package:assumemate/storage/secure_storage.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:intl/intl.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:assumemate/screens/photo_screen.dart';
 import 'package:open_file/open_file.dart';
 import 'package:path/path.dart' as p;

@@ -181,7 +181,7 @@ class _PayoutRequestState extends State<PayoutRequest> {
                                     ),
                                     Expanded(
                                       child: Text(
-                                        'Your payout has already been processed! Please verify your PayPal account for confirmation.',
+                                        'Your payout has already been processed! Please check your PayPal account for confirmation.',
                                         style: TextStyle(letterSpacing: 1),
                                         textAlign: TextAlign.center,
                                         softWrap: true,

@@ -1,17 +1,8 @@
-// import 'dart:convert';
-
 import 'package:assumemate/logo/pop_up.dart';
 import 'package:assumemate/service/service.dart';
 import 'package:assumemate/storage/secure_storage.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-// import 'package:flutter_dotenv/flutter_dotenv.dart';
-// import 'package:assumemate/components/chat_list.dart';
 import 'package:assumemate/components/offer_list.dart';
-// import 'package:assumemate/logo/pop_up.dart';
-// import 'package:assumemate/service/service.dart';
-// import 'package:assumemate/storage/secure_storage.dart';
-// import 'package:web_socket_channel/web_socket_channel.dart';
 
 class OfferListScreen extends StatefulWidget {
   const OfferListScreen({super.key});

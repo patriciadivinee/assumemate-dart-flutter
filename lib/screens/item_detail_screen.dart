@@ -728,30 +728,30 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                         size: 24,
                       ),
                     ),
-                    // PopupMenuButton<int>(
-                    //   color: const Color(0xffFCFCFC),
-                    //   icon:
-                    //       const Icon(Icons.more_vert, color: Color(0xff4A8AF0)),
-                    //   iconSize: 26,
-                    //   padding: const EdgeInsets.symmetric(
-                    //       horizontal: 10, vertical: 0),
-                    //   itemBuilder: (context) => [
-                    //     const PopupMenuItem(
-                    //         height: 25,
-                    //         child: Row(children: [
-                    //           Expanded(
-                    //             child: Text(
-                    //               'Report',
-                    //               style: TextStyle(fontSize: 14),
-                    //             ),
-                    //           ),
-                    //           Icon(
-                    //             Icons.flag_outlined,
-                    //             color: Color(0xffFF0000),
-                    //           ),
-                    //         ]))
-                    //   ],
-                    // ),
+                    PopupMenuButton<int>(
+                      color: const Color(0xffFCFCFC),
+                      icon:
+                          const Icon(Icons.more_vert, color: Color(0xff4A8AF0)),
+                      iconSize: 26,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 0),
+                      itemBuilder: (context) => [
+                        const PopupMenuItem(
+                            height: 25,
+                            child: Row(children: [
+                              Expanded(
+                                child: Text(
+                                  'Report',
+                                  style: TextStyle(fontSize: 14),
+                                ),
+                              ),
+                              Icon(
+                                Icons.flag_outlined,
+                                color: Color(0xffFF0000),
+                              ),
+                            ]))
+                      ],
+                    ),
                   ],
                 ),
               ),
@@ -875,7 +875,14 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                           if (_applicationStatus == 'PENDING') {
                             popUp(context,
                                 'You need to be verified to buy this list');
-                          } else {}
+                          } else {
+                            showBuyConfirmation(
+                              context,
+                              _userId!,
+                              widget.listingId,
+                              listingDetail!.reservation,
+                            );
+                          }
                         },
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
@@ -1003,8 +1010,6 @@ class ListingDetail {
     int parsedNumberOfMonthsPaid =
         int.tryParse(content['numberOfMonthsPaid']?.toString() ?? '0') ?? 0;
 
-    double calculatedPrice = parsedMonthlyPayment * parsedNumberOfMonthsPaid;
-
     return ListingDetail(
       status: json['list_status'],
       // price: calculatedPrice > 0
@@ -1087,6 +1092,87 @@ class ListingDetail {
     }
     return null;
   }
+}
+
+Future<void> showBuyConfirmation(
+    BuildContext context, String id, String listId, double reservation) async {
+  final ApiService apiService = ApiService();
+
+  Future<void> buyNow() async {
+    try {
+      final response = await apiService.createOrder(
+          id, null, listId, reservation.toString());
+
+      print(response);
+
+      if (response.containsKey('message')) {
+        Navigator.of(context).pop();
+        popUp(context, 'Order sent');
+      } else {
+        popUp(context, response['error']);
+        return;
+      }
+    } catch (e) {
+      popUp(context, 'Error accepting offer');
+    }
+  }
+
+  return showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12.0),
+          ),
+          actionsPadding:
+              const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
+          contentPadding: const EdgeInsets.only(left: 18, right: 18, top: 12),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Accept and reserve offer?',
+                style:
+                    const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                textAlign: TextAlign.start,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Do you wish to accept offer with reservation amount of ${formatCurrency(reservation)}?',
+                style:
+                    const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                textAlign: TextAlign.start,
+              )
+            ],
+          ),
+          actions: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  child: const Text(
+                    'Cancel',
+                    style: TextStyle(
+                        color: Color(0xff4A8AF0), fontWeight: FontWeight.w400),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () => buyNow(),
+                  child: const Text(
+                    'Confirm',
+                    style: TextStyle(
+                        color: Color(0xff4A8AF0), fontWeight: FontWeight.w400),
+                  ),
+                ),
+              ],
+            )
+          ],
+        );
+      });
 }
 
 Future<void> offerDialog(BuildContext context, String listId) async {
@@ -1229,19 +1315,6 @@ Widget buildSuggestionsList(Future<List<dynamic>> futureListings) {
               var listing = snapshot.data![index];
               if (listing == null) {
                 return const Center(child: Text('No Listing Data'));
-              }
-              var content = listing['list_content'];
-              var title;
-
-              if (content['category'] == "Car" ||
-                  content['category'] == "Motorcycle") {
-                title =
-                    '${content['model'] ?? 'Unknown model'} ${content['make'] ?? 'Unknown make'} ${content['year'] ?? 'Unknown year'}';
-              } else if (content['category'] == "Real Estate") {
-                title = content['title'] ?? 'No Title';
-              } else {
-                title = content['title'] ??
-                    'No Title'; // Default case if category doesn't match
               }
 
               return ListingItem(

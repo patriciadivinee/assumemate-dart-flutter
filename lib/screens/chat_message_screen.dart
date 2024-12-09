@@ -1141,7 +1141,10 @@ class _ChatMessageState extends State<ChatMessageScreen> {
   Future<void> acceptOfferAndReserve(BuildContext context) async {
     try {
       final response = await apiService.createOrder(
-          offerDetails['offerId'], offerDetails['reservation'].toString());
+          widget.receiverId,
+          offerDetails['offerId'],
+          offerDetails['listingId'],
+          offerDetails['reservation'].toString());
 
       print(response);
 
@@ -1155,7 +1158,7 @@ class _ChatMessageState extends State<ChatMessageScreen> {
           offerDetails['order_price'] = response['order']['order_price'];
         });
         Navigator.of(context).pop();
-        popUp(context, response['message']);
+        popUp(context, 'Offer accepted');
       } else {
         popUp(context, response['error']);
         return;

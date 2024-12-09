@@ -170,21 +170,6 @@ class _FeedScreenState extends State<FeedScreen> {
               if (listing == null) {
                 return const Center(child: Text('No Listing Data'));
               }
-              var content = listing['list_content'];
-              var title;
-
-              print(content);
-
-              if (content['category'] == "Car" ||
-                  content['category'] == "Motorcycle") {
-                title =
-                    '${content['model'] ?? 'Unknown model'} ${content['make'] ?? 'Unknown make'} ${content['year'] ?? 'Unknown year'}';
-              } else if (content['category'] == "Real Estate") {
-                title = '${content['title'] ?? 'No Title'}';
-              } else {
-                title = content['title'] ??
-                    'No Title'; // Default case if category doesn't match
-              }
 
               return ListingItem(
                 listing: listing,

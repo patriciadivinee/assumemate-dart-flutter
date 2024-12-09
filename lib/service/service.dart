@@ -79,7 +79,6 @@ class ApiService {
       File validID,
       File picture) async {
     final regAPI = Uri.parse('$baseURL/user-register/');
-    final profAPI = Uri.parse('$baseURL/create-profile/');
 
     String validIDBase64 = await imageToBase64(validID);
     String picBase64 = await imageToBase64(picture);
@@ -1114,11 +1113,19 @@ class ApiService {
   }
 
   Future<Map<String, dynamic>> createOrder(
-      String offerId, String amount) async {
+      String userId, String? offerId, String listId, String amount) async {
     final apiUrl = Uri.parse('$baseURL/create/order/');
     final token = await secureStorage.getToken();
 
-    final Map<String, dynamic> data = {'offer_id': offerId, 'amount': amount};
+    final Map<String, dynamic> data = {
+      'user_id': userId,
+      'list_id': listId,
+      'amount': amount
+    };
+
+    if (offerId != null && offerId.isNotEmpty) {
+      data['offer_id'] = offerId;
+    }
 
     try {
       final response = await http.post(apiUrl,
@@ -1127,6 +1134,28 @@ class ApiService {
             "Authorization": "Bearer $token",
           },
           body: jsonEncode(data));
+
+      return jsonDecode(response.body);
+    } catch (e) {
+      return ({'error': 'An error occured: $e'});
+    }
+  }
+
+  Future<Map<String, dynamic>> confirmBuyOrder(String orderId) async {
+    final apiUrl = Uri.parse('$baseURL/confirm/buy-now/order/');
+    final token = await secureStorage.getToken();
+
+    final Map<String, dynamic> data = {'order_id': orderId};
+
+    try {
+      final response = await http.put(
+        apiUrl,
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
+        body: jsonEncode(data),
+      );
 
       return jsonDecode(response.body);
     } catch (e) {

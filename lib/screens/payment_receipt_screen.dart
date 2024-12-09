@@ -32,14 +32,49 @@ class _PaymentReceiptScreenState extends State<PaymentReceiptScreen> {
     _userType = await secureStorage.getUserType();
   }
 
-  void cancelOrder() async {
-    final response = await apiService.cancelOrder(widget.orderId);
+  void confirmOrder() async {
+    setState(() {
+      _isLoading = true;
+    });
 
-    if (response.containsKey('message')) {
-      popUp(context, response['message']);
-    } else {
-      popUp(context, response['error']);
-      return;
+    try {
+      final response = await apiService.confirmBuyOrder(widget.orderId);
+
+      if (response.containsKey('message')) {
+        popUp(context, response['message']);
+      } else {
+        popUp(context, response['error']);
+        return;
+      }
+    } catch (e) {
+      popUp(context, 'An error occured: $e');
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  void cancelOrder() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final response = await apiService.cancelOrder(widget.orderId);
+
+      if (response.containsKey('message')) {
+        popUp(context, response['message']);
+      } else {
+        popUp(context, response['error']);
+        return;
+      }
+    } catch (e) {
+      popUp(context, 'An error occured: $e');
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
@@ -455,13 +490,13 @@ class _PaymentReceiptScreenState extends State<PaymentReceiptScreen> {
                               color: Colors.white, fontWeight: FontWeight.bold),
                         ),
                       ))
-                  : orderDetails['order_status'] == 'PENDING'
+                  : orderDetails['order_status'] == 'FOR CONFIRMATION'
                       ? ElevatedButton(
                           onPressed: () {
-                            cancelOrder();
+                            confirmOrder();
                             Navigator.of(context).pop(context);
 
-                            print('cancel order');
+                            print('confirm order');
                           },
                           style: ButtonStyle(
                             backgroundColor: WidgetStateProperty.all(
@@ -475,27 +510,23 @@ class _PaymentReceiptScreenState extends State<PaymentReceiptScreen> {
                             ),
                           ),
                           child: const Text(
-                            'Cancel',
+                            'Confirm Order',
                             style: TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold),
                           ),
                         )
-                      : orderDetails['order_status'] == 'COMPLETED'
+                      : orderDetails['order_status'] == 'PENDING'
                           ? ElevatedButton(
-                              onPressed: () => {
-                                print('yawaa na'),
-                                showConfirmation(
-                                    context,
-                                    'Mark as sold?',
-                                    'You cannot make changes after confirmation',
-                                    () => _markSold())
+                              onPressed: () {
+                                cancelOrder();
+                                Navigator.of(context).pop(context);
+
+                                print('cancel order');
                               },
                               style: ButtonStyle(
                                 backgroundColor: WidgetStateProperty.all(
-                                    orderDetails['order_status'] != 'COMPLETED'
-                                        ? Colors.grey.shade400
-                                        : const Color(0xff4A8AF0)),
+                                    const Color(0xff4A8AF0)),
                                 minimumSize: WidgetStateProperty.all(
                                     const Size(double.infinity, 45)),
                                 shape: WidgetStateProperty.all(
@@ -505,13 +536,45 @@ class _PaymentReceiptScreenState extends State<PaymentReceiptScreen> {
                                 ),
                               ),
                               child: const Text(
-                                'Mark as Sold',
+                                'Cancel',
                                 style: TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.bold),
                               ),
                             )
-                          : const SizedBox.shrink()
+                          : orderDetails['order_status'] == 'COMPLETED'
+                              ? ElevatedButton(
+                                  onPressed: () => {
+                                    print('yawaa na'),
+                                    showConfirmation(
+                                        context,
+                                        'Mark as sold?',
+                                        'You cannot make changes after confirmation',
+                                        () => _markSold())
+                                  },
+                                  style: ButtonStyle(
+                                    backgroundColor: WidgetStateProperty.all(
+                                        orderDetails['order_status'] !=
+                                                'COMPLETED'
+                                            ? Colors.grey.shade400
+                                            : const Color(0xff4A8AF0)),
+                                    minimumSize: WidgetStateProperty.all(
+                                        const Size(double.infinity, 45)),
+                                    shape: WidgetStateProperty.all(
+                                      RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(30.0),
+                                      ),
+                                    ),
+                                  ),
+                                  child: const Text(
+                                    'Mark as Sold',
+                                    style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold),
+                                  ),
+                                )
+                              : const SizedBox.shrink()
             ],
             if (_userType == 'assumee') ...[
               (transDetails.isNotEmpty) &&
@@ -560,7 +623,7 @@ class _PaymentReceiptScreenState extends State<PaymentReceiptScreen> {
                             print('press yawaAAA');
                             showConfirmation(
                                 context,
-                                'Confirm complete?',
+                                'Mark reservation as complete?',
                                 'You cannot change this once confirmed.',
                                 () => _markComplete());
                           },
@@ -576,7 +639,7 @@ class _PaymentReceiptScreenState extends State<PaymentReceiptScreen> {
                             ),
                           ),
                           child: const Text(
-                            'Mark as Complete',
+                            'Complete Reservation',
                             style: TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold),
@@ -586,106 +649,6 @@ class _PaymentReceiptScreenState extends State<PaymentReceiptScreen> {
                     )
                   : const SizedBox.shrink()
             ],
-            // _userType == 'assumptor'
-            //     ? listDetails['list_status'] == 'SOLD'
-            //         ? Padding(
-            //             padding: const EdgeInsets.symmetric(
-            //                 vertical: 5, horizontal: 18),
-            //             child: ElevatedButton(
-            //               onPressed: () {
-            //                 Navigator.push(
-            //                     context,
-            //                     MaterialPageRoute(
-            //                       builder: (context) =>
-            //                           PayoutRequest(orderId: widget.orderId),
-            //                     ));
-            //               },
-            //               style: ButtonStyle(
-            //                 backgroundColor: WidgetStateProperty.all(
-            //                     const Color(0xff4A8AF0)),
-            //                 minimumSize: WidgetStateProperty.all(
-            //                     const Size(double.infinity, 45)),
-            //                 shape: WidgetStateProperty.all(
-            //                   RoundedRectangleBorder(
-            //                     borderRadius: BorderRadius.circular(30.0),
-            //                   ),
-            //                 ),
-            //               ),
-            //               child: const Text(
-            //                 'Request payout',
-            //                 style: TextStyle(
-            //                     color: Colors.white,
-            //                     fontWeight: FontWeight.bold),
-            //               ),
-            //             ))
-            //         : Padding(
-            //             padding: const EdgeInsets.symmetric(
-            //                 vertical: 5, horizontal: 18),
-            //             child: _userType == 'assumee'
-            //                 ? orderDetails['order_status'] != 'COMPLETED'
-            //                     ? ElevatedButton(
-            //                         onPressed: () {
-            //                           print('press yawaAAA');
-            //                           showConfirmation(
-            //                               context,
-            //                               'Confirm complete?',
-            //                               'You cannot change this once confirmed.',
-            //                               () => _markComplete());
-            //                         },
-            //                         style: ButtonStyle(
-            //                           backgroundColor: WidgetStateProperty.all(
-            //                               const Color(0xff4A8AF0)),
-            //                           minimumSize: WidgetStateProperty.all(
-            //                               const Size(double.infinity, 45)),
-            //                           shape: WidgetStateProperty.all(
-            //                             RoundedRectangleBorder(
-            //                               borderRadius:
-            //                                   BorderRadius.circular(30.0),
-            //                             ),
-            //                           ),
-            //                         ),
-            //                         child: const Text(
-            //                           'Mark as Complete',
-            //                           style: TextStyle(
-            //                               color: Colors.white,
-            //                               fontWeight: FontWeight.bold),
-            //                         ),
-            //                       )
-            //                     : const SizedBox.shrink()
-            //                 : orderDetails['order_status'] == 'COMPLETED'
-            //                     ? ElevatedButton(
-            //                         onPressed: () => {
-            //                           print('yawaa na'),
-            //                           showConfirmation(
-            //                               context,
-            //                               'Mark as sold?',
-            //                               'You cannot make changes after confirmation',
-            //                               () => _markSold())
-            //                         },
-            //                         style: ButtonStyle(
-            //                           backgroundColor: WidgetStateProperty.all(
-            //                               orderDetails['order_status'] !=
-            //                                       'COMPLETED'
-            //                                   ? Colors.grey.shade400
-            //                                   : const Color(0xff4A8AF0)),
-            //                           minimumSize: WidgetStateProperty.all(
-            //                               const Size(double.infinity, 45)),
-            //                           shape: WidgetStateProperty.all(
-            //                             RoundedRectangleBorder(
-            //                               borderRadius:
-            //                                   BorderRadius.circular(30.0),
-            //                             ),
-            //                           ),
-            //                         ),
-            //                         child: const Text(
-            //                           'Mark as Sold',
-            //                           style: TextStyle(
-            //                               color: Colors.white,
-            //                               fontWeight: FontWeight.bold),
-            //                         ),
-            //                       )
-            //                     : const SizedBox.shrink())
-            //     : const SizedBox.shrink()
           ],
         ),
       ),

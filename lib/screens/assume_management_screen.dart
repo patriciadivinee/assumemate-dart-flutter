@@ -1,8 +1,6 @@
 import 'dart:convert';
 
 import 'package:assumemate/components/transaction_list.dart';
-import 'package:assumemate/logo/pop_up.dart';
-import 'package:assumemate/screens/offer_list_screen.dart';
 import 'package:http/http.dart' as http;
 import 'package:assumemate/service/service.dart';
 import 'package:assumemate/storage/secure_storage.dart';
@@ -19,7 +17,6 @@ class AssumeManagementScreen extends StatefulWidget {
 class _AssumeManagementScreenState extends State<AssumeManagementScreen> {
   final SecureStorage secureStorage = SecureStorage();
   final ApiService apiService = ApiService();
-  bool _isLoading = false;
 
   late Future<List<dynamic>> _onGoingTransactions;
   late Future<List<dynamic>> _completedTransaction;

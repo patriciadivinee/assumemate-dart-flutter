@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:assumemate/format.dart';
 import 'package:assumemate/logo/pop_up.dart';
 import 'package:assumemate/screens/assumptor_list_detail_screen.dart';
@@ -8,9 +6,7 @@ import 'package:assumemate/service/service.dart';
 import 'package:assumemate/storage/secure_storage.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:web_socket_channel/web_socket_channel.dart';
 
 class OfferList extends StatefulWidget {
   final int offerId;
@@ -23,7 +19,6 @@ class OfferList extends StatefulWidget {
   final int roomId;
   final Function(int) onOfferRejected;
 
-  // const OfferList({required this.userId, required this.offerAmnt, super.key});
   const OfferList({
     super.key,
     required this.offerId,
@@ -45,7 +40,6 @@ class _OfferListState extends State<OfferList> {
   final SecureStorage secureStorage = SecureStorage();
   final ApiService apiService = ApiService();
   bool _isLoading = false;
-
   void _acceptOffer() async {
     setState(() {
       _isLoading = true;
@@ -59,8 +53,8 @@ class _OfferListState extends State<OfferList> {
       print(response['error']);
 
       if (response.containsKey('message')) {
-        final oresponse = await apiService.createOrder(
-            widget.offerId.toString(), widget.reservation);
+        final oresponse = await apiService.createOrder(widget.userId.toString(),
+            widget.listId, widget.offerId.toString(), widget.reservation);
 
         if (oresponse.containsKey('message')) {
           widget.onOfferRejected(widget.offerId);

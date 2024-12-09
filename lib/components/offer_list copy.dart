@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:assumemate/format.dart';
-import 'package:assumemate/logo/pop_up.dart';
 import 'package:assumemate/screens/assumptor_list_detail_screen.dart';
 import 'package:assumemate/screens/chat_message_screen.dart';
 import 'package:assumemate/service/service.dart';

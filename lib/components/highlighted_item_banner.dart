@@ -4,9 +4,6 @@ import 'package:assumemate/screens/item_detail_screen.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:assumemate/storage/secure_storage.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'dart:convert';
-import 'package:http/http.dart' as http;
 
 class HighlightedItemBanner extends StatefulWidget {
   final Map<String, dynamic> promotedListing;

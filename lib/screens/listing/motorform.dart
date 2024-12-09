@@ -816,8 +816,6 @@ class _MotorForm extends State<MotorForm> {
                 if (!regex.hasMatch(value)) {
                   return 'Invalid characters. Only letters, numbers, and spaces are allowed.';
                 }
-              } else if (value != null && value.trim().isEmpty) {
-                return 'Model cannot be empty or just spaces.';
               }
 
               return null; // No validation error

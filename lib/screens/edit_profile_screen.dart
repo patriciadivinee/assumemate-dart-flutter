@@ -29,7 +29,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   final SecureStorage secureStorage = SecureStorage();
   late String _profilePic;
   late bool isSaved;
-  bool _isLoading = false;
   String? _applicationStatus;
   final ImagePicker _picker = ImagePicker();
 

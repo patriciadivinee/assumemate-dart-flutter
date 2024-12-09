@@ -175,17 +175,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             itemCount: snapshot.data!.length,
             itemBuilder: (context, index) {
               var listing = snapshot.data![index];
-              var content = listing['list_content'];
-
-              String title = 'No title';
-
-              if (content['category'] == 'Real Estate') {
-                // title = content['title'];
-                title = 'No title';
-              } else {
-                title =
-                    '${content['make']} ${content['model']} (${content['year']}) - ${content['transmission']}';
-              }
 
               return ListingItem(
                 listing: listing,
@@ -304,10 +293,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     super.initState();
     _getToken();
     _getFollower();
-    _activeListings = _userType == 'assumptor'
-        ? fetchUserListings('ACTIVE')
-        : Future.value([]);
-    if (_userType == 'assumptor') _fetchCoins();
+    _activeListings = fetchUserListings('ACTIVE');
+    _fetchCoins();
     // _fetchCoins();
     // _activeListings = fetchUserListings('ACTIVE');
   }

@@ -1077,27 +1077,6 @@ class _SearchScreenState extends State<SearchScreen> {
       itemCount: listings.length,
       itemBuilder: (context, index) {
         var listing = listings[index];
-        var content = listing['list_content'];
-
-        var title;
-        if (content['category'] == "Car" ||
-            content['category'] == "Motorcycle") {
-          title =
-              '${content['model'] ?? 'Unknown model'} ${content['make'] ?? 'Unknown make'} ${content['year'] ?? 'Unknown year'}';
-        } else if (content['category'] == "Real Estate") {
-          title = '${content['title'] ?? 'No Title'}';
-        } else {
-          title = content['title'] ??
-              'No Title'; // Default case if category doesn't match
-        }
-
-        var images = (content['images'] is List)
-            ? content['images']
-            : (content['images'] is String ? [content['images']] : []);
-
-        String imageUrl = images.isNotEmpty
-            ? images[0]
-            : 'https://example.com/placeholder.png';
 
         return ListingItem(
           listing: listing,

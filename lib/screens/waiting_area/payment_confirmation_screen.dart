@@ -181,25 +181,26 @@ class _PaymentConfirmationScreenState extends State<PaymentConfirmationScreen> {
                     padding: const EdgeInsets.only(top: 30),
                     child: Column(
                       children: [
-                        Row(
-                          children: [
-                            const Text(
-                              'Offered price:',
-                              style: TextStyle(
-                                  fontSize: 16, fontWeight: FontWeight.w500),
-                            ),
-                            const Spacer(),
-                            Text(
-                              formatCurrency(double.parse(
-                                  orderDetails['offer_price'].toString())),
-                              style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black,
+                        if (orderDetails.containsKey('offer_price'))
+                          Row(
+                            children: [
+                              const Text(
+                                'Offered price:',
+                                style: TextStyle(
+                                    fontSize: 16, fontWeight: FontWeight.w500),
                               ),
-                            ),
-                          ],
-                        ),
+                              const Spacer(),
+                              Text(
+                                formatCurrency(double.parse(
+                                    orderDetails['offer_price'].toString())),
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black,
+                                ),
+                              ),
+                            ],
+                          ),
                         Row(
                           children: [
                             const Text(

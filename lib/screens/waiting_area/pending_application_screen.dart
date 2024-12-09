@@ -97,10 +97,6 @@ class PendingApplicationScreen extends StatelessWidget {
                   await Provider.of<FollowProvider>(context, listen: false)
                       .initializeFollow();
 
-                  final count =
-                      await Provider.of<FollowProvider>(context, listen: false)
-                          .followingCount;
-
                   await firebaseApi.requestNotificationPermission();
 
                   String? token = await FirebaseMessaging.instance.getToken();

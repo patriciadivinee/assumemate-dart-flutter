@@ -7,8 +7,6 @@ import 'package:assumemate/provider/profile_provider.dart';
 import 'package:assumemate/screens/listing/update_motor.dart';
 import 'package:assumemate/screens/listing/update_car.dart';
 import 'package:assumemate/screens/listing/update_restate.dart';
-import 'package:assumemate/screens/chat_message_screen.dart';
-import 'package:currency_text_input_formatter/currency_text_input_formatter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:assumemate/logo/pop_up.dart';
 import 'package:flutter/material.dart';
@@ -820,11 +818,7 @@ class _AssumptorListDetailScreenState extends State<AssumptorListDetailScreen> {
                             );
                           }
                         } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                                content:
-                                    Text('Listing details are not available.')),
-                          );
+                          popUp(context, 'Listing details are not available.');
                         }
                       } else if (value == 1) {
                         // Archive listing logic
@@ -899,9 +893,7 @@ class _AssumptorListDetailScreenState extends State<AssumptorListDetailScreen> {
                           );
                         } catch (e) {
                           // Display error message
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Error: $e')),
-                          );
+                          popUp(context, 'Error: $e');
                         }
                       },
                       icon: const Icon(
@@ -1078,8 +1070,6 @@ class ListingDetail {
 
     print(content['loanDuration']!);
 
-    double calculatedPrice = parsedMonthlyPayment * parsedNumberOfMonthsPaid;
-
     return ListingDetail(
         year: content['year']?.toString() ?? '0',
 
@@ -1195,19 +1185,6 @@ Widget buildSuggestionsList(Future<List<dynamic>> futureListings) {
               var listing = snapshot.data![index];
               if (listing == null) {
                 return const Center(child: Text('No Listing Data'));
-              }
-              var content = listing['list_content'];
-              var title;
-
-              if (content['category'] == "Car" ||
-                  content['category'] == "Motorcycle") {
-                title =
-                    '${content['model'] ?? 'Unknown model'} ${content['make'] ?? 'Unknown make'} ${content['year'] ?? 'Unknown year'}';
-              } else if (content['category'] == "Real Estate") {
-                title = content['title'] ?? 'No Title';
-              } else {
-                title = content['title'] ??
-                    'No Title'; // Default case if category doesn't match
               }
 
               return ListingItem(

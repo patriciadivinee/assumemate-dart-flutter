@@ -80,24 +80,7 @@ class _HighlightedItemScreenState extends State<HighlightedItemScreen> {
               final favorite = promoted[index];
 
               final listId = favorite['list_id'];
-              final listContent = listId != null ? listId['list_content'] : {};
-              final title = listContent['title'] ?? 'No Title';
-              final price = listContent['price']?.toString() ?? 'N/A';
-              final images = listContent['images'] ?? [];
-              final category = listContent['category']?.toString() ?? 'N/A';
               final listingId = listId['list_id']?.toString() ?? '';
-              final assumptorId = listId['user_id'].toString();
-
-              // Build title based on category
-              String listingTitle = title;
-              if (category == 'Real Estate') {
-                listingTitle = title;
-              } else if (category == 'Car' || category == 'Motorcycle') {
-                final model = listContent['model'] ?? 'Unknown model';
-                final make = listContent['make'] ?? 'Unknown make';
-                final year = listContent['year'] ?? 'Unknown year';
-                listingTitle = '$model $make $year';
-              }
 
               // Check if listing is valid before building
               if (listingId.isEmpty) {
