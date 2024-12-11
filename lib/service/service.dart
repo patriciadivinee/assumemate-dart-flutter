@@ -149,8 +149,13 @@ class ApiService {
         await secureStorage.storeToken(token);
         await secureStorage.storeRefreshToken(refreshToken);
         await secureStorage.storeApplicationStatus('PENDING');
+        print(responseData);
 
-        return {'profile': responseData['user'], 'credential': responseData};
+        return {
+          'profile': responseData['profile'],
+          'user': responseData['user'],
+          'credential': responseData
+        };
       } else {
         var responseBody = jsonDecode(response.body);
         print(responseBody);

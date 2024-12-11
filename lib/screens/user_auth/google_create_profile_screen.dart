@@ -1,5 +1,6 @@
 // ignore_for_file: unused_import, sized_box_for_whitespace, prefer_const_constructors
 import 'dart:typed_data';
+import 'package:assumemate/provider/usertype_provider.dart';
 import 'package:assumemate/storage/secure_storage.dart';
 import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/services.dart';
@@ -85,8 +86,12 @@ class _GoogleCreateProfileScreenState extends State<GoogleCreateProfileScreen> {
           picture!);
 
       if (response.containsKey('profile')) {
-        final token = await secureStorage.getToken();
-        print(token);
+        final user = response['user'];
+        final userType = await secureStorage.getUserType();
+        final userProvider = Provider.of<UserProvider>(context, listen: false);
+        userProvider.setRoles(
+            isAssumptor: user['is_assumptor'], isAssumee: user['is_assumee']);
+        userProvider.setUserType(userType!);
         Navigator.pushReplacement(
             context,
             MaterialPageRoute(

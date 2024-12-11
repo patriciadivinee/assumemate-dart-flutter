@@ -406,12 +406,11 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen>
               ),
               InkWell(
                 onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const ChangePasswordScreen(),
-                    ),
-                  );
+                  if (isAssumee && isAssumptor) {
+                    switchType(context);
+                  } else {
+                    showConfirmation(context, () => addRole());
+                  }
                 },
                 child: Container(
                   padding: const EdgeInsets.all(10),

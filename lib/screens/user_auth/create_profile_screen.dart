@@ -1,5 +1,7 @@
 // ignore_for_file: unused_import, sized_box_for_whitespace, prefer_const_constructors
 import 'dart:typed_data';
+import 'package:assumemate/provider/usertype_provider.dart';
+import 'package:assumemate/storage/secure_storage.dart';
 import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -28,6 +30,7 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
   late PhotosPermission storagePermission;
   final ApiService apiService = ApiService();
   final ImagePicker _picker = ImagePicker();
+  final SecureStorage secureStorage = SecureStorage();
 
   String? roleSelected;
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
@@ -99,6 +102,12 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
           picture!);
 
       if (response.containsKey('profile')) {
+        final user = response['user'];
+        final userType = await secureStorage.getUserType();
+        final userProvider = Provider.of<UserProvider>(context, listen: false);
+        userProvider.setRoles(
+            isAssumptor: user['is_assumptor'], isAssumee: user['is_assumee']);
+        userProvider.setUserType(userType!);
         Navigator.pushReplacement(
             context,
             MaterialPageRoute(
