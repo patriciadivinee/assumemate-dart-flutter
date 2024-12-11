@@ -1,9 +1,11 @@
 import 'package:assumemate/format.dart';
+import 'package:assumemate/provider/usertype_provider.dart';
 import 'package:assumemate/screens/payment_receipt_screen.dart';
 import 'package:assumemate/screens/waiting_area/payment_confirmation_screen.dart';
 import 'package:assumemate/storage/secure_storage.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 class TransactionList extends StatefulWidget {
   final Map<String, dynamic> transaction;
@@ -18,15 +20,8 @@ class TransactionList extends StatefulWidget {
 class _TransactionListState extends State<TransactionList> {
   final SecureStorage secureStorage = SecureStorage();
   Map<String, dynamic>? trans;
-  String? _userType;
-
-  Future<void> _getUserType() async {
-    _userType = await secureStorage.getUserType();
-  }
-
   @override
   void initState() {
-    _getUserType();
     trans = widget.transaction;
     print(trans);
     super.initState();
@@ -34,6 +29,7 @@ class _TransactionListState extends State<TransactionList> {
 
   @override
   Widget build(BuildContext context) {
+    final userType = Provider.of<UserProvider>(context, listen: false).userType;
     final listing = trans!['listing'];
     final content = trans!['listing']['list_content'];
     String? title;
@@ -46,7 +42,7 @@ class _TransactionListState extends State<TransactionList> {
 
     return InkWell(
         onTap: () {
-          trans!['order_status'] == 'PENDING' && _userType == 'assumee'
+          trans!['order_status'] == 'PENDING' && userType == 'assumee'
               ? Navigator.push(
                   context,
                   MaterialPageRoute(

@@ -25,14 +25,14 @@ class _ListingItemState extends State<ListingItem> {
   bool isLoading = true; // For loading state
   String? _userId;
 
-  Future<void> _getUserType() async {
+  Future<void> _getUserId() async {
     _userId = await secureStorage.getUserId();
   }
 
   @override
   void initState() {
     super.initState();
-    _getUserType();
+    _getUserId();
   }
 
   @override

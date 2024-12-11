@@ -1,4 +1,5 @@
 import 'package:assumemate/logo/pop_up.dart';
+import 'package:assumemate/provider/usertype_provider.dart';
 import 'package:assumemate/screens/search_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -32,17 +33,9 @@ class _FeedScreenState extends State<FeedScreen> {
   late Future<List<dynamic>> houseAndLotListings;
   late Future<List<dynamic>> carListings;
   late Future<List<dynamic>> motorcycleListings;
-  String? _userType;
   String? _appStatus;
   final ValueNotifier<bool> _isSpeedDialOpen = ValueNotifier(false);
   List<dynamic> _promotedListings = [];
-
-  Future<void> _getUserType() async {
-    String? userType = await secureStorage.getUserType();
-    setState(() {
-      _userType = userType;
-    });
-  }
 
   Future<void> _getappStatus() async {
     String? appStats = await secureStorage.getApplicationStatus();
@@ -55,7 +48,6 @@ class _FeedScreenState extends State<FeedScreen> {
   void initState() {
     super.initState();
     pageController = PageController(initialPage: 0, viewportFraction: 0.95);
-    _getUserType();
     _getappStatus();
     _fetchPromotedListings();
     _startAutoScroll();
@@ -240,6 +232,7 @@ class _FeedScreenState extends State<FeedScreen> {
   @override
   Widget build(BuildContext context) {
     final favoriteProvider = Provider.of<FavoriteProvider>(context);
+    final userType = Provider.of<UserProvider>(context).userType;
 
     int favoriteCount = favoriteProvider.favoriteIds.length;
     final tabTextStyle =
@@ -439,7 +432,7 @@ class _FeedScreenState extends State<FeedScreen> {
             ),
           ),
         ),
-        floatingActionButton: (_userType == 'assumptor')
+        floatingActionButton: (userType == 'assumptor')
             ? SpeedDial(
                 icon: Icons.add,
                 openCloseDial: _isSpeedDialOpen,

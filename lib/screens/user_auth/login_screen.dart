@@ -1,5 +1,7 @@
 import 'package:assumemate/format.dart';
 import 'package:assumemate/provider/follow_provider.dart';
+import 'package:assumemate/provider/usertype_provider.dart';
+import 'package:assumemate/screens/waiting_area/choose_logged_as.dart';
 import 'package:flutter/material.dart';
 // import 'package:assumemate/logo/check_splash.dart';
 // import 'package:assumemate/screens/user_auth/create_profile_screen.dart';
@@ -86,6 +88,7 @@ class _LoginScreenState extends State<LoginScreen> {
         await GoogleSignInApi.logout();
         popUp(context, response['error']);
       } else {
+        final userProvider = Provider.of<UserProvider>(context, listen: false);
         await Provider.of<ProfileProvider>(context, listen: false)
             .initializeToken();
         await Provider.of<FavoriteProvider>(context, listen: false)
@@ -93,17 +96,31 @@ class _LoginScreenState extends State<LoginScreen> {
         await Provider.of<FollowProvider>(context, listen: false)
             .initializeFollow();
 
-        final count = await Provider.of<FollowProvider>(context, listen: false)
-            .followingCount;
-
-        print(count);
-        // final status = response['is_approved'];
-        // final token = response['access_token'];
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (context) => const HomeScreen()),
-          (Route<dynamic> route) => false,
-        );
+        // userProvider.setUserType(response['role']);
+        final isAssumptor = response['is_assumptor'];
+        final isAssumee = response['is_assumee'];
+        print(isAssumptor);
+        print(isAssumee);
+        userProvider.setRoles(isAssumptor: isAssumptor, isAssumee: isAssumee);
+        if (isAssumptor && isAssumee) {
+          userProvider.setUserType('assumptor');
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => const ChooseLoggedAs()),
+            (Route<dynamic> route) => false,
+          );
+        } else {
+          if (isAssumee) {
+            userProvider.setUserType('assumee');
+          } else if (isAssumptor) {
+            userProvider.setUserType('assumptor');
+          }
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => const HomeScreen()),
+            (Route<dynamic> route) => false,
+          );
+        }
       }
     } catch (e) {
       await GoogleSignInApi.logout();

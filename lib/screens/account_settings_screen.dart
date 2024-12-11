@@ -1,6 +1,9 @@
 import 'package:app_settings/app_settings.dart';
 import 'package:assumemate/api/firebase_api.dart';
 import 'package:assumemate/logo/pop_up.dart';
+import 'package:assumemate/provider/usertype_provider.dart';
+import 'package:assumemate/screens/account_information_screen.dart';
+import 'package:assumemate/screens/home_screen.dart';
 import 'package:assumemate/screens/user_auth/login_screen.dart';
 import 'package:assumemate/storage/secure_storage.dart';
 import 'package:flutter/material.dart';
@@ -9,6 +12,7 @@ import 'package:assumemate/service/service.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 final String? clientID = dotenv.env['PAYPAL_CLIENT_ID'];
@@ -29,6 +33,7 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen>
   final subtitleStyle = GoogleFonts.poppins();
 
   bool notifEnabled = false;
+  bool isLoading = false;
 
   @override
   void initState() {
@@ -127,26 +132,6 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen>
     }
   }
 
-  Future<void> deact() async {
-    try {
-      final response = await apiService.deactivate();
-
-      if (response.containsKey('success')) {
-        await apiService.sessionExpired();
-        await GoogleSignInApi.logout();
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (context) => const LoginScreen()),
-          (Route<dynamic> route) => false,
-        );
-      } else {
-        popUp(context, response['error']);
-      }
-    } catch (e) {
-      popUp(context, 'An error occurred: $e');
-    }
-  }
-
   Widget buildToggleRow({
     required String title,
     required String descriptionEnabled,
@@ -200,8 +185,97 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen>
     );
   }
 
+  Future<void> addRole() async {
+    try {
+      final response = await apiService.addUserType(true, true);
+
+      if (response.containsKey('message')) {
+        context
+            .read<UserProvider>()
+            .setRoles(isAssumptor: true, isAssumee: true);
+
+        return showDialog(
+          context: context,
+          barrierDismissible: true,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12.0),
+              ),
+              actionsPadding:
+                  const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
+              contentPadding:
+                  const EdgeInsets.only(left: 18, right: 18, top: 12),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'User type switched! Continue?',
+                    style: const TextStyle(
+                        fontSize: 14, fontWeight: FontWeight.bold),
+                    textAlign: TextAlign.start,
+                  ),
+                ],
+              ),
+              actions: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    TextButton(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                      },
+                      child: const Text(
+                        'Close',
+                        style: TextStyle(
+                            color: Color(0xff4A8AF0),
+                            fontWeight: FontWeight.w400),
+                      ),
+                    ),
+                    Consumer<UserProvider>(
+                        builder: (context, userprovider, child) {
+                      return TextButton(
+                        onPressed: () async {
+                          final role = userprovider.userType;
+                          if (role == 'assumptor') {
+                            userprovider.setUserType('assumee');
+                          } else if (role == 'assumee') {
+                            userprovider.setUserType('assumptor');
+                          }
+                          Navigator.pushAndRemoveUntil(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => const HomeScreen()),
+                            (Route<dynamic> route) => false,
+                          );
+                        },
+                        child: const Text(
+                          'Confirm',
+                          style: TextStyle(
+                              color: Color(0xff4A8AF0),
+                              fontWeight: FontWeight.w400),
+                        ),
+                      );
+                    }),
+                  ],
+                ),
+              ],
+            );
+          },
+        );
+      }
+    } catch (e) {
+      popUp(context, 'An error occurred');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final userType = userProvider.userType;
+    final isAssumptor = userProvider.isAssumptor;
+    final isAssumee = userProvider.isAssumee;
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: const Color(0xff4A8AF0),
@@ -236,7 +310,14 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen>
                 icon: Icons.notifications_outlined,
               ),
               InkWell(
-                onTap: () {},
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const AccountInformationScreen(),
+                    ),
+                  );
+                },
                 child: Container(
                   padding: const EdgeInsets.all(10),
                   child: Row(
@@ -323,36 +404,70 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen>
                   ),
                 ),
               ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () async {
-                  showConfirmation(
+              InkWell(
+                onTap: () {
+                  Navigator.push(
                     context,
-                    'Are you sure you want to deactivate your account?',
-                    'Deactivating your account will prevent others from viewing your listings or making offers.',
-                    () => deact(),
+                    MaterialPageRoute(
+                      builder: (context) => const ChangePasswordScreen(),
+                    ),
                   );
                 },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xff683131),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 40,
-                    vertical: 8,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30.0),
-                  ),
-                ),
-                child: const Text(
-                  "Deactivate",
-                  style: TextStyle(
-                    color: Color(0xffFFFEF7),
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13,
+                child: Container(
+                  padding: const EdgeInsets.all(10),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.switch_account_outlined,
+                        color: Color(0xff4A8AF0),
+                        size: 36,
+                      ),
+                      const SizedBox(width: 15),
+                      Expanded(
+                        child: RichText(
+                          text: TextSpan(
+                            style: subtitleStyle,
+                            children: <TextSpan>[
+                              TextSpan(
+                                text: 'Switch user type \n',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                  color: Colors.black,
+                                ),
+                              ),
+                              TextSpan(
+                                text: 'You\'re currently logged as $userType',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () {
+                          print('isAssumee');
+                          print(isAssumee);
+                          print(isAssumptor);
+
+                          if (isAssumee && isAssumptor) {
+                            switchType(context);
+                          } else {
+                            showConfirmation(context, () => addRole());
+                          }
+                        },
+                        icon: const Icon(Icons.chevron_right_rounded),
+                        iconSize: 28,
+                        color: const Color(0xFF4A8AF0),
+                      )
+                    ],
                   ),
                 ),
               ),
-              const SizedBox(height: 5),
+              const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: () async {
                   await apiService.sessionExpired();
@@ -391,8 +506,10 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen>
     );
   }
 
-  void showConfirmation(
-      BuildContext context, String title, String? desc, Function confirm) {
+  void showConfirmation(BuildContext context, Function confirm) {
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final userType = userProvider.userType;
+
     showDialog(
       context: context,
       barrierDismissible: true,
@@ -408,19 +525,20 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen>
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                title,
+                userType == 'assumptor' ? 'Be an assumee?' : 'Be an assumptor?',
                 style:
                     const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                 textAlign: TextAlign.start,
               ),
               const SizedBox(height: 8),
-              if (desc != null)
-                Text(
-                  desc,
-                  style: const TextStyle(
-                      fontSize: 12, fontWeight: FontWeight.w500),
-                  textAlign: TextAlign.start,
-                )
+              Text(
+                userType == 'assumptor'
+                    ? 'You are not an assumee. Be an assumee to unlock some exclusive features.'
+                    : 'You are not an assumptor. Be an assumee to unlock some exclusive features.',
+                style:
+                    const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                textAlign: TextAlign.start,
+              )
             ],
           ),
           actions: [
@@ -438,13 +556,85 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen>
                   ),
                 ),
                 TextButton(
-                  onPressed: () => confirm(),
+                  onPressed: () => {Navigator.of(context).pop(), confirm()},
                   child: const Text(
                     'Confirm',
                     style: TextStyle(
                         color: Color(0xff4A8AF0), fontWeight: FontWeight.w400),
                   ),
                 ),
+              ],
+            )
+          ],
+        );
+      },
+    );
+  }
+
+  void switchType(BuildContext context) {
+    final userType = Provider.of<UserProvider>(context, listen: false).userType;
+
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12.0),
+          ),
+          actionsPadding:
+              const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
+          contentPadding: const EdgeInsets.only(left: 18, right: 18, top: 12),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                userType == 'assumptor'
+                    ? 'Switch as assumee?'
+                    : 'Switch as assumptor?',
+                style:
+                    const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                textAlign: TextAlign.start,
+              ),
+            ],
+          ),
+          actions: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  child: const Text(
+                    'Cancel',
+                    style: TextStyle(
+                        color: Color(0xff4A8AF0), fontWeight: FontWeight.w400),
+                  ),
+                ),
+                Consumer<UserProvider>(builder: (context, userprovider, child) {
+                  return TextButton(
+                    onPressed: () => {
+                      if (userType == 'assumee')
+                        {userprovider.setUserType('assumptor')}
+                      else if (userType == 'assumptor')
+                        {userprovider.setUserType('assumee')},
+                      // Navigator.of(context).pop()
+                      Navigator.pushAndRemoveUntil(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => const HomeScreen()),
+                        (Route<dynamic> route) => false,
+                      )
+                    },
+                    child: const Text(
+                      'Confirm',
+                      style: TextStyle(
+                          color: Color(0xff4A8AF0),
+                          fontWeight: FontWeight.w400),
+                    ),
+                  );
+                })
               ],
             )
           ],

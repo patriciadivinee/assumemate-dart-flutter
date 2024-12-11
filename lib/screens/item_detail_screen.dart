@@ -3,6 +3,7 @@
 import 'dart:async';
 import 'package:assumemate/components/listing_item.dart';
 import 'package:assumemate/format.dart';
+import 'package:assumemate/provider/usertype_provider.dart';
 import 'package:assumemate/screens/chat_message_screen.dart';
 import 'package:assumemate/screens/other_profile_screen.dart';
 import 'package:assumemate/screens/profile_screen.dart';
@@ -35,7 +36,6 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
   bool isFav = false;
   ListingDetail? listingDetail; // Variable to hold the listing details
   String? assumptorId;
-  String? _userType;
   String? _applicationStatus;
   String? _userId;
 
@@ -62,7 +62,6 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
   }
 
   Future<void> _getUserType() async {
-    _userType = await secureStorage.getUserType();
     _applicationStatus = await secureStorage.getApplicationStatus();
     _userId = await secureStorage.getUserId();
   }
@@ -167,6 +166,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final favoriteProvider = Provider.of<FavoriteProvider>(context);
+    final userType = Provider.of<UserProvider>(context).userType;
 
     // Show a loading indicator if listingDetail is still null
     if (listingDetail == null) {
@@ -796,7 +796,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
             ],
           ),
         ),
-        bottomNavigationBar: (_userType == 'assumee' &&
+        bottomNavigationBar: (userType == 'assumee' &&
                 listingDetail?.status == 'ACTIVE')
             ? Row(
                 mainAxisSize: MainAxisSize.min,

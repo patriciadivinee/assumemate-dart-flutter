@@ -1,11 +1,13 @@
 import 'dart:convert';
 
 import 'package:assumemate/components/transaction_list.dart';
+import 'package:assumemate/provider/usertype_provider.dart';
 import 'package:http/http.dart' as http;
 import 'package:assumemate/service/service.dart';
 import 'package:assumemate/storage/secure_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 
 class AssumeManagementScreen extends StatefulWidget {
   const AssumeManagementScreen({super.key});
@@ -23,7 +25,7 @@ class _AssumeManagementScreenState extends State<AssumeManagementScreen> {
   late Future<List<dynamic>> _cancelledTransaction;
 
   Future<List<dynamic>> fetchCurrentTransactions() async {
-    final userType = await SecureStorage().getUserType();
+    final userType = Provider.of<UserProvider>(context, listen: false).userType;
     final token = await secureStorage.getToken();
     final apiUrl = userType == 'assumptor'
         ? Uri.parse('$baseURL/assumptor/on-going/transactions/')
@@ -45,7 +47,7 @@ class _AssumeManagementScreenState extends State<AssumeManagementScreen> {
   }
 
   Future<List<dynamic>> fetchCancelledTransactions() async {
-    final userType = await SecureStorage().getUserType();
+    final userType = Provider.of<UserProvider>(context, listen: false).userType;
     final token = await secureStorage.getToken();
     final apiUrl = userType == 'assumptor'
         ? Uri.parse('$baseURL/assumptor/cancelled/transactions/')
@@ -68,7 +70,7 @@ class _AssumeManagementScreenState extends State<AssumeManagementScreen> {
 
   Future<List<dynamic>> fetchCompletedCancelledTransactions(
       String status) async {
-    final userType = await SecureStorage().getUserType();
+    final userType = Provider.of<UserProvider>(context, listen: false).userType;
     final token = await secureStorage.getToken();
     final apiUrl = userType == 'assumptor'
         ? Uri.parse('$baseURL/assumptor/$status/transactions/')

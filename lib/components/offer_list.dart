@@ -40,6 +40,7 @@ class _OfferListState extends State<OfferList> {
   final SecureStorage secureStorage = SecureStorage();
   final ApiService apiService = ApiService();
   bool _isLoading = false;
+
   void _acceptOffer() async {
     setState(() {
       _isLoading = true;
@@ -54,7 +55,7 @@ class _OfferListState extends State<OfferList> {
 
       if (response.containsKey('message')) {
         final oresponse = await apiService.createOrder(widget.userId.toString(),
-            widget.listId, widget.offerId.toString(), widget.reservation);
+            widget.offerId.toString(), widget.listId, widget.reservation);
 
         if (oresponse.containsKey('message')) {
           widget.onOfferRejected(widget.offerId);

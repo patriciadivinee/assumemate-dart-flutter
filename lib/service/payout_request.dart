@@ -205,7 +205,7 @@ class _PayoutRequestState extends State<PayoutRequest> {
                                         ),
                                         Expanded(
                                           child: Text(
-                                            'We’re processing your payout request. Please allow up to 3-7 business days for completion..',
+                                            'We’re processing your payout request. Please allow up to 3-7 business days for completion.',
                                             style: TextStyle(letterSpacing: 1),
                                             textAlign: TextAlign.center,
                                             softWrap: true,

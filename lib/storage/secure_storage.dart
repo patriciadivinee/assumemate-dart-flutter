@@ -27,6 +27,24 @@ class SecureStorage {
     return await _storage.read(key: 'user_type');
   }
 
+  Future<void> storeIsAssumee(bool isAssumee) async {
+    await _storage.write(key: 'is_assumee', value: isAssumee.toString());
+  }
+
+  Future<bool> getIsAssumee() async {
+    final value = await _storage.read(key: 'is_assumee');
+    return value?.toLowerCase() == 'true';
+  }
+
+  Future<void> storeIsAssumptor(bool isAssumptor) async {
+    await _storage.write(key: 'is_assumptor', value: isAssumptor.toString());
+  }
+
+  Future<bool> getIsAssumptor() async {
+    final value = await _storage.read(key: 'is_assumptor');
+    return value?.toLowerCase() == 'true';
+  }
+
   Future<void> storeApplicationStatus(String applicationStatus) async {
     await _storage.write(key: 'app_status', value: applicationStatus);
   }
@@ -49,6 +67,8 @@ class SecureStorage {
     await _storage.delete(key: 'user_type');
     await _storage.delete(key: 'app_status');
     await _storage.delete(key: 'user_id');
+    await _storage.delete(key: 'is_assumptor');
+    await _storage.delete(key: 'is_assumee');
   }
 
 // jericho

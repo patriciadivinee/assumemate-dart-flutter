@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:assumemate/components/listing_item.dart';
 import 'package:assumemate/logo/pop_up.dart';
 import 'package:assumemate/provider/follow_provider.dart';
+import 'package:assumemate/provider/usertype_provider.dart';
 import 'package:assumemate/screens/ListingRequestScreen.dart';
 import 'package:assumemate/screens/assume_management_screen.dart';
 import 'package:assumemate/screens/assumptor_listing_screen.dart';
@@ -15,12 +16,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-// import 'package:assumemate/components/offer_list.dart';
 import 'package:assumemate/logo/loading_animation.dart';
 import 'package:assumemate/provider/profile_provider.dart';
 import 'package:assumemate/screens/account_settings_screen.dart';
 import 'package:assumemate/screens/edit_profile_screen.dart';
-// import 'package:assumemate/screens/offer_list_screen.dart';
 import 'package:assumemate/screens/payment_screen.dart';
 import 'package:assumemate/service/service.dart';
 import 'package:assumemate/storage/secure_storage.dart';
@@ -46,7 +45,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   final SecureStorage secureStorage = SecureStorage();
   final ApiService apiService = ApiService();
-  String? _userType;
 
   Future<void> _fetchCoins() async {
     final wallId = await secureStorage.getUserId();
@@ -256,11 +254,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void _getToken() async {
     final tok = await secureStorage.getToken();
     final status = await secureStorage.getApplicationStatus();
-    final type = await secureStorage.getUserType();
     setState(() {
       token = tok;
       _applicationStatus = status;
-      _userType = type;
     });
   }
 
@@ -303,6 +299,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     final profileProvider = Provider.of<ProfileProvider>(context);
     final followProvider = Provider.of<FollowProvider>(context);
+    final userType = Provider.of<UserProvider>(context).userType;
     final tabTextStyle =
         GoogleFonts.poppins(textStyle: const TextStyle(fontSize: 13));
 
@@ -321,7 +318,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (profileProvider.userProfile.isNotEmpty) {
       return Scaffold(
           body: DefaultTabController(
-        length: (_userType == 'assumptor') ? 2 : 1,
+        length: (userType == 'assumptor') ? 2 : 1,
         child: NestedScrollView(
           headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
             return [
@@ -526,7 +523,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   collapseMode: CollapseMode.pin,
                 ),
               ),
-              if (_userType == 'assumptor')
+              if (userType == 'assumptor')
                 SliverToBoxAdapter(
                   child: Padding(
                       padding: const EdgeInsets.all(10),
@@ -628,7 +625,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 8),
-                      if (_userType == 'assumptor')
+                      if (userType == 'assumptor')
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -729,7 +726,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     tabs: [
-                      if (_userType == 'assumptor')
+                      if (userType == 'assumptor')
                         Tab(child: Text('Listings', style: tabTextStyle)),
                       Tab(child: Text('Reviews', style: tabTextStyle)),
                     ],
@@ -743,7 +740,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             padding: const EdgeInsets.all(10),
             child: TabBarView(
               children: [
-                if (_userType == 'assumptor') buildListingGrid(_activeListings),
+                if (userType == 'assumptor') buildListingGrid(_activeListings),
                 buildRatingList(fetchRatings()),
               ],
             ),

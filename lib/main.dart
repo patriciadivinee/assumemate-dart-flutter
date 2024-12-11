@@ -1,5 +1,6 @@
 import 'package:assumemate/api/firebase_api.dart';
 import 'package:assumemate/provider/follow_provider.dart';
+import 'package:assumemate/provider/usertype_provider.dart';
 import 'package:assumemate/screens/account_settings_screen.dart';
 import 'package:assumemate/screens/assumptor_list_detail_screen.dart';
 import 'package:assumemate/screens/chat_message_screen.dart';
@@ -35,6 +36,7 @@ void main() async {
   final profileProvider = ProfileProvider();
   final faveProvider = FavoriteProvider();
   final followProvider = FollowProvider();
+  final userProvider = UserProvider();
   final token = await profileProvider.secureStorage.getToken();
 
   // jericho
@@ -68,6 +70,7 @@ void main() async {
     runApp(
       MultiProvider(
         providers: [
+          ChangeNotifierProvider(create: (_) => userProvider),
           ChangeNotifierProvider(create: (_) => profileProvider),
           ChangeNotifierProvider(create: (_) => faveProvider),
           ChangeNotifierProvider(create: (_) => followProvider),

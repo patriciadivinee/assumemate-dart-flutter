@@ -219,13 +219,13 @@ class ApiService {
           await secureStorage.storeUserId(userId);
         }
 
+        bool isAssumptor = false;
+        bool isAssumee = false;
+
         if (responseData.containsKey('user_role')) {
           final userRole = responseData['user_role'];
-          if (userRole['is_assumptor'] == true) {
-            await secureStorage.storeUserType('assumptor');
-          } else if (userRole['is_assumee'] == true) {
-            await secureStorage.storeUserType('assumee');
-          }
+          isAssumptor = userRole['is_assumptor'];
+          isAssumee = userRole['is_assumee'];
         }
         // Save FCM token after login
         final prefs = await SharedPreferences.getInstance();
@@ -245,7 +245,9 @@ class ApiService {
         }
         return {
           'access_token': responseData['access'],
-          'is_approved': responseData['user']['is_approved']
+          'is_approved': responseData['user']['is_approved'],
+          'is_assumptor': isAssumptor,
+          'is_assumee': isAssumee
         };
       } else {
         if (responseData.containsKey('error')) {
@@ -501,6 +503,32 @@ class ApiService {
       } else {
         return {'error': 'Failed to update profile'};
       }
+    } catch (e) {
+      return {'error': 'An error occured: $e'};
+    }
+  }
+
+  Future<Map<String, dynamic>> addUserType(
+      bool isAssumptor, bool isAssumee) async {
+    final apiUrl = Uri.parse('$baseURL/add/user/type/');
+    final token = await secureStorage.getToken();
+
+    Map<String, dynamic> role = {
+      'is_assumee': isAssumee,
+      'is_assumptor': isAssumptor
+    };
+
+    try {
+      final response = await http.patch(
+        apiUrl,
+        headers: {
+          "Content-Type": "application/json; charset=UTF-8",
+          "Authorization": "Bearer $token",
+        },
+        body: jsonEncode(role),
+      );
+
+      return jsonDecode(response.body);
     } catch (e) {
       return {'error': 'An error occured: $e'};
     }
@@ -917,8 +945,54 @@ class ApiService {
     }
   }
 
+  Future<Map<String, dynamic>> requestRefund(String orderId) async {
+    final apiUrl = Uri.parse('$baseURL/request/refund/');
+    final token = await secureStorage.getToken();
+
+    final Map<String, dynamic> requestPayload = {
+      'order_id': orderId,
+    };
+
+    try {
+      final response = await http.post(apiUrl,
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer $token",
+          },
+          body: jsonEncode(requestPayload));
+
+      if (response.statusCode == 201) {
+        return jsonDecode(response.body);
+      } else {
+        return jsonDecode(response.body);
+      }
+    } catch (e) {
+      return {'error': 'An error occured: $e'};
+    }
+  }
+
   Future<Map<String, dynamic>> getRequestPayout(String orderId) async {
     final apiUrl = Uri.parse('$baseURL/get/request/payout/$orderId');
+    final token = await secureStorage.getToken();
+
+    try {
+      final response = await http.get(apiUrl, headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer $token",
+      });
+
+      if (response.statusCode == 201) {
+        return jsonDecode(response.body);
+      } else {
+        return jsonDecode(response.body);
+      }
+    } catch (e) {
+      return {'error': 'An error occured: $e'};
+    }
+  }
+
+  Future<Map<String, dynamic>> getRequestRefund(String orderId) async {
+    final apiUrl = Uri.parse('$baseURL/get/request/refund/$orderId');
     final token = await secureStorage.getToken();
 
     try {

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:assumemate/format.dart';
+import 'package:assumemate/provider/usertype_provider.dart';
 import 'package:assumemate/screens/Report_user.dart';
 import 'package:assumemate/screens/payment_receipt_screen.dart';
 import 'package:assumemate/screens/rating.dart';
@@ -50,7 +51,6 @@ class _ChatMessageState extends State<ChatMessageScreen> {
   WebSocketChannel? _inboxChannel;
   String? _userId;
   String? _chatroomId;
-  String? _userType;
   Timer? _typingTimer;
   bool _isTyping = false;
   bool _otherIsTyping = false;
@@ -68,8 +68,7 @@ class _ChatMessageState extends State<ChatMessageScreen> {
 
   Map<String, dynamic> offerDetails = {};
 
-  Future<void> _getUserType() async {
-    _userType = await secureStorage.getUserType();
+  Future<void> _getUserId() async {
     _userId = await secureStorage.getUserId();
   }
 
@@ -410,8 +409,8 @@ class _ChatMessageState extends State<ChatMessageScreen> {
   }
 
   Future<void> _getOffer() async {
-    _userType = await secureStorage.getUserType();
-    final response = (_userType == 'assumee')
+    final userType = Provider.of<UserProvider>(context, listen: false).userType;
+    final response = (userType == 'assumee')
         ? await apiService.getActiveOffer(int.parse(widget.receiverId))
         : await apiService.getListingOffer(int.parse(widget.receiverId));
 
@@ -488,7 +487,7 @@ class _ChatMessageState extends State<ChatMessageScreen> {
     });
 
     try {
-      await _getUserType();
+      await _getUserId();
       await _getProfile();
       await _fetchMessages();
       await _getOffer();
@@ -524,6 +523,8 @@ class _ChatMessageState extends State<ChatMessageScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final userType = Provider.of<UserProvider>(context).userType;
+
     if (_isLoading) {
       return Container(
           color: const Color(0xffD1E3FE),
@@ -724,7 +725,7 @@ class _ChatMessageState extends State<ChatMessageScreen> {
                                 ],
                               )),
                               const SizedBox(height: 10),
-                              (_userType == 'assumptor')
+                              (userType == 'assumptor')
                                   ? (offerDetails['offerStatus'] == 'PENDING')
                                       ? actionButtons(
                                           'REJECT',

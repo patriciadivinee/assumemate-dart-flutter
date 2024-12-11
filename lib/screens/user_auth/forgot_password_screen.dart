@@ -122,8 +122,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               style: ButtonStyle(
                 backgroundColor:
                     WidgetStateProperty.all(const Color(0xff4A8AF0)),
-                minimumSize:
-                    WidgetStateProperty.all(const Size(double.infinity, 50)),
+                minimumSize: WidgetStateProperty.all(const Size(150, 50)),
                 shape: WidgetStateProperty.all(
                   RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(30.0),

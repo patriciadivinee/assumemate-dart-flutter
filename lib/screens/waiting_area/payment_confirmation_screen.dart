@@ -59,6 +59,8 @@ class _PaymentConfirmationScreenState extends State<PaymentConfirmationScreen> {
           }
         });
         print(orderDetails);
+        print(orderDetails['offer_price']);
+
         print(address);
         print(price);
         print(firstImage);
