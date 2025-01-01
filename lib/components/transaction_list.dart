@@ -1,6 +1,7 @@
 import 'package:assumemate/format.dart';
 import 'package:assumemate/provider/usertype_provider.dart';
 import 'package:assumemate/screens/payment_receipt_screen.dart';
+import 'package:assumemate/screens/rating_list.dart';
 import 'package:assumemate/screens/waiting_area/payment_confirmation_screen.dart';
 import 'package:assumemate/storage/secure_storage.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -32,6 +33,11 @@ class _TransactionListState extends State<TransactionList> {
     final userType = Provider.of<UserProvider>(context, listen: false).userType;
     final listing = trans!['listing'];
     final content = trans!['listing']['list_content'];
+
+    //changes ni joselito
+    final user_id = listing['user_id'].toString(); // Make sure it's a string
+    final list_id = listing['list_id'].toString();
+
     String? title;
     if (content['category'] == 'Real Estate') {
       title = content['title'];
@@ -39,6 +45,8 @@ class _TransactionListState extends State<TransactionList> {
       title = '${content['make']} ${content['model']} ${content['year']}';
     }
     String address = listing['list_content']['address'];
+    print('Listing ID}, Value: ${listing['list_id']}');
+    print('USER for rate ID, Value: ${user_id}');
 
     return InkWell(
         onTap: () {
@@ -59,7 +67,7 @@ class _TransactionListState extends State<TransactionList> {
                   ));
         },
         child: SizedBox(
-          height: MediaQuery.of(context).size.height * .138,
+          height: MediaQuery.of(context).size.height * .15 + 42,
           child: Card(
             color: Colors.white,
             // margin: const EdgeInsets.only(left: 3, top: 6, right: 5),
@@ -185,9 +193,11 @@ class _TransactionListState extends State<TransactionList> {
                             const Text(
                               'Reservation price:',
                               style: TextStyle(
-                                  fontSize: 13, fontWeight: FontWeight.w500),
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
-                            const Spacer(),
+                            const Spacer(), // Spacer pushes the price text to the left
                             Text(
                               formatCurrency(
                                   double.parse(trans!['order_price'])),
@@ -199,6 +209,56 @@ class _TransactionListState extends State<TransactionList> {
                             ),
                           ],
                         ),
+                        //changes ni joselito
+                        const SizedBox(
+                            height:
+                                5), // Add spacing between price and rate button
+
+                        if (userType == 'assumee' &&
+                            trans!['order_status'] == 'COMPLETED')
+                          Align(
+                              alignment: Alignment
+                                  .centerRight, // Align the button to the right
+                              child: OutlinedButton.icon(
+                                style: OutlinedButton.styleFrom(
+                                  padding:
+                                      const EdgeInsets.symmetric(horizontal: 8),
+                                  side: const BorderSide(
+                                      color: Color(0xff4A8AF0), width: 1),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(
+                                        8), // Rounded button
+                                  ),
+                                ),
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                        builder: (context) => RateListPage(
+                                              user_id: user_id,
+                                              list_id: list_id,
+                                              images: content['images'],
+                                            )),
+                                  );
+                                  print(
+                                      'Rate button clicked for user: ${listing['user_id']}');
+                                  print(
+                                      'Rate button clicked for users item: ${listing['list_id']}');
+                                },
+                                icon: const Icon(
+                                  Icons.star,
+                                  color: Colors.amber,
+                                  size: 16,
+                                ),
+                                label: const Text(
+                                  'Rate  ',
+                                  style: TextStyle(
+                                    color: Colors.black,
+                                    fontWeight: FontWeight.w300,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              )),
                       ],
                     ),
                   )),

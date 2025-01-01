@@ -6,16 +6,22 @@ import 'package:assumemate/storage/secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
-class RateUserPage extends StatefulWidget {
+class RateListPage extends StatefulWidget {
   final String user_id;
+  final String list_id;
+  final dynamic images;
 
-  RateUserPage(this.user_id);
+  const RateListPage(
+      {super.key,
+      required this.user_id,
+      required this.list_id,
+      required this.images});
 
   @override
-  _RateUserPageState createState() => _RateUserPageState();
+  State<RateListPage> createState() => _RateListPageState();
 }
 
-class _RateUserPageState extends State<RateUserPage> {
+class _RateListPageState extends State<RateListPage> {
   final _formKey = GlobalKey<FormState>();
   double _rating = 0.0;
   String _comment = '';
@@ -41,11 +47,11 @@ class _RateUserPageState extends State<RateUserPage> {
         },
         body: json.encode({
           'to_user_id': widget.user_id,
+          'list_id': widget.list_id,
           'rating_value': _rating,
           'review_comment': _comment,
         }),
       );
-      print(response.statusCode);
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         Navigator.of(context).pop(context);
@@ -86,8 +92,21 @@ class _RateUserPageState extends State<RateUserPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: AspectRatio(
+                  aspectRatio: 16 / 9,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(7),
+                    child: Image.network(
+                      widget.images[0]!,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ),
+              ),
               const Text(
-                'How would you rate this user?',
+                'How would you rate this listing?',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 10),
@@ -113,7 +132,7 @@ class _RateUserPageState extends State<RateUserPage> {
               ),
               const SizedBox(height: 10),
               const Text(
-                'Would you like to share more about your experience of this user?',
+                'Would you like to share more about your experience of this listing?',
                 style: TextStyle(fontSize: 15),
               ),
               const SizedBox(height: 10),
@@ -121,14 +140,14 @@ class _RateUserPageState extends State<RateUserPage> {
                 maxLines: 5,
                 decoration: InputDecoration(
                   hintText: 'Provide your feedback here',
+                  contentPadding:
+                      EdgeInsets.symmetric(vertical: 12, horizontal: 15),
                   enabledBorder: borderStyle.copyWith(
                       borderRadius: BorderRadius.circular(5.0)),
                   focusedBorder: borderStyle.copyWith(
                       borderRadius: BorderRadius.circular(5.0)),
                   border: borderStyle.copyWith(
                       borderRadius: BorderRadius.circular(5.0)),
-                  contentPadding:
-                      EdgeInsets.symmetric(vertical: 12, horizontal: 15),
                 ),
                 onChanged: (value) {
                   _comment = value;

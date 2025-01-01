@@ -104,6 +104,7 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
       if (response.containsKey('profile')) {
         final user = response['user'];
         final userType = await secureStorage.getUserType();
+        print(userType);
         final userProvider = Provider.of<UserProvider>(context, listen: false);
         userProvider.setRoles(
             isAssumptor: user['is_assumptor'], isAssumee: user['is_assumee']);

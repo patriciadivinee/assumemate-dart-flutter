@@ -1035,7 +1035,7 @@ class ApiService {
     }
   }
 
-  Future<double> getTotalCoins(int wallId) async {
+  Future<int> getTotalCoins(int wallId) async {
     final token = await secureStorage.getToken();
     final response = await http.get(
       Uri.parse('$baseURL/wallet/total-coins/'),
@@ -1052,7 +1052,7 @@ class ApiService {
           data['wall_amnt']; // Assuming this is a string
 
       // Convert to int and handle errors
-      final double walletAmount = double.tryParse(walletAmountString) ?? 0;
+      final int walletAmount = int.tryParse(walletAmountString) ?? 0;
 
       return walletAmount;
     } else {

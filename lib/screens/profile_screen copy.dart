@@ -24,9 +24,8 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   String? errorMsg;
-  double _coins = 0;
+  int _coins = 0;
   late ScrollController _scrollController;
-  bool? _isCollapsed = false;
   List<Map<String, dynamic>> _offers = [];
   List<Map<String, dynamic>> _listings = [];
   List<Map<String, dynamic>> _followers = [];
@@ -39,7 +38,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _fetchCoins() async {
     final wallId = await secureStorage.getUserId();
     try {
-      double totalCoins = await apiService.getTotalCoins(int.parse(wallId!));
+      int totalCoins = await apiService.getTotalCoins(int.parse(wallId!));
       setState(() {
         _coins = totalCoins;
       });
@@ -125,13 +124,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _fetchCoins();
     _getOffers();
     _getListings();
-
-    _scrollController = ScrollController()
-      ..addListener(() {
-        setState(() {
-          _isCollapsed = _isSliverAppBarExpanded;
-        });
-      });
   }
 
   @override

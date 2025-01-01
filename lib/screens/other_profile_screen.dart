@@ -1,5 +1,6 @@
 import 'package:assumemate/components/listing_item.dart';
 import 'package:assumemate/provider/follow_provider.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:assumemate/logo/loading_animation.dart';
 import 'package:assumemate/service/service.dart';
@@ -45,6 +46,9 @@ class _OtherProfileScreenState extends State<OtherProfileScreen> {
       if (response.containsKey('user_profile')) {
         final rawReviews = response['reviews'];
 
+        print(rawReviews);
+        print('rawReviews');
+
         // Process reviews
         final List<Map<String, dynamic>> processedReviews = rawReviews.isEmpty
             ? []
@@ -53,8 +57,10 @@ class _OtherProfileScreenState extends State<OtherProfileScreen> {
                   'name': rating['from_user_id'] != null
                       ? '${rating['from_user_id']['user_prof_fname']} ${rating['from_user_id']['user_prof_lname']}'
                       : 'Anonymous',
+                  'profile': rating['from_user_id']['user_prof_pic'],
                   'rating': rating['rating_value'] ?? 0,
                   'comment': rating['review_comment'] ?? 'No comment provided',
+                  'list': rating['list_details']
                 };
               }).toList();
 
@@ -491,42 +497,157 @@ Widget buildRatingList(Future<List<dynamic>> futureRatings) {
             var stars = (rating['rating'] ?? 0)
                 .toInt(); // Convert rating to integer for stars
             var comment = rating['comment'] ?? 'No comment provided';
+            var list = rating['list'];
 
-            return Padding(
-              padding:
-                  const EdgeInsets.symmetric(vertical: 5.0, horizontal: 10.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+            var title = '';
+            if (list != null) {
+              if (list['list_content']['category'] != 'Real Estate') {
+                title =
+                    '${list['list_content']['make']} ${list['list_content']['model']} ${list['list_content']['year']}';
+              } else {
+                title = list['list_content']['title'];
+              }
+            }
+
+            print(comment);
+            print('yawaaaa');
+
+            return SizedBox(
+              // height: MediaQuery.of(context).size.height * .09,
+              child: Card(
+                color: Colors.white,
+                // margin: const EdgeInsets.only(left: 3, top: 6, right: 5),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(2),
+                ),
+                child: Padding(
+                  padding: EdgeInsets.all(7),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
-                        name,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // name and pic
+                            Row(
+                              children: [
+                                CircleAvatar(
+                                  backgroundImage:
+                                      NetworkImage(rating['profile']),
+                                  radius: 12,
+                                ),
+                                const SizedBox(width: 5),
+                                Text(
+                                  name,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            // star rating
+                            Padding(
+                              padding: EdgeInsets.only(top: 3),
+                              child: Row(
+                                children: List.generate(5, (index) {
+                                  if (index < stars) {
+                                    // Filled stars for the rating
+                                    return const Icon(
+                                      Icons.star_rounded,
+                                      color: Colors.amber,
+                                      size: 18,
+                                    );
+                                  } else {
+                                    // Outlined stars for the remaining
+                                    return const Icon(
+                                      Icons.star_border_rounded,
+                                      color: Colors.amber,
+                                      size: 20,
+                                    );
+                                  }
+                                }),
+                              ),
+                            ),
+                            if (comment != '') ...[
+                              // const SizedBox(height: 5),
+                              Text(
+                                comment,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey[700],
+                                ),
+                              ),
+                            ],
+                            if (list != null) ...[
+                              const SizedBox(height: 3),
+                              Container(
+                                padding: EdgeInsets.all(3),
+                                decoration: BoxDecoration(
+                                    color: Colors.grey.shade200,
+                                    borderRadius: BorderRadius.circular(5.0)),
+                                child: Row(
+                                  children: [
+                                    ConstrainedBox(
+                                        constraints: const BoxConstraints(
+                                          maxWidth: 60,
+                                          maxHeight: 60,
+                                        ),
+                                        child: AspectRatio(
+                                          aspectRatio: 1,
+                                          child: ClipRRect(
+                                            borderRadius:
+                                                BorderRadius.circular(5),
+                                            child: CachedNetworkImage(
+                                              imageUrl: list['list_content']
+                                                          ['images']
+                                                      ?.first ??
+                                                  '',
+                                              placeholder: (context, url) =>
+                                                  Container(
+                                                color: Colors.black38,
+                                              ),
+                                              errorWidget: (context, url,
+                                                      error) =>
+                                                  Container(
+                                                      color: Colors.white60,
+                                                      child: const Column(
+                                                        mainAxisAlignment:
+                                                            MainAxisAlignment
+                                                                .center,
+                                                        children: [
+                                                          Icon(
+                                                            Icons
+                                                                .warning_rounded,
+                                                            color: Colors.white,
+                                                          ),
+                                                          Text(
+                                                            'Failed to load image',
+                                                            style: TextStyle(
+                                                                fontSize: 10,
+                                                                color: Colors
+                                                                    .white),
+                                                          )
+                                                        ],
+                                                      )),
+                                              fit: BoxFit.cover,
+                                            ),
+                                          ),
+                                        )),
+                                    const SizedBox(width: 10),
+                                    Text(title),
+                                  ],
+                                ),
+                              )
+                            ],
+                          ],
                         ),
-                      ),
-                      const SizedBox(width: 5),
-                      Text(
-                        '★' * stars, // Display stars based on rating value
-                        style: const TextStyle(
-                          color: Colors.amber,
-                          fontSize: 14,
-                        ),
-                      ),
+                      )
                     ],
                   ),
-                  const SizedBox(height: 5),
-                  Text(
-                    comment,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[700],
-                    ),
-                  ),
-                  const Divider(), // Add a divider for spacing
-                ],
+                ),
               ),
             );
           },
