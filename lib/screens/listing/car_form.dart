@@ -14,6 +14,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:intl/intl.dart';
 
 class CarForm extends StatefulWidget {
@@ -42,7 +43,7 @@ class _CarFormState extends State<CarForm> {
 
   final cloudinary = Cloudinary.signedConfig(
     apiKey: '713443683486728',
-    apiSecret: 'gKCMD_fCso--h1CIyPGxTWsp9As',
+    apiSecret: dotenv.env['CLOUDINARY_API_SECRET']!,
     cloudName: 'dqfvxj9h0',
   );
 
