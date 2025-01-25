@@ -4,13 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class PaypalPayoutService {
-     // Replace with your actual backend URL
-
-  // Send money to user
   static Future<Map<String, dynamic>> sendMoney({
     required String recipientEmail,
     required double amount,
-    
     required String token,
   }) async {
     try {
@@ -45,7 +41,8 @@ class PaypalPayoutService {
     try {
       final String? baseUrl = dotenv.env['API_URL'];
       final response = await http.get(
-        Uri.parse('$baseUrl/complete-simple-transfer/?payout_batch_id=$payoutBatchId'),
+        Uri.parse(
+            '$baseUrl/complete-simple-transfer/?payout_batch_id=$payoutBatchId'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
